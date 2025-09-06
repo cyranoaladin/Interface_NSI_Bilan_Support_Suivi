@@ -1,0 +1,249 @@
+{
+  "version": "terminale-nsi-v1.1-2025-09-03",
+  "locale": "fr-FR",
+  "title": "NSI Terminale — Bilan d'entrée & Profil Bac/Parcoursup (fusionné)",
+  "description": "Questionnaire d'ouverture d'année pour les élèves de Terminale NSI. Génère deux bilans (élève & enseignant) au format PDF via LLM + RAG et templates LaTeX, puis dépose les PDF sur les dashboards. Le Volet 1 évalue exclusivement des connaissances de Première, avec un poids renforcé sur les prérequis critiques pour la Terminale.",
+
+  "owners": ["alaeddine.benrhouma@ert.tn", "pierre.caillabet@ert.tn"],
+
+  "data_sources": {
+    "students_csv": {
+      "type": "csv",
+      "path": "/mnt/data/TERMINALE_NSI.csv",
+      "delimiter": ";",
+      "encoding": "utf-8",
+      "header": true,
+      "columns": {
+        "email": "Email",
+        "given_name": "Prénom",
+        "family_name": "Nom",
+        "classe": "Classe",
+        "specialites": "Spécialités gardées",
+        "id": "ID"
+      },
+      "columns_fallback": {
+        "email": ["email", "Email", "Adresse e-mail", "Adresse email"],
+        "given_name": ["Prénom", "Prenom", "First Name"],
+        "family_name": ["Nom", "Last Name"],
+        "classe": ["Classe", "Classe/Grp"],
+        "specialites": ["Spécialités gardées", "Spécialités", "Specialites", "Enseignements de spécialité"],
+        "id": ["ID", "Id", "Identifiant"]
+      }
+    }
+  },
+
+  "auth": {
+    "method": "email_domain",
+    "domain": "ert.tn",
+    "verification": "magic_link",
+    "fields": ["email"],
+    "constraints": {"email_regex": "^[A-Za-z0-9._%+-]+@ert\\.tn$"},
+    "lookup": {
+      "source": "students_csv",
+      "key": "email",
+      "failPolicy": "block",
+      "onFailMessage": "Adresse inconnue. Vérifie ton e-mail @ert.tn ou contacte l'enseignant.",
+      "prefill": {
+        "auth.email": "row.email",
+        "auth.given_name": "row.given_name",
+        "auth.family_name": "row.family_name",
+        "context.csv_classe": "row.classe",
+        "context.csv_specialites_raw": "row.specialites",
+        "context.student_id": "row.id"
+      }
+    },
+    "guards": [{
+      "id": "require_nsi_specialite",
+      "rule": "contains_any(derived.specialites_list, ['NSI'])",
+      "onFail": {"action": "block", "message": "Ce questionnaire est réservé aux élèves ayant gardé la spécialité NSI en Terminale."}
+    }]
+  },
+
+  "audience": {"niveau": "Terminale", "specialite": "NSI", "enjeux": ["Parcoursup", "Baccalauréat"]},
+  "display": {"theme": "nsi", "progressBar": true, "navigation": "sequential", "saveAndResume": true, "i18n": {"dateFormat": "dd/MM/yyyy"}},
+
+  "derived": {
+    "specialites_list": {"fn": "split", "args": ["context.csv_specialites_raw", ",|;|/|\\|\n", true]},
+    "profil_scientifique": {"fn": "any_in", "args": ["derived.specialites_list", ["Maths", "Mathématiques", "Physique-Chimie", "SI", "Sciences de l'ingénieur"]]}
+  },
+
+  "workflow": {
+    "stages": ["start", "volet_intro", "volet_identite", "volet_connaissances", "volet_pedago_commun", "volet_pedago_nsi", "volet_objectifs", "volet_consentement", "submit", "generate_reports", "publish_reports"],
+    "onComplete": ["generate_reports"],
+    "ui": {
+      "student": {"disableButtonsOn": [{"button_id": "start_bilan_button", "when": "reports.published == true"}]}
+    }
+  },
+
+  "volets": [
+    {
+      "id": "volet_intro",
+      "title": "Bienvenue en NSI (Terminale)",
+      "pages": [
+        {"id": "intro", "title": "Pourquoi ce questionnaire ?", "content": "Ce questionnaire n'est pas noté. Il sert à établir un bilan utile pour toi et pour les enseignants afin de préparer l'année (Parcoursup, Bac). Le premier volet n'interroge que des notions de Première indispensables pour bien démarrer la Terminale."}
+      ]
+    },
+
+    {
+      "id": "volet_identite",
+      "title": "Identité vérifiée & contexte",
+      "pages": [
+        {"id": "identite", "title": "Vérification établissement", "questions": [
+          {"id": "niveau_fix", "type": "static", "statement": "Niveau", "value": "Terminale"},
+          {"id": "given_name", "type": "static", "statement": "Prénom", "bind": "auth.given_name"},
+          {"id": "family_name", "type": "static", "statement": "Nom", "bind": "auth.family_name"},
+          {"id": "email_show", "type": "static", "statement": "E‑mail", "bind": "auth.email"},
+          {"id": "classe_etab", "type": "static", "statement": "Classe", "bind": "context.csv_classe"},
+          {"id": "specialites_etab", "type": "static", "statement": "Spécialités gardées (CSV)", "bind": "derived.specialites_list"}
+        ]},
+        {"id": "materiel", "title": "Matériel & usage du numérique", "questions": [
+          {"id": "ordi", "type": "single", "statement": "Possèdes-tu un ordinateur personnel ?", "options": ["Oui", "Non"]},
+          {"id": "os", "type": "single", "statement": "Système d’exploitation principal", "options": ["Windows", "macOS", "Linux", "ChromeOS", "Autre"], "visible_if": {"ordi": "Oui"}},
+          {"id": "dispo", "type": "single", "statement": "Disponibilité de l’ordinateur", "options": ["Quotidienne", "Hebdomadaire", "Occasionnelle"], "visible_if": {"ordi": "Oui"}},
+          {"id": "internet", "type": "single", "statement": "Connexion internet régulière", "options": ["Oui", "Non"]}
+        ]}
+      ]
+    },
+
+    {
+      "id": "volet_connaissances",
+      "title": "Volet 1 — Connaissances de Première (poids renforcé sur les prérequis de Terminale)",
+      "description": "Banque QCM/QROC importée, limitée aux notions de Première : Python de base, structures (listes/dicos/tuples), données en tables (CSV), logique & encodage, Web/HTTP, lecture d'algorithmes. Aucune notion de Terminale n'est interrogée.",
+      "delivery": {"randomize": true, "timeLimitMin": 45, "showSolutions": false},
+      "bank_imports": [
+        {"path": "/mnt/data/qcm_premiere_for_terminale_nsi.json", "format": "json", "domainField": "domain", "idField": "id", "weightField": "weight"}
+      ],
+      "domain_weights": {
+        "python": 0.25,
+        "structures": 0.22,
+        "donnees": 0.20,
+        "logique": 0.12,
+        "web": 0.11,
+        "lecture_algo": 0.10
+      },
+      "pages": [
+        {"id": "sample_notice", "title": "Exemple d'items", "content": "Les questions proviennent d'une banque validée. L'ordre est aléatoire et le barème est pondéré par domaine (pré-requis critiques plus lourds)."}
+      ]
+    },
+
+    {
+      "id": "volet_pedago_commun",
+      "title": "Volet 2 — Profil pédagogique (commun)",
+      "import": {"path": "/mnt/data/pedago_survey_commun.json", "format": "json", "map": {"questions": "questions"}}
+    },
+
+    {
+      "id": "volet_pedago_nsi",
+      "title": "Volet 3 — Profil NSI Terminale (spécifique)",
+      "import": {"path": "/mnt/data/pedago_survey_nsi_terminale.json", "format": "json", "map": {"questions": "questions"}}
+    },
+
+    {
+      "id": "volet_objectifs",
+      "title": "Objectifs Parcoursup & Bac",
+      "pages": [
+        {"id": "psup", "title": "Parcoursup (T1 & T2)", "questions": [
+          {"id": "objectif_T1", "type": "single", "statement": "Objectif de moyenne NSI — Trimestre 1", "options": ["≥ 16", "14–15", "12–13", "10–11", "< 10"]},
+          {"id": "objectif_T2", "type": "single", "statement": "Objectif de moyenne NSI — Trimestre 2", "options": ["≥ 16", "14–15", "12–13", "10–11", "< 10"]},
+          {"id": "aides", "type": "multi", "statement": "Aides souhaitées", "options": ["Cartes mentales des chapitres", "Banque d’exercices ciblés", "Vidéos courtes", "Fiches méthode (tests, débogage)", "Ateliers pair‑à‑pair", "RDV individuel"]}
+        ]},
+        {"id": "bac", "title": "Préférences de préparation Bac (écrit)", "questions": [
+          {"id": "format_eval", "type": "multi", "statement": "Formats d’entraînement privilégiés", "options": ["DS type bac", "DM progressifs", "Oral d’explication de code", "Projets courts d’intégration"]},
+          {"id": "stress_eval", "type": "likert", "scale": 5, "statement": "Le travail évalué (DS, oraux) est une source de stress pour moi."}
+        ]}
+      ]
+    },
+
+    {
+      "id": "volet_consentement",
+      "title": "Consentement & confidentialité",
+      "pages": [
+        {"id": "rgpd", "title": "Traitement des données", "questions": [
+          {"id": "consentement_data", "type": "checkbox", "statement": "Je consens à l’utilisation de mes réponses pour un bilan pédagogique individuel et leur conservation pendant l’année scolaire.", "required": true},
+          {"id": "consentement_mail", "type": "checkbox", "statement": "J’accepte de recevoir par e‑mail mon bilan PDF.", "required": true}
+        ]}
+      ]
+    }
+  ],
+
+  "scoring": {
+    "sections": {
+      "volet_connaissances": {
+        "mode": "sum_weighted_by_domain",
+        "domainMap": {
+          "donnees": ["donnees", "tables", "csv"],
+          "python": ["python", "py_base"],
+          "structures": ["structures", "listes", "dictionnaires", "tuples"],
+          "logique": ["logique", "encodage", "binaire", "flottants"],
+          "web": ["web", "http"],
+          "lecture_algo": ["lecture_algo", "tracage"]
+        },
+        "weights": {
+          "python": 0.25,
+          "structures": 0.22,
+          "donnees": 0.20,
+          "logique": 0.12,
+          "web": 0.11,
+          "lecture_algo": 0.10
+        },
+        "criticalPolicy": "flag_below_50"
+      },
+      "volet_pedago_commun": {"mode": "profile_bucketed"},
+      "volet_pedago_nsi": {"mode": "likert_weighted", "reverseHandling": "auto"}
+    },
+    "tags": [
+      {"id": "TAG_Python_Faible", "rule": "volet_connaissances.python < 0.5"},
+      {"id": "TAG_Structures_Faible", "rule": "volet_connaissances.structures < 0.5"},
+      {"id": "TAG_Tables_Faible", "rule": "volet_connaissances.donnees < 0.5"},
+      {"id": "TAG_Methodes_Faibles", "rule": "volet_pedago_nsi.P5 <= 2 or volet_pedago_nsi.P6 <= 2"},
+      {"id": "TAG_Organisation_Faible", "rule": "volet_pedago_nsi.P8 <= 2"},
+      {"id": "TAG_Stress_Eleve", "rule": "volet_objectifs.stress_eval >= 4"}
+    ],
+    "risk_flags": [
+      {"id": "ALERTE_Parcoursup", "rule": "(volet_objectifs.objectif_T1 in ['< 10','10–11']) or (volet_objectifs.objectif_T2 in ['< 10','10–11'])"}
+    ]
+  },
+
+  "reporting": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "rag": {
+      "strategy": "hybrid",
+      "chunk_size": 1200,
+      "overlap": 100,
+      "sources": [
+        {"path": "/mnt/data/programme_nsi_premiere.pdf", "label": "Programme NSI Première"},
+        {"path": "/mnt/data/programme_nsi_terminale.pdf", "label": "Programme NSI Terminale"},
+        {"path": "/mnt/data/RCP_Référentiel de compétences en programmation_vue détaillée.pdf", "label": "RCP — détaillée"},
+        {"path": "/mnt/data/RCP _ Référentiel de compétences en programmation - vue formulaire.pdf", "label": "RCP — formulaire"},
+        {"path": "/mnt/data/Questionnaire_Rentrée.pdf", "label": "Questionnaire rentrée (inspiration)"},
+        {"path": "/mnt/data/idées_questionnaire.md", "label": "Idées questionnaire (notes)"},
+        {"path": "/mnt/data/questionnaire_premiere_nsi.json", "label": "Questionnaire Première — modèle"}
+      ]
+    },
+    "latex_templates": {
+      "eleve": "\\documentclass[11pt]{article}\n\\usepackage[margin=2cm]{geometry}\n\\usepackage[french]{babel}\n\\usepackage{hyperref}\n\\newcommand{\\score}[1]{\\textbf{#1}}\n\\begin{document}\n\\section*{Bilan d'entrée — NSI Terminale (Élève)}\n\\textbf{Nom :} {{student.family_name}} \\ \\textbf{Prénom :} {{student.given_name}} \\ \\textbf{Classe :} {{context.csv_classe}}\\\n\\vspace{0.5em}\\hrule\\vspace{0.5em}\n\\subsection*{Synthèse rapide}\nPré-requis Python : \\score{{{scores.python_pct}}}\\% \quad Structures : \\score{{{scores.structures_pct}}}\\% \quad Tables/CSV : \\score{{{scores.donnees_pct}}}\\% \\ \\Logique/encodage : \\score{{{scores.logique_pct}}}\\% \quad Web/HTTP : \\score{{{scores.web_pct}}}\\% \\Lecture d'algorithmes : \\score{{{scores.lecture_algo_pct}}}\\%\n\\subsection*{Forces et points d'appui}\n{{analysis.strengths_eleve}}\n\\subsection*{Priorités de révision (2 semaines)}\n{{analysis.remediations_eleve}}\n\\subsection*{Méthodes de travail : conseils personnalisés}\n{{analysis.methodes_conseils}}\n\\subsection*{Objectifs Parcoursup (T1/T2) et Bac}\n{{analysis.objectifs_eleve}}\n\\end{document}",
+      "enseignant": "\\documentclass[11pt]{article}\n\\usepackage[margin=2cm]{geometry}\n\\usepackage[french]{babel}\n\\usepackage{booktabs}\n\\begin{document}\n\\section*{Bilan d'entrée — NSI Terminale (Enseignant)}\n\\textbf{Élève :} {{student.family_name}} {{student.given_name}} ({{context.csv_classe}})\\\n\\subsection*{Scores détaillés (pré-requis de Première)}\n\\begin{tabular}{ll}\\toprule Domaine & Score \\ \\midrule Python (bases) & {{scores.python_pct}}\\% \\ Structures & {{scores.structures_pct}}\\% \\ Tables/CSV & {{scores.donnees_pct}}\\% \\ Logique/encodage & {{scores.logique_pct}}\\% \\ Web/HTTP & {{scores.web_pct}}\\% \\ Lecture d'algorithmes & {{scores.lecture_algo_pct}}\\% \\ \\bottomrule\n\\end{tabular}\n\\subsection*{Profil pédagogique}\n{{analysis.gestes_commentaires}}\\\n\\subsection*{Alertes \\& recommandations ciblées}\n{{analysis.alertes_recos}}\n\\subsection*{Proposition d'accompagnement (4 semaines)}\n{{analysis.plan_4_semaines}}\n\\newpage\n\\section*{Synthèse classe (aperçu)}\n- Moyennes par domaine : {{class_stats.domain_means}}\\\n- Taux d'alerte (tags) : {{class_stats.tag_rates}}\\\n- Recommandations de séquences d'appui : {{class_stats.sequence_recos}}\n\\end{document>"}
+    },
+    "prompts": {
+      "system_eleve": "Tu es un professeur de NSI. Tu écris un bilan court, positif et actionnable pour l'élève, en français, structuré en puces, avec des priorités de révision et des ressources légères (exercices ciblés, rappels de cours). Appuie-toi sur les scores et les réponses. Ne copie pas les questions.",
+      "system_enseignant": "Tu es un professeur de NSI. Tu produis un bilan diagnostique détaillé pour l'enseignant (français), reliant chaque faiblesse à un objectif Terminale (structures de données, bases relationnelles/SQL, graphes, POO, réseaux). Propose un plan d'appui (4 semaines).",
+      "user_template_eleve": "Données:\n- Scores: {{scores_json}}\n- Volets pédagogiques: {{pedago_json}}\n- Objectifs Parcoursup/Bac: {{objectifs_json}}\nConsigne: Rédige {{n}} paragraphes courts (forces, priorités, méthodes, objectifs).",
+      "user_template_enseignant": "Données:\n- Scores: {{scores_json}}\n- Volets pédagogiques: {{pedago_json}}\n- Objectifs: {{objectifs_json}}\n- Tags/Risques: {{tags_json}}\nConsigne: Analyse et propose un plan (4 semaines), avec liens explicites vers les objectifs de Terminale."
+    },
+    "post_actions": {
+      "student_dashboard": {"save_pdf": true, "file_field": "bilan_eleve_pdf", "disable_button_id": "start_bilan_button"},
+      "teacher_dashboard": {"collect_all": true, "fields": ["bilan_eleve_pdf", "bilan_enseignant_pdf"], "group_by": ["classe"]},
+      "email": {
+        "to": ["alaeddine.benrhouma@ert.tn", "pierre.caillabet@ert.tn"],
+        "subject": "Bilan NSI Terminale — {{student.family_name}} {{student.given_name}}",
+        "attachments": ["bilan_eleve_pdf", "bilan_enseignant_pdf"]
+      }
+    }
+  },
+
+  "security": {
+    "data_retention": "année scolaire en cours",
+    "anonymized_analytics": true
+  }
+}

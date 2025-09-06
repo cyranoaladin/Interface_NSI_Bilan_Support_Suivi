@@ -1,0 +1,264 @@
+{
+  "version": "premiere-v1.1-2025-09-03",
+  "locale": "fr-FR",
+  "title": "NSI Première — Bilan d'entrée & Profil pédagogique (avec vérification CSV)",
+  "description": "Questionnaire d'ouverture d'année pour des élèves de Première (première année de NSI). Appui SNT. Vérifie l'e-mail via un CSV établissement, pré-remplit identité et spécialités, et adapte les bilans.",
+
+  "data_sources": {
+    "students_csv": {
+      "type": "csv",
+      "path": "/mnt/data/Export CSV.csv",
+      "delimiter": ";",
+      "encoding": "utf-8",
+      "header": true,
+      "columns": {
+        "email": "Email",
+        "given_name": "Prénom",
+        "family_name": "Nom",
+        "classe": "Classe",
+        "specialites": "Spécialités",
+        "id": "ID"
+      },
+      "columns_fallback": {
+        "email": ["email", "Email", "Adresse e-mail", "Adresse email"],
+        "given_name": ["Prénom", "Prenom", "First Name"],
+        "family_name": ["Nom", "Last Name"],
+        "classe": ["Classe", "Classe/Grp"],
+        "specialites": ["Spécialités", "Specialites", "Enseignements de spécialité"],
+        "id": ["ID", "Id", "Identifiant"]
+      }
+    }
+  },
+
+  "auth": {
+    "method": "email_domain",
+    "domain": "ert.tn",
+    "verification": "magic_link",
+    "fields": ["email"],
+    "constraints": {"email_regex": "^[A-Za-z0-9._%+-]+@ert\.tn$"},
+
+    "lookup": {
+      "source": "students_csv",
+      "key": "email",
+      "failPolicy": "block",             
+      "onFailMessage": "Adresse inconnue. Vérifie ton e-mail @ert.tn ou contacte l'enseignant.",
+      "prefill": {
+        "auth.email": "row.email",
+        "auth.given_name": "row.given_name",
+        "auth.family_name": "row.family_name",
+        "context.csv_classe": "row.classe",
+        "context.csv_specialites_raw": "row.specialites",
+        "context.student_id": "row.id"
+      }
+    }
+  },
+
+  "audience": {"niveau": "Première", "premiere_annee_nsi": true, "base_reference": "SNT"},
+  "display": {"theme": "nsi", "progressBar": true, "navigation": "sequential", "saveAndResume": true, "i18n": {"dateFormat": "dd/MM/yyyy"}},
+
+  "derived": {
+    "specialites_list": {"fn": "split", "args": ["context.csv_specialites_raw", ",|;
+?", true]},
+    "profil_scientifique": {"fn": "any_in", "args": ["derived.specialites_list", ["Maths", "Mathématiques", "Physique-Chimie", "SI", "Sciences de l'ingénieur"]]},
+    "profil_eco": {"fn": "any_in", "args": ["derived.specialites_list", ["SES", "Économie"]]}
+  },
+
+  "volets": [
+    {
+      "id": "intro_contexte",
+      "title": "Bienvenue en NSI (Première)",
+      "pages": [
+        {"id": "intro", "title": "Pourquoi ce questionnaire ?", "content": "Ce questionnaire n'est pas une évaluation notée. Il sert à comprendre ton point de départ après la SNT en Seconde, pour t'accompagner au mieux en NSI. Réponds spontanément : il est normal de ne pas tout savoir en début d'année."}
+      ]
+    },
+
+    {
+      "id": "identite_contexte",
+      "title": "Identité vérifiée & contexte",
+      "pages": [
+        {"id": "identite",
+         "title": "Vérification depuis l'établissement",
+         "questions": [
+          {"id": "classe_fix", "type": "static", "statement": "Niveau", "value": "Première"},
+          {"id": "given_name", "type": "static", "statement": "Prénom", "bind": "auth.given_name"},
+          {"id": "family_name", "type": "static", "statement": "Nom", "bind": "auth.family_name"},
+          {"id": "email_show", "type": "static", "statement": "E‑mail", "bind": "auth.email"},
+          {"id": "classe_etab", "type": "static", "statement": "Classe (établissement)", "bind": "context.csv_classe"},
+          {"id": "specialites_etab", "type": "static", "statement": "Enseignements de spécialité (depuis l'établissement)", "bind": "derived.specialites_list"},
+          {"id": "specialites_confirm", "type": "single", "statement": "Ces spécialités sont-elles correctes ?", "options": ["Oui", "Non"], "required": true},
+          {"id": "specialites_corr", "type": "chips", "statement": "Corrige si nécessaire (max 3)", "options": ["Maths", "Physique-Chimie", "SVT", "SES", "LLCER", "HGGSP", "SI", "NSI", "Arts", "Autre"], "visible_if": {"specialites_confirm": "Non"}}
+         ]}
+        },
+        {"id": "materiel", "title": "Matériel & usage du numérique", "questions": [
+          {"id": "ordi", "type": "single", "statement": "Possèdes-tu un ordinateur personnel ?", "options": ["Oui", "Non"]},
+          {"id": "os", "type": "single", "statement": "Système d’exploitation principal", "options": ["Windows", "macOS", "Linux", "ChromeOS", "Autre"], "visible_if": {"ordi": "Oui"}},
+          {"id": "disponibilite", "type": "single", "statement": "Disponibilité de l’ordinateur", "options": ["Quotidienne", "Hebdomadaire", "Occasionnelle"], "visible_if": {"ordi": "Oui"}},
+          {"id": "internet", "type": "single", "statement": "Connexion internet régulière", "options": ["Oui", "Non"]},
+          {"id": "experience_code", "type": "single", "statement": "As-tu déjà programmé ?", "options": ["Jamais", "Un peu", "Régulièrement"]},
+          {"id": "langages", "type": "multi", "statement": "Langages déjà utilisés (SNT / perso)", "options": ["Python", "Scratch", "C/C++", "Java", "JS/HTML/CSS", "SQL", "Autre"], "visible_if": {"experience_code": ["Un peu", "Régulièrement"]}}
+        ]}
+      ]
+    },
+
+    {
+      "id": "profil_pedago_commun",
+      "title": "Profil pédagogique (commun)",
+      "include": {"from": "pedago_survey_commun.json"},
+      "overrides": {"required": true, "group": "Profil pédagogique"}
+    },
+
+    {
+      "id": "volet_premiere_specs",
+      "title": "Volet NSI — Première : méthodes & organisation",
+      "include": {"from": "pedago_survey_nsi_premiere.json"},
+      "overrides": {"required": true}
+    },
+
+    {
+      "id": "qcm_prerequis_snt",
+      "title": "Prérequis issus de SNT (Seconde) — QCM de départ",
+      "description": "Diagnostic basé sur les notions vues en SNT : web/HTTP, données/CSV, réseaux (IP/TCP, DNS), encodage (binaire/hexadécimal), Python très simple.",
+      "delivery": {"randomize": false, "showSolutions": false, "timeLimitMin": 35},
+      "include": {"from": "qcm_seconde_for_premiere_nsi.json"}
+    },
+
+    {
+      "id": "autoeval_rcp",
+      "title": "Auto‑évaluation — gestes de base (RCP simplifié)",
+      "description": "Positionne-toi : décomposer, if, for, petite fonction, table CSV, chercher dans la doc.",
+      "pages": [
+        {"id": "rcp_matrix_light", "title": "Gestes de base (1 à 5)", "questions": [
+          {"id": "rcp_light", "type": "matrix_likert", "scale": {"min": 1, "max": 5, "labels": ["Jamais fait", "Peu à l’aise", "Mitigé", "À l’aise", "Très à l’aise"]},
+           "rows": [
+              {"rid": "D", "label": "Décomposer un problème en étapes"},
+              {"rid": "IF", "label": "Écrire une condition simple (if)"},
+              {"rid": "FOR", "label": "Écrire une boucle for avec range"},
+              {"rid": "FUNC", "label": "Écrire une fonction très simple"},
+              {"rid": "TAB", "label": "Lire/filtrer des données d’un tableau (CSV)"},
+              {"rid": "DOC", "label": "Chercher une information dans une documentation (ex. docs.python.org)"}
+           ]}
+        ]}
+      ]
+    },
+
+    {
+      "id": "attentes_objectifs",
+      "title": "Attentes, méthodes, rythme & bien‑être",
+      "pages": [
+        {"id": "attentes", "title": "Ce que tu attends de la NSI", "questions": [
+          {"id": "attentes_libre", "type": "textarea", "statement": "Qu’attends-tu de la NSI cette année ?", "charlimit": 800},
+          {"id": "objectif_bac", "type": "single", "statement": "Objectif au Bac (NSI)", "options": ["≥ 16", "14–15", "12–13", "10–11", "Je ne sais pas encore"]},
+          {"id": "stress_exam", "type": "likert", "scale": 5, "statement": "Le travail évalué (DS, oraux) est une source de stress pour moi."}
+        ]},
+        {"id": "methodes", "title": "Ta manière de travailler", "questions": [
+          {"id": "planif", "type": "single", "statement": "Planifies‑tu un créneau NSI chaque semaine ?", "options": ["Oui", "Non", "Par périodes"]},
+          {"id": "habitudes", "type": "multi", "statement": "Quand tu bloques, tu…", "options": ["Relis l’énoncé", "Découpes en sous‑problèmes", "Consultes la doc", "Demandes à un pair", "Cherches un code à copier", "Attends le cours suivant"]},
+          {"id": "autonomie", "type": "likert", "scale": 5, "statement": "Je peux travailler en autonomie 30–45 min sur un problème NSI."}
+        ]}
+      ]
+    },
+
+    {
+      "id": "orientation_projet",
+      "title": "Orientation & projet personnel",
+      "pages": [
+        {"id": "projet", "title": "Après le bac (premières idées)", "questions": [
+          {"id": "orientation_cible", "type": "multi", "statement": "Pistes d’orientation envisagées", "options": ["Informatique/Ingénierie", "Données/IA", "Santé", "Économie/Commerce", "Droit/Sciences politiques", "Arts/Design", "Je ne sais pas encore"]},
+          {"id": "orientation_commentaire", "type": "textarea", "statement": "Précisions (si tu en as)"}
+        ]}
+      ]
+    },
+
+    {
+      "id": "libre_expression",
+      "title": "Dernier mot",
+      "pages": [
+        {"id": "commentaires_fin", "title": "Commentaire libre", "questions": [
+          {"id": "message_prof", "type": "textarea", "statement": "Un message pour les professeurs (difficultés, besoins, contraintes personnelles)"}
+        ]}
+      ]
+    },
+
+    {
+      "id": "consentement_rgpd",
+      "title": "Consentement & confidentialité",
+      "pages": [
+        {"id": "rgpd", "title": "Traitement des données", "questions": [
+          {"id": "consentement_data", "type": "checkbox", "statement": "Je consens à l’utilisation de mes réponses pour un bilan pédagogique individuel et leur conservation pendant l’année scolaire.", "required": true},
+          {"id": "consentement_mail", "type": "checkbox", "statement": "J’accepte de recevoir par e‑mail mon bilan PDF.", "required": true}
+        ]}
+      ]
+    }
+  ],
+
+  "scoring": {
+    "sections": {
+      "qcm_prerequis_snt": {"mode": "sum_weighted", "perDomain": true, "criticalPolicy": "flag_below_50"},
+      "profil_pedago_commun": {"mode": "likert_avg"},
+      "volet_premiere_specs": {"mode": "likert_avg"},
+      "autoeval_rcp": {"mode": "likert_avg", "groupBy": ["D","IF","FOR","FUNC","TAB","DOC"]}
+    },
+    "tags": [
+      {"id": "TAG_Intro_Python", "rule": "qcm_prerequis_snt.python_basics < 50% OR autoeval_rcp.FOR <= 2 OR autoeval_rcp.IF <= 2"},
+      {"id": "TAG_Donnees_Tables", "rule": "qcm_prerequis_snt.donnees_encodage < 50% OR autoeval_rcp.TAB <= 2"},
+      {"id": "TAG_Methode_Test", "rule": "volet_premiere_specs.P6 <= 2"},
+      {"id": "TAG_Organisation_Faible", "rule": "profil_pedago_commun.confiance <= 2 AND attentes_objectifs.autonomie <= 2"},
+      {"id": "TAG_Profil_Scientifique", "rule": "derived.profil_scientifique == true"},
+      {"id": "TAG_Profil_Eco", "rule": "derived.profil_eco == true"},
+      {"id": "TAG_Coh_Orientation_Info", "rule": "orientation_projet.projet.orientation_cible CONTAINS ANY OF ['Informatique/Ingénierie','Données/IA'] AND derived.profil_scientifique == false"},
+      {"id": "TAG_Coh_Orientation_Sante", "rule": "orientation_projet.projet.orientation_cible CONTAINS 'Santé' AND 'SVT' NOT IN derived.specialites_list"},
+      {"id": "TAG_Coh_Orientation_Eco", "rule": "orientation_projet.projet.orientation_cible CONTAINS 'Économie/Commerce' AND derived.profil_eco == false"}
+    ]
+  },
+
+  "exports": {
+    "student_pdf": {
+      "template": "bilan_eleve_premiere.tex",
+      "fields": {
+        "nom": "auth.family_name",
+        "prenom": "auth.given_name",
+        "email": "auth.email",
+        "classe": "identite_contexte.identite.classe_fix",
+        "specialites": "derived.specialites_list",
+        "profil_scientifique": "derived.profil_scientifique",
+        "points_forts": "top3Domains(qcm_prerequis_snt|autoeval_rcp)",
+        "axes_progres": "bottom3Domains(qcm_prerequis_snt|autoeval_rcp)",
+        "conseils_personnalises": "generate_with_rag(profile, tags)"
+      }
+    },
+    "teacher_pdf": {
+      "template": "bilan_prof_premiere.tex",
+      "fields": {
+        "identite": {"nom": "auth.family_name", "prenom": "auth.given_name", "email": "auth.email", "classe": "context.csv_classe", "id_eleve": "context.student_id"},
+        "specialites": "derived.specialites_list",
+        "profil_scientifique": "derived.profil_scientifique",
+        "profil_pedago_synthese": "profil_pedago_commun + volet_premiere_specs",
+        "scores_detail": "perDomainScores(qcm_prerequis_snt)",
+        "rcp_heatmap": "matrix(autoeval_rcp)",
+        "drapeaux": "tags"
+      }
+    }
+  },
+
+  "workflow": {
+    "onAuth": [
+      {"step": "csv_lookup", "source": "students_csv", "by": "email", "required": true},
+      {"step": "prefill_fields", "mapping": {
+        "auth.email": "row.email",
+        "auth.given_name": "row.given_name",
+        "auth.family_name": "row.family_name",
+        "context.csv_classe": "row.classe",
+        "context.csv_specialites_raw": "row.specialites",
+        "context.student_id": "row.id"
+      }},
+      {"step": "derive", "fields": ["derived.specialites_list", "derived.profil_scientifique", "derived.profil_eco"]}
+    ],
+
+    "onSubmit": [
+      {"step": "persist", "target": "postgres", "table": "nsi_bilans_premiere", "pk": ["email", "date"], "extra": {"student_id": "context.student_id", "classe": "context.csv_classe", "specialites": "derived.specialites_list"}},
+      {"step": "rag_enrich", "source": ["programme_nsi_premiere.pdf", "vademecum-snt-nsi_0.pdf", "RCP_Référentiel de compétences en programmation_vue détaillée.pdf"], "query": "profil eleve + axes de progression premiere + conseils adaptés au profil scientifique"},
+      {"step": "generate_pdfs", "engine": "latex", "templates": ["bilan_eleve_premiere.tex", "bilan_prof_premiere.tex"]},
+      {"step": "email_send", "student": {"to": "auth.email", "attachment": "student_pdf"}, "teacher": {"to": "nsi@ert.tn", "attachment": "teacher_pdf"}}
+    ]
+  }
+}

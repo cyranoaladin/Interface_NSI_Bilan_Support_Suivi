@@ -1,0 +1,170 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// === AUTH MODELS ===
+
+model Student {
+  // Spéc: email est la clé primaire
+  email                  String   @id
+  givenName              String
+  familyName             String
+  classe                 String
+  specialites            String
+  active                 Boolean  @default(true)
+  passwordHash           String
+  passwordChangeRequired Boolean  @default(true)
+
+  // Relations
+  attempts    Attempt[]
+  profileData StudentProfileData?
+  groupId     String?
+  group       Group?   @relation(fields: [groupId], references: [id])
+  bilans      Bilan[]
+}
+
+model Attempt {
+  id            String    @id @default(cuid())
+  // Spéc: flag de réactivation
+  isActive      Boolean   @default(true)
+
+  studentEmail  String
+  student       Student   @relation(fields: [studentEmail], references: [email])
+  questionnaire String
+  startedAt     DateTime  @default(now())
+  submittedAt   DateTime?
+  status        String    @default("in_progress")
+  scores        Score[]
+  tags          Tag[]
+  reports       Report[]
+
+  // Optionnel: tentative liée à un groupe/classe
+  groupId String?
+  group   Group?   @relation(fields: [groupId], references: [id])
+
+  @@index([studentEmail])
+}
+
+model Score {
+  id        String  @id @default(cuid())
+  attemptId String
+  attempt   Attempt @relation(fields: [attemptId], references: [id])
+  domain    String
+  pct       Float
+  raw       Float
+  weight    Float
+
+  @@index([attemptId])
+}
+
+model Tag {
+  id        String  @id @default(cuid())
+  attemptId String
+  attempt   Attempt @relation(fields: [attemptId], references: [id])
+  code      String
+
+  @@index([attemptId])
+}
+
+model Report {
+  id          String    @id @default(cuid())
+  attemptId   String
+  attempt     Attempt   @relation(fields: [attemptId], references: [id])
+  type        String // 'eleve' | 'enseignant'
+  json        Json
+  pdfUrl      String?
+  publishedAt DateTime?
+
+  @@index([attemptId])
+}
+
+model Teacher {
+  // Spéc: email est la clé primaire
+  email                  String   @id
+  firstName              String
+  lastName               String
+  passwordHash           String
+  passwordChangeRequired Boolean  @default(true)
+
+  // Groupes enseignés (via table de jointure)
+  groups TeacherOnGroup[]
+}
+
+// === GROUP / CLASSES ===
+model Group {
+  id           String           @id @default(cuid())
+  name         String           @unique
+  code         String           @unique
+  academicYear String           // ex: "2024-2025"
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  students     Student[]
+  attempts     Attempt[]
+  teachers     TeacherOnGroup[]
+
+  @@index([academicYear])
+}
+
+model TeacherOnGroup {
+  teacherEmail String
+  groupId      String
+  role      String   @default("teacher") // main | teacher | assistant
+
+  teacher   Teacher  @relation(fields: [teacherEmail], references: [email])
+  group     Group    @relation(fields: [groupId], references: [id])
+
+  @@id([teacherEmail, groupId])
+  @@index([groupId])
+}
+
+// PasswordReset n'est plus utilisé sans User central. Supprimé.
+
+// === BILAN MODELS ===
+model Bilan {
+  id               String   @id @default(cuid())
+  authorEmail      String
+  authorRole       String // 'teacher' | 'student'
+
+  studentEmail     String?
+  student          Student? @relation(fields: [studentEmail], references: [email])
+
+  matiere          String?
+  niveau           String?
+
+  qcmRawAnswers    Json?
+  pedagoRawAnswers Json?
+
+  qcmScores        Json?
+  pedagoProfile    Json?
+  preAnalyzedData  Json?
+
+  reportText       String?
+  summaryText      String?
+
+  generatedAt      DateTime?
+  status           String   @default("PENDING")
+  variant          String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([authorEmail])
+  @@index([studentEmail])
+}
+
+model StudentProfileData {
+  id               String   @id @default(cuid())
+  studentEmail     String   @unique
+  student          Student  @relation(fields: [studentEmail], references: [email])
+
+  pedagoRawAnswers Json?
+  pedagoProfile    Json?
+  preAnalyzedData  Json?
+  lastUpdatedAt    DateTime @default(now())
+}

@@ -1,0 +1,918 @@
+{
+  "version": "terminale-nsi-v2.1-2025-09-04",
+  "locale": "fr-FR",
+  "title": "NSI Terminale — Questionnaire d’entrée & Bilans personnalisés",
+  "description": "Questionnaire complet de rentrée pour les élèves de Terminale NSI, intégrant les acquis de Première, les profils pédagogiques communs et spécifiques NSI. Génère automatiquement deux bilans PDF (élève & enseignant) via LLM + RAG et LaTeX, déposés dans les dashboards respectifs.",
+  "owners": [
+    "alaeddine.benrhouma@ert.tn",
+    "pierre.caillabet@ert.tn"
+  ],
+  "data_sources": {
+    "students_csv": {
+      "type": "csv",
+      "path": "/mnt/data/TERMINALE_NSI.csv",
+      "delimiter": ";",
+      "encoding": "utf-8",
+      "header": true,
+      "columns": {
+        "email": "Email",
+        "given_name": "Prénom",
+        "family_name": "Nom",
+        "classe": "Classe",
+        "specialites": "Spécialités gardées",
+        "id": "ID"
+      }
+    }
+  },
+  "auth": {
+    "method": "email_domain",
+    "domain": "ert.tn",
+    "verification": "magic_link",
+    "fields": [
+      "email"
+    ],
+    "lookup": {
+      "source": "students_csv",
+      "key": "email",
+      "prefill": {
+        "auth.email": "row.email",
+        "auth.given_name": "row.given_name",
+        "auth.family_name": "row.family_name",
+        "context.csv_classe": "row.classe",
+        "context.csv_specialites_raw": "row.specialites",
+        "context.student_id": "row.id"
+      }
+    },
+    "guards": [
+      {
+        "id": "require_nsi_specialite",
+        "rule": "contains_any(context.csv_specialites_raw, ['NSI'])",
+        "onFail": {
+          "action": "block",
+          "message": "Ce questionnaire est réservé aux élèves ayant gardé la spécialité NSI en Terminale."
+        }
+      }
+    ]
+  },
+  "audience": {
+    "niveau": "Terminale",
+    "specialite": "NSI",
+    "enjeux": [
+      "Parcoursup",
+      "Baccalauréat"
+    ]
+  },
+  "workflow": {
+    "stages": [
+      {
+        "id": "intro",
+        "title": "Introduction",
+        "pages": [
+          {
+            "id": "consignes",
+            "markdown": "Bienvenue au questionnaire de rentrée NSI Terminale. Durée : 60 min. Répondez seul·e et sans aide. Les résultats alimentent un bilan personnalisé et un plan d’appui de début d’année."
+          }
+        ]
+      },
+      {
+        "id": "volet_connaissances",
+        "title": "Volet 1 — Connaissances de Première utiles en Terminale (version longue, séance D201)",
+        "description": "Banque QCM/QROC élargie : ~45 questions réparties par domaine (Python, structures, données/CSV, logique & encodage, Web/HTTP, lecture/traçage d’algorithmes). Pondération renforcée sur les prérequis critiques.",
+        "delivery": {
+          "randomize": true,
+          "timeLimitMin": 60,
+          "showSolutions": false,
+          "shuffleChoices": true
+        },
+        "domain_weights": {
+          "python": 0.25,
+          "structures": 0.22,
+          "donnees": 0.20,
+          "logique": 0.12,
+          "web": 0.11,
+          "lecture_algo": 0.10
+        },
+        "selection": {
+          "by_domain": {
+            "python": {
+              "total": 10,
+              "difficulty_mix": {
+                "A": 5,
+                "B": 4,
+                "C": 1
+              }
+            },
+            "structures": {
+              "total": 9,
+              "difficulty_mix": {
+                "A": 4,
+                "B": 4,
+                "C": 1
+              }
+            },
+            "donnees": {
+              "total": 8,
+              "difficulty_mix": {
+                "A": 4,
+                "B": 3,
+                "C": 1
+              }
+            },
+            "logique": {
+              "total": 6,
+              "difficulty_mix": {
+                "A": 4,
+                "B": 2
+              }
+            },
+            "web": {
+              "total": 6,
+              "difficulty_mix": {
+                "A": 4,
+                "B": 2
+              }
+            },
+            "lecture_algo": {
+              "total": 6,
+              "difficulty_mix": {
+                "A": 4,
+                "B": 2
+              }
+            }
+          },
+          "max_items": 45
+        },
+        "bank_imports": [
+          {
+            "path": "/mnt/data/qcm_premiere_for_terminale_nsi.json",
+            "format": "json",
+            "domainField": "domain",
+            "idField": "id",
+            "weightField": "weight"
+          }
+        ],
+        "bank_append": [
+          {
+            "id": "PY-A-02",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Quelle tranche renvoie [2,3] pour L=[0,1,2,3,4]?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "L[2:4]",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "L[2:3]"
+              },
+              {
+                "k": "C",
+                "text": "L[1:3]"
+              }
+            ],
+            "explanation": "La borne haute est exclue."
+          },
+          {
+            "id": "PY-B-03",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Fonctions : laquelle est valide ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "def f(x,y=0,z): return x+y+z"
+              },
+              {
+                "k": "B",
+                "text": "def f(x, y=0, z=1): return x+y+z",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "def f(x; y): return x+y"
+              }
+            ],
+            "explanation": "Les paramètres par défaut doivent être en fin de liste."
+          },
+          {
+            "id": "PY-B-04",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Mutabilité : que vaut L ?",
+            "code": "python\nL=[1,2]; M=L; M.append(3); print(L)",
+            "choices": [
+              {
+                "k": "A",
+                "text": "[1,2]"
+              },
+              {
+                "k": "B",
+                "text": "[1,2,3]",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Erreur"
+              }
+            ],
+            "explanation": "Listes mutables et aliasage."
+          },
+          {
+            "id": "PY-C-05",
+            "domain": "python",
+            "type": "short",
+            "difficulty": "C",
+            "weight": 1,
+            "statement": "Écrire une compréhension renvoyant les carrés pairs de 0 à 10 inclus.",
+            "answer": "[x*x for x in range(0,11) if x%2==0]"
+          },
+          {
+            "id": "PY-A-06",
+            "domain": "python",
+            "type": "msq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Quelles expressions valent True ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "(3<4) and (not False)",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "len('abc')==3",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "None==0"
+              },
+              {
+                "k": "D",
+                "text": "5=='5'"
+              }
+            ]
+          },
+          {
+            "id": "PY-B-07",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Portée : quel affichage ?",
+            "code":"python\nx=1\ndef g():\n    x=2\n    def h():\n        return x\n    return h()\nprint(g())","choices":[{"k":"A","text":"1"},{"k":"B","text":"2","correct":true},{"k":"C","text":"Erreur"}]},{"id": "PY-B-08",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Que vaut sum(i for i in range(3,8,2)) ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "12"
+              },
+              {
+                "k": "B",
+                "text": "15",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "18"
+              }
+            ]
+          },
+          {
+            "id": "ST-A-01",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Dictionnaires : que renvoie ?",
+            "code":"python\nd={'a': 1,'b': 2\n            }\nprint('a' in d,\n            2 in d,\n            2 in d.values())","choices":[{"k":"A","text":"True True True"},{"k":"B","text":"True False True","correct":true},{"k":"C","text":"True False False"}]},{"id": "ST-A-02",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Tuples : accès valide pour t=(10,20) ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "t[0]=5"
+              },
+              {
+                "k": "B",
+                "text": "t[1]",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "t.append(30)"
+              }
+            ]
+          },
+          {
+            "id": "ST-B-03",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Ensembles : résultat ?",
+            "code":"python\nA={\n              1,\n              2,\n              3\n            }; B={\n              3,\n              4\n            }\nprint(A|B, A&B, A-B)","choices":[{"k":"A","text":"{\n              1,\n              2,\n              3,\n              4\n            } {\n              3\n            } {\n              1,\n              2\n            }","correct":true},{"k":"B","text":"{\n              1,\n              2,\n              3\n            } {} {\n              1,\n              2\n            }"},{"k":"C","text":"{\n              1,\n              2,\n              3,\n              4\n            } {\n              1,\n              2\n            } {\n              3\n            }"}]},{"id": "ST-B-04",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Listes : que vaut L ?",
+            "code":"python\nL=[\n              0,\n              1,\n              2,\n              3\n            ]\nL[\n              1: 3\n            ]=[\n              9\n            ]\nprint(L)","choices":[{"k":"A","text":"[\n              0,\n              9,\n              3\n            ]","correct":true},{"k":"B","text":"[\n              0,\n              9,\n              2,\n              3\n            ]"},{"k":"C","text":"[\n              0,\n              1,\n              9,\n              3\n            ]"}]},{"id": "ST-B-05",
+            "domain": "structures",
+            "type": "msq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Opérations dict valides ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "d.get('k',0)",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "d.items()",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "d.push(1)"
+              },
+              {
+                "k": "D",
+                "text": "d.update({'x':1})",
+                "correct": true
+              }
+            ]
+          },
+          {
+            "id": "ST-C-06",
+            "domain": "structures",
+            "type": "short",
+            "difficulty": "C",
+            "weight": 1,
+            "statement": "Écrire une dict‑compréhension inversant d={'a':1,'b':2}.",
+            "answer": "{v:k for k,v in d.items()}"
+          },
+          {
+            "id": "ST-A-07",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Compréhension de liste :",
+            "code":"python\nL=[i for i in range(5) if i%2\n            ]","choices":[{"k":"A","text":"[\n              0,\n              2,\n              4\n            ]"},{"k":"B","text":"[\n              1,\n              3\n            ]","correct":true},{"k":"C","text":"[\n              1,\n              2,\n              3,\n              4\n            ]"}]},{"id": "DN-A-01",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Module standard pour lire un CSV ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "csv",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "pandas"
+              },
+              {
+                "k": "C",
+                "text": "sqlite3"
+              }
+            ]
+          },
+          {
+            "id": "DN-A-02",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Filtrage de lignes : résultat ?",
+            "code":"python\nrows=[\n              {'classe':'TNSI','nom':'Ali'\n              },\n              {'classe':'1G','nom':'Zoé'\n              }\n            ]\nsel=[r for r in rows if r['classe'\n              ]=='TNSI'\n            ]\nprint(len(sel))","choices":[{"k":"A","text":"0"},{"k":"B","text":"1","correct":true},{"k":"C","text":"2"}]},{"id": "DN-B-03",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "csv.DictReader :",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Renvoie des tuples"
+              },
+              {
+                "k": "B",
+                "text": "Renvoie des dict par ligne",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Écrit un CSV"
+              }
+            ],
+            "explanation": "DictReader itère sur des dict mappant en-têtes->valeurs."
+          },
+          {
+            "id": "DN-B-04",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Conversion : que vaut int('08') ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "8",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "Erreur"
+              },
+              {
+                "k": "C",
+                "text": "0"
+              }
+            ]
+          },
+          {
+            "id": "DN-C-05",
+            "domain": "donnees",
+            "type": "short",
+            "difficulty": "C",
+            "weight": 1,
+            "statement": "Écrire le code Python (3 lignes) lisant un CSV 'eleves.csv' et comptant les lignes (header inclus).",
+            "answer":"import csv\nwith open('eleves.csv', newline='') as f:\n    print(sum(1 for _ in csv.reader(f)))"},{"id": "DN-B-06",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Nettoyage : quelle stratégie pour trim des espaces autour des champs ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "strip() sur chaque valeur",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "upper()"
+              },
+              {
+                "k": "C",
+                "text": "split(',') brut"
+              }
+            ]
+          },
+          {
+            "id": "LG-A-01",
+            "domain": "logique",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Binaire 1010 1100 = ? (hexa)",
+            "choices": [
+              {
+                "k": "A",
+                "text": "0xAC",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "0xCA"
+              },
+              {
+                "k": "C",
+                "text": "0xAA"
+              }
+            ]
+          },
+          {
+            "id": "LG-A-02",
+            "domain": "logique",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Table correcte pour XOR ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "0⊕0=0, 0⊕1=1, 1⊕0=1, 1⊕1=0",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "0⊕0=1, 0⊕1=0, 1⊕0=0, 1⊕1=1"
+              },
+              {
+                "k": "C",
+                "text": "0⊕0=0, 0⊕1=0, 1⊕0=0, 1⊕1=1"
+              }
+            ]
+          },
+          {
+            "id": "LG-B-03",
+            "domain": "logique",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Sur 8 bits signé (C2), intervalle représentable :",
+            "choices": [
+              {
+                "k": "A",
+                "text": "[-255,255]"
+              },
+              {
+                "k": "B",
+                "text": "[-128,127]",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "[0,255]"
+              }
+            ]
+          },
+          {
+            "id": "LG-B-04",
+            "domain": "logique",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Pourquoi 0.1+0.2≠0.3 en binaire flottant ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Bug du langage"
+              },
+              {
+                "k": "B",
+                "text": "Arrondi/representation binaire finie",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Division par 0"
+              }
+            ]
+          },
+          {
+            "id": "WB-A-01",
+            "domain": "web",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Paramètres d’un formulaire GET ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Dans le corps (body)"
+              },
+              {
+                "k": "B",
+                "text": "Dans la chaîne de requête, après ?",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Dans les en‑têtes"
+              }
+            ]
+          },
+          {
+            "id": "WB-A-02",
+            "domain": "web",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "HTTPS garantit :",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Chiffrement client‑serveur",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "Pas de latence"
+              },
+              {
+                "k": "C",
+                "text": "Stockage persistant"
+              }
+            ]
+          },
+          {
+            "id": "WB-B-03",
+            "domain": "web",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Quel code statut pour ressource non trouvée ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "200"
+              },
+              {
+                "k": "B",
+                "text": "301"
+              },
+              {
+                "k": "C",
+                "text": "404",
+                "correct": true
+              }
+            ]
+          },
+          {
+            "id": "WB-B-04",
+            "domain": "web",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Méthode HTTP idempotente :",
+            "choices": [
+              {
+                "k": "A",
+                "text": "GET",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "POST"
+              },
+              {
+                "k": "C",
+                "text": "PATCH"
+              }
+            ]
+          },
+          {
+            "id": "AL-A-01",
+            "domain": "lecture_algo",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Affichage ?",
+            "code":"python\n def f(n):\n     s=0\n     for i in range(1,n+1):\n         if i%2==0: s+=i\n     return s\nprint(f(5))","choices":[{"k":"A","text":"6","correct":true},{"k":"B","text":"9"},{"k":"C","text":"12"}]},{"id": "AL-A-02",
+            "domain": "lecture_algo",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Résultat ?",
+            "code":"python\nL=[\n              3,\n              1,\n              2\n            ]\nfor i in range(len(L)):\n    L[i\n            ]=L[i\n            ]**2\nprint(L)","choices":[{"k":"A","text":"[\n              3,\n              1,\n              2\n            ]"},{"k":"B","text":"[\n              9,\n              1,\n              4\n            ]","correct":true},{"k":"C","text":"[\n              6,\n              2,\n              4\n            ]"}]},{"id": "AL-B-03",
+            "domain": "lecture_algo",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Complexité : quelle est la complexité de la double boucle imbriquée ci‑dessous ?",
+            "code":"python\nfor i in range(n):\n    for j in range(n):\n        k += 1","choices":[{"k":"A","text":"O(n)"},{"k":"B","text":"O(n log n)"},{"k":"C","text":"O(n^2)","correct":true}]},{"id": "AL-B-04",
+            "domain": "lecture_algo",
+            "type": "short",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Écrire la valeur renvoyée par la fonction :",
+            "code":"python\n def g(L):\n     m=L[\n              0\n            ]\n     for x in L:\n         if x<m: m=x\n     return m\nprint(g([\n              5,\n              2,\n              9,\n              1\n            ]))","answer":"1"}
+          ]
+        },
+        {
+          "id": "volet_objectifs",
+          "title": "Volet 1b — Objectifs & contraintes (Parcoursup / Bac)",
+          "pages": [
+            {
+              "id": "obj1",
+              "questions": [
+                {
+                  "id": "objectif_T1",
+                  "type": "select",
+                  "statement": "Objectif de moyenne au T1",
+                  "options": [
+                    "< 10",
+                    "10–11",
+                    "12–13",
+                    "14–15",
+                    "≥ 16"
+                  ],
+                  "required": true
+                },
+                {
+                  "id": "objectif_T2",
+                  "type": "select",
+                  "statement": "Objectif de moyenne au T2",
+                  "options": [
+                    "< 10",
+                    "10–11",
+                    "12–13",
+                    "14–15",
+                    "≥ 16"
+                  ],
+                  "required": true
+                },
+                {
+                  "id": "stress_eval",
+                  "type": "likert5",
+                  "statement": "Je me sens stressé·e par Parcoursup / Bac"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "volet_pedago_commun",
+          "title": "Volet 2 — Profil pédagogique commun",
+          "import": "/mnt/data/pedago_survey_commun.json"
+        },
+        {
+          "id": "volet_pedago_nsi",
+          "title": "Volet 3 — Profil pédagogique spécifique NSI Terminale",
+          "import": "/mnt/data/pedago_survey_nsi_terminale.json"
+        },
+        {
+          "id": "consentement",
+          "title": "Consentement RGPD",
+          "pages": [
+            {
+              "id": "rgpd",
+              "questions": [
+                {
+                  "id": "consentement_data",
+                  "type": "checkbox",
+                  "statement": "J’autorise l’utilisation de mes réponses pour un bilan pédagogique individuel.",
+                  "required": true
+                },
+                {
+                  "id": "consentement_mail",
+                  "type": "checkbox",
+                  "statement": "J’accepte de recevoir mon bilan PDF par e‑mail.",
+                  "required": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "scoring": {
+      "sections": {
+        "volet_connaissances": {
+          "mode": "sum_weighted_by_domain",
+          "domainMap": {
+            "donnees": [
+              "donnees",
+              "tables",
+              "csv"
+            ],
+            "python": [
+              "python",
+              "py_base"
+            ],
+            "structures": [
+              "structures",
+              "listes",
+              "dictionnaires",
+              "tuples",
+              "ensembles"
+            ],
+            "logique": [
+              "logique",
+              "encodage",
+              "binaire",
+              "flottants"
+            ],
+            "web": [
+              "web",
+              "http"
+            ],
+            "lecture_algo": [
+              "lecture_algo",
+              "tracage"
+            ]
+          },
+          "weights": {
+            "python": 0.25,
+            "structures": 0.22,
+            "donnees": 0.20,
+            "logique": 0.12,
+            "web": 0.11,
+            "lecture_algo": 0.10
+          },
+          "criticalPolicy": "flag_below_50"
+        },
+        "volet_pedago_commun": {
+          "mode": "profile_bucketed"
+        },
+        "volet_pedago_nsi": {
+          "mode": "likert_weighted",
+          "reverseHandling": "auto"
+        },
+        "volet_objectifs": {
+          "mode": "passthrough"
+        }
+      },
+      "tags": [
+        {
+          "id": "TAG_Python_Faible",
+          "rule": "volet_connaissances.python < 0.5"
+        },
+        {
+          "id": "TAG_Structures_Faible",
+          "rule": "volet_connaissances.structures < 0.5"
+        },
+        {
+          "id": "TAG_Tables_Faible",
+          "rule": "volet_connaissances.donnees < 0.5"
+        },
+        {
+          "id": "TAG_Methodes_Faibles",
+          "rule": "volet_pedago_nsi.P5 <= 2 or volet_pedago_nsi.P6 <= 2"
+        },
+        {
+          "id": "TAG_Organisation_Faible",
+          "rule": "volet_pedago_nsi.P8 <= 2"
+        },
+        {
+          "id": "TAG_Stress_Eleve",
+          "rule": "volet_objectifs.stress_eval >= 4"
+        }
+      ],
+      "risk_flags": [
+        {
+          "id": "ALERTE_Parcoursup",
+          "rule": "(volet_objectifs.objectif_T1 in ['< 10','10–11']) or (volet_objectifs.objectif_T2 in ['< 10','10–11'])"
+        }
+      ]
+    },
+    "reporting": {
+      "provider": "openai",
+      "model": "gpt-4o",
+      "rag": {
+        "sources": [
+          {
+            "path": "/mnt/data/programme_nsi_premiere.pdf",
+            "label": "Programme NSI Première"
+          },
+          {
+            "path": "/mnt/data/programme_nsi_terminale.pdf",
+            "label": "Programme NSI Terminale"
+          },
+          {
+            "path": "/mnt/data/vademecum-snt-nsi_0.pdf",
+            "label": "Vademecum NSI"
+          }
+        ]
+      },
+      "latex_templates": {
+        "eleve": "\\documentclass[11pt]{article}\n\\usepackage[margin=2cm\n        ]{geometry\n        }\n\\usepackage[french\n        ]{babel\n        }\n\\usepackage{hyperref\n        }\n\\usepackage{graphicx\n        }\n\newcommand{\\score\n        }[\n          1\n        ]{\textbf{#1\n          }\n        }\n\begin{document\n        }\n\begin{center\n        }\\Large\textbf{Bilan d'entrée — NSI Terminale (Élève)\n        }\\end{center\n        }\n\\vspace{0.5em\n        }\\hrule\\vspace{0.5em\n        }\n\textbf{Nom :\n        } {\n          {student.family_name\n          }\n        } \\ \textbf{Prénom :\n        } {\n          {student.given_name\n          }\n        } \\ \textbf{Classe :\n        } {\n          {context.csv_classe\n          }\n        } \n\\section*{Synthèse rapide\n        }\nPré-requis Python : \\score{\n          {scores.python_pct\n          }\n        }\\% \\ Structures : \\score{\n          {scores.structures_pct\n          }\n        }\\% \\ Tables/CSV : \\score{\n          {scores.donnees_pct\n          }\n        }\\% \\ Logique/encodage : \\score{\n          {scores.logique_pct\n          }\n        }\\% \\ Web/HTTP : \\score{\n          {scores.web_pct\n          }\n        }\\% \\ Lecture d'algorithmes : \\score{\n          {scores.lecture_algo_pct\n          }\n        }\\%\n\\section*{Forces et points d'appui\n        }\n{\n          {analysis.strengths_eleve\n          }\n        }\n\\section*{Priorités de révision (2 semaines)\n        }\n{\n          {analysis.remediations_eleve\n          }\n        }\n\\section*{Méthodes de travail : conseils personnalisés\n        }\n{\n          {analysis.methodes_conseils\n          }\n        }\n\\section*{Objectifs Parcoursup et Bac\n        }\n{\n          {analysis.objectifs_eleve\n          }\n        }\n\\section*{Recommandations de ressources\n        }\n{\n          {analysis.ressources\n          }\n        }\n\\end{document\n        }","enseignant": "\\documentclass[\n          11pt\n        ]{article\n        }\n\\usepackage[margin=2cm\n        ]{geometry\n        }\n\\usepackage[french\n        ]{babel\n        }\n\\usepackage{booktabs\n        }\n\\usepackage{graphicx\n        }\n\begin{document\n        }\n\begin{center\n        }\\Large\textbf{Bilan d'entrée — NSI Terminale (Enseignant)\n        }\\end{center\n        }\n\\vspace{0.5em\n        }\\hrule\\vspace{0.5em\n        }\n\textbf{Élève :\n        } {\n          {student.family_name\n          }\n        } {\n          {student.given_name\n          }\n        } ({\n          {context.csv_classe\n          }\n        })\n\\section*{Scores détaillés\n        }\n\begin{tabular\n        }{ll\n        }\toprule Domaine & Score \\ \\midrule Python & {\n          {scores.python_pct\n          }\n        }\\% \\ Structures & {\n          {scores.structures_pct\n          }\n        }\\% \\ Tables/CSV & {\n          {scores.donnees_pct\n          }\n        }\\% \\ Logique/encodage & {\n          {scores.logique_pct\n          }\n        }\\% \\ Web/HTTP & {\n          {scores.web_pct\n          }\n        }\\% \\ Lecture d'algorithmes & {\n          {scores.lecture_algo_pct\n          }\n        }\\% \\ \bottomrule\\end{tabular\n        }\n\\section*{Analyse pédagogique (RCP et habitudes)\n        }\n{\n          {analysis.gestes_commentaires\n          }\n        }\n\\section*{Alertes et recommandations ciblées\n        }\n{\n          {analysis.alertes_recos\n          }\n        }\n\\section*{Proposition d'accompagnement (4 semaines)\n        }\n{\n          {analysis.plan_4_semaines\n          }\n        }\n\newpage\n\\section*{Synthèse classe (enseignant)\n        }\n- Moyennes par domaine : {\n          {class_stats.domain_means\n          }\n        }\\n- Taux d'alerte : {\n          {class_stats.tag_rates\n          }\n        }\\n- Recommandations séquences d'appui : {\n          {class_stats.sequence_recos\n          }\n        }\n\\end{document\n        }"
+      },
+      "prompts": {
+        "system_eleve": "Tu écris un bilan court, positif et concret pour l’élève, avec conseils de révision et ressources adaptées.",
+        "system_enseignant": "Tu rédiges une analyse complète pour l’enseignant, reliant les résultats aux objectifs du programme et proposant un plan d’appui (4 semaines)."
+      },
+      "post_actions": {
+        "student_dashboard": {
+          "save_pdf": true,
+          "disable_button_id": "start_bilan_button"
+        },
+        "teacher_dashboard": {
+          "collect_all": true,
+          "fields": [
+            "bilan_eleve_pdf",
+            "bilan_enseignant_pdf"
+          ]
+        },
+        "email": {
+          "to": [
+            "alaeddine.benrhouma@ert.tn",
+            "pierre.caillabet@ert.tn"
+          ],
+          "subject": "Bilan NSI Terminale — {{student.family_name}} {{student.given_name}}",
+          "attachments": [
+            "bilan_eleve_pdf",
+            "bilan_enseignant_pdf"
+          ]
+        }
+      }
+    },
+    "security": {
+      "data_retention": "année scolaire en cours",
+      "anonymized_analytics": true
+    }
+  }

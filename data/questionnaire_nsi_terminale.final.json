@@ -1,0 +1,1933 @@
+{
+  "version": "terminale-nsi-v_final_2025-09-04",
+  "locale": "fr-FR",
+  "title": "NSI Terminale — Questionnaire d’Entrée & Bilan Pédagogique (Lycée Pierre Mendès France)",
+  "description": "Questionnaire complet de rentrée pour les élèves de Terminale NSI. Inclut un QCM sur les prérequis de Première NSI et un Volet sur le profil pédagogique et personnel de l'élève. Les résultats génèrent deux bilans PDF personnalisés (élève & enseignant) via LLM + RAG et LaTeX.",
+  "owners": [
+    "labo.maths@ert.tn"
+  ],
+  "meta": {
+    "embedding_provider": "gemini",
+    "api_embedding_model": "text-embedding-004",
+    "vector_dim": 768
+  },
+  "data_sources": {
+    "students_csv": {
+      "type": "csv",
+      "path": "/mnt/data/TERMINALE_NSI.csv",
+      "delimiter": ";",
+      "encoding": "utf-8",
+      "header": true,
+      "columns": {
+        "email": "Email",
+        "given_name": "Prénom",
+        "family_name": "Nom",
+        "classe": "Classe",
+        "specialites": "Spécialités gardées",
+        "id": "ID"
+      }
+    }
+  },
+  "auth": {
+    "method": "email_domain",
+    "domain": "ert.tn",
+    "verification": "magic_link",
+    "fields": [
+      "email"
+    ],
+    "lookup": {
+      "source": "students_csv",
+      "key": "email",
+      "prefill": {
+        "auth.email": "row.email",
+        "auth.given_name": "row.given_name",
+        "auth.family_name": "row.family_name",
+        "context.csv_classe": "row.classe",
+        "context.csv_specialites_raw": "row.specialites",
+        "context.student_id": "row.id"
+      }
+    },
+    "guards": [
+      {
+        "id": "require_nsi_specialite",
+        "rule": "contains_any(context.csv_specialites_raw, ['NSI'])",
+        "onFail": {
+          "action": "block",
+          "message": "Ce questionnaire est réservé aux élèves ayant gardé la spécialité NSI en Terminale."
+        }
+      }
+    ]
+  },
+  "audience": {
+    "niveau": "Terminale",
+    "specialite": "NSI",
+    "enjeux": [
+      "Parcoursup",
+      "Baccalauréat"
+    ]
+  },
+  "workflow": {
+    "stages": [
+      {
+        "id": "intro",
+        "title": "Introduction au Bilan NSI Terminale",
+        "pages": [
+          {
+            "id": "consignes",
+            "markdown": "Bienvenue au questionnaire de rentrée NSI Terminale du Lycée Pierre Mendès France de Tunis. Ce bilan est un outil pédagogique conçu pour vous accompagner au mieux cette année. Il se compose de deux volets : un QCM sur les connaissances de Première NSI, et un questionnaire sur votre profil d'apprentissage et vos projets.\n\nDurée estimée : environ 60 minutes pour le QCM. Répondez seul·e et au mieux de vos capacités. Il n'y a pas de note, mais une analyse personnalisée pour vous et votre enseignant.\n\nLes résultats alimenteront un bilan détaillé (version élève et version enseignant) qui vous sera remis, ainsi qu'un plan d’appui pour bien démarrer l’année."
+          }
+        ]
+      },
+      {
+        "id": "volet_connaissances",
+        "title": "Volet 1 — Connaissances de Première NSI utiles en Terminale",
+        "description": "Ce QCM évalue les prérequis essentiels du programme de Première NSI pour aborder sereinement la Terminale. Il contient 40 questions à choix multiples ou à réponse courte et 3 mini-exercices. Répondez avec honnêteté pour un diagnostic précis.",
+        "delivery": {
+          "randomize": true,
+          "timeLimitMin": 60,
+          "showSolutions": false,
+          "shuffleChoices": true
+        },
+        "domain_weights": {
+          "python": 0.25,
+          "structures": 0.22,
+          "donnees": 0.20,
+          "logique": 0.12,
+          "web": 0.11,
+          "lecture_algo": 0.10
+        },
+        "items": [
+          {
+            "id": "PY-A-02",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Quelle tranche renvoie [2,3] pour L=[0,1,2,3,4]?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "L[2:4]",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "L[2:3]"
+              },
+              {
+                "k": "C",
+                "text": "L[1:3]"
+              }
+            ],
+            "explanation": "La borne haute est exclue."
+          },
+          {
+            "id": "PY-B-03",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Fonctions : laquelle est valide ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "def f(x,y=0,z): return x+y+z"
+              },
+              {
+                "k": "B",
+                "text": "def f(x, y=0, z=1): return x+y+z",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "def f(x; y): return x+y"
+              }
+            ],
+            "explanation": "Les paramètres par défaut doivent être en fin de liste."
+          },
+          {
+            "id": "PY-B-04",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Mutabilité : que vaut L ?",
+            "code": "python\nL=[1,2]; M=L; M.append(3); print(L)",
+            "choices": [
+              {
+                "k": "A",
+                "text": "[1,2]"
+              },
+              {
+                "k": "B",
+                "text": "[1,2,3]",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Erreur"
+              }
+            ],
+            "explanation": "Listes mutables et aliasage."
+          },
+          {
+            "id": "PY-C-05",
+            "domain": "python",
+            "type": "short",
+            "difficulty": "C",
+            "weight": 1,
+            "statement": "Écrire une compréhension renvoyant les carrés pairs de 0 à 10 inclus.",
+            "answer": "[x*x for x in range(0,11) if x%2==0]"
+          },
+          {
+            "id": "PY-A-06",
+            "domain": "python",
+            "type": "msq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Quelles expressions valent True ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "(3<4) and (not False)",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "len('abc')==3",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "None==0"
+              },
+              {
+                "k": "D",
+                "text": "5=='5'"
+              }
+            ]
+          },
+          {
+            "id": "PY-B-07",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Portée : quel affichage ?",
+            "code": "python\nx=1\ndef g():\n    x=2\n    def h():\n        return x\n    return h()\nprint(g())",
+            "choices": [
+              {
+                "k": "A",
+                "text": "1"
+              },
+              {
+                "k": "B",
+                "text": "2",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Erreur"
+              }
+            ]
+          },
+          {
+            "id": "PY-B-08",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Que vaut sum(i for i in range(3,8,2)) ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "12"
+              },
+              {
+                "k": "B",
+                "text": "15",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "18"
+              }
+            ]
+          },
+          {
+            "id": "ST-A-01",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Dictionnaires : que renvoie ?",
+            "code": "python\nd={'a': 1,'b': 2}\\nprint('a' in d, 2 in d, 2 in d.values())",
+            "choices": [
+              {
+                "k": "A",
+                "text": "True True True"
+              },
+              {
+                "k": "B",
+                "text": "True False True",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "True False False"
+              }
+            ]
+          },
+          {
+            "id": "ST-A-02",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Tuples : accès valide pour t=(10,20) ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "t[0]=5"
+              },
+              {
+                "k": "B",
+                "text": "t[1]",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "t.append(30)"
+              }
+            ]
+          },
+          {
+            "id": "ST-B-03",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Ensembles : résultat ?",
+            "code": "python\nA={1,2,3}; B={3,4}\nprint(A|B, A&B, A-B)",
+            "choices": [
+              {
+                "k": "A",
+                "text": "{1,2,3,4} {3} {1,2}",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "{1,2,3} {} {1,2}"
+              },
+              {
+                "k": "C",
+                "text": "{1,2,3,4} {1,2} {3}"
+              }
+            ]
+          },
+          {
+            "id": "ST-B-04",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Listes : que vaut L ?",
+            "code": "python\nL=[0,1,2,3]\nL[1:3]=[9]\nprint(L)",
+            "choices": [
+              {
+                "k": "A",
+                "text": "[0,9,3]",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "[0,9,2,3]"
+              },
+              {
+                "k": "C",
+                "text": "[0,1,9,3]"
+              }
+            ]
+          },
+          {
+            "id": "ST-B-05",
+            "domain": "structures",
+            "type": "msq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Opérations dict valides ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "d.get('k',0)",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "d.items()",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "d.push(1)"
+              },
+              {
+                "k": "D",
+                "text": "d.update({'x':1})",
+                "correct": true
+              }
+            ]
+          },
+          {
+            "id": "ST-A-07",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Compréhension de liste :",
+            "code": "python\nL=[i for i in range(5) if i%2]",
+            "choices": [
+              {
+                "k": "A",
+                "text": "[0,2,4]"
+              },
+              {
+                "k": "B",
+                "text": "[1,3]",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "[1,2,3,4]"
+              }
+            ]
+          },
+          {
+            "id": "DN-A-01",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Module standard pour lire un CSV ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "csv",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "pandas"
+              },
+              {
+                "k": "C",
+                "text": "sqlite3"
+              }
+            ]
+          },
+          {
+            "id": "DN-A-02",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Filtrage de lignes : résultat ?",
+            "code": "python\nrows=[{'classe':'TNSI','nom':'Ali'},{'classe':'1G','nom':'Zoé'}]\nsel=[r for r in rows if r['classe']=='TNSI']\nprint(len(sel))",
+            "choices": [
+              {
+                "k": "A",
+                "text": "0"
+              },
+              {
+                "k": "B",
+                "text": "1",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "2"
+              }
+            ]
+          },
+          {
+            "id": "DN-B-03",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "csv.DictReader :",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Renvoie des tuples"
+              },
+              {
+                "k": "B",
+                "text": "Renvoie des dict par ligne",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Écrit un CSV"
+              }
+            ],
+            "explanation": "DictReader itère sur des dict mappant en-têtes->valeurs."
+          },
+          {
+            "id": "DN-B-04",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Conversion : que vaut int('08') ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "8",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "Erreur"
+              },
+              {
+                "k": "C",
+                "text": "0"
+              }
+            ]
+          },
+          {
+            "id": "DN-C-05",
+            "domain": "donnees",
+            "type": "short",
+            "difficulty": "C",
+            "weight": 1,
+            "statement": "Écrire le code Python (3 lignes) lisant un CSV 'eleves.csv' et comptant les lignes (header inclus).",
+            "answer": "import csv\nwith open('eleves.csv', newline='') as f:\n    print(sum(1 for _ in csv.reader(f)))"
+          },
+          {
+            "id": "DN-B-06",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Nettoyage : quelle stratégie pour trim des espaces autour des champs ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "strip() sur chaque valeur",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "upper()"
+              },
+              {
+                "k": "C",
+                "text": "split(',') brut"
+              }
+            ]
+          },
+          {
+            "id": "LG-A-01",
+            "domain": "logique",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Binaire 1010 1100 = ? (hexa)",
+            "choices": [
+              {
+                "k": "A",
+                "text": "0xAC",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "0xCA"
+              },
+              {
+                "k": "C",
+                "text": "0xAA"
+              }
+            ]
+          },
+          {
+            "id": "LG-A-02",
+            "domain": "logique",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Table correcte pour XOR ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "0⊕0=0, 0⊕1=1, 1⊕0=1, 1⊕1=0",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "0⊕0=1, 0⊕1=0, 1⊕0=0, 1⊕1=1"
+              },
+              {
+                "k": "C",
+                "text": "0⊕0=0, 0⊕1=0, 1⊕0=0, 1⊕1=1"
+              }
+            ]
+          },
+          {
+            "id": "LG-B-03",
+            "domain": "logique",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Sur 8 bits signé (C2), intervalle représentable :",
+            "choices": [
+              {
+                "k": "A",
+                "text": "[-255,255]"
+              },
+              {
+                "k": "B",
+                "text": "[-128,127]",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "[0,255]"
+              }
+            ]
+          },
+          {
+            "id": "LG-B-04",
+            "domain": "logique",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Pourquoi 0.1+0.2≠0.3 en binaire flottant ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Bug du langage"
+              },
+              {
+                "k": "B",
+                "text": "Arrondi/representation binaire finie",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Division par 0"
+              }
+            ]
+          },
+          {
+            "id": "WB-A-01",
+            "domain": "web",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Paramètres d’un formulaire GET ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Dans le corps (body)"
+              },
+              {
+                "k": "B",
+                "text": "Dans la chaîne de requête, après ?",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Dans les en‑têtes"
+              }
+            ]
+          },
+          {
+            "id": "WB-A-02",
+            "domain": "web",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "HTTPS garantit :",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Chiffrement client‑serveur",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "Pas de latence"
+              },
+              {
+                "k": "C",
+                "text": "Stockage persistant"
+              }
+            ]
+          },
+          {
+            "id": "WB-B-03",
+            "domain": "web",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Quel code statut pour ressource non trouvée ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "200"
+              },
+              {
+                "k": "B",
+                "text": "301"
+              },
+              {
+                "k": "C",
+                "text": "404",
+                "correct": true
+              }
+            ]
+          },
+          {
+            "id": "WB-B-04",
+            "domain": "web",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Méthode HTTP idempotente :",
+            "choices": [
+              {
+                "k": "A",
+                "text": "GET",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "POST"
+              },
+              {
+                "k": "C",
+                "text": "PATCH"
+              }
+            ]
+          },
+          {
+            "id": "AL-A-01",
+            "domain": "lecture_algo",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Affichage ?",
+            "code": "python\n def f(n):\n     s=0\n     for i in range(1,n+1):\n         if i%2==0: s+=i\n     return s\nprint(f(5))",
+            "choices": [
+              {
+                "k": "A",
+                "text": "6",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "9"
+              },
+              {
+                "k": "C",
+                "text": "12"
+              }
+            ]
+          },
+          {
+            "id": "AL-A-02",
+            "domain": "lecture_algo",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Résultat ?",
+            "code": "python\nL=[3,1,2]\nfor i in range(len(L)):\n    L[i]=L[i]**2\nprint(L)",
+            "choices": [
+              {
+                "k": "A",
+                "text": "[3,1,2]"
+              },
+              {
+                "k": "B",
+                "text": "[9,1,4]",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "[6,2,4]"
+              }
+            ]
+          },
+          {
+            "id": "AL-B-04",
+            "domain": "lecture_algo",
+            "type": "short",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Écrire la valeur renvoyée par la fonction :",
+            "code": "python\n def g(L):\n     m=L[0]\n     for x in L:\n         if x<m: m=x\n     return m\nprint(g([5,2,9,1]))",
+            "answer": "1"
+          },
+          {
+            "id": "PY-A-09",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Que renvoie L[::-1] pour L=[1,2,3]?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "[1,2,3]"
+              },
+              {
+                "k": "B",
+                "text": "[3,2,1]",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "[2,3]"
+              }
+            ]
+          },
+          {
+            "id": "PY-B-10",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Que vaut sum([i for i in range(5) if i%2==0]) ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "3"
+              },
+              {
+                "k": "B",
+                "text": "6",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "9"
+              }
+            ]
+          },
+          {
+            "id": "PY-B-11",
+            "domain": "python",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Immutabilité des chaînes :",
+            "code": "python\ns='abc'\ns.replace('b','x')\nprint(s)",
+            "choices": [
+              {
+                "k": "A",
+                "text": "axc"
+              },
+              {
+                "k": "B",
+                "text": "abc",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Erreur"
+              }
+            ]
+          },
+          {
+            "id": "ST-A-08",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Quelle instruction supprime le dernier élément d'une liste L ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "del L[0]"
+              },
+              {
+                "k": "B",
+                "text": "L.remove()"
+              },
+              {
+                "k": "C",
+                "text": "L.pop()",
+                "correct": true
+              }
+            ]
+          },
+          {
+            "id": "ST-B-09",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Dans for k in d: que parcourt-on ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Les valeurs"
+              },
+              {
+                "k": "B",
+                "text": "Les clés",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Les paires (clé,valeur)"
+              }
+            ]
+          },
+          {
+            "id": "DN-B-08",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Avec open sur CSV sous Windows, quel paramètre éviter les lignes vides ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "encoding='latin-1'"
+              },
+              {
+                "k": "B",
+                "text": "newline=''",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "errors='ignore'"
+              }
+            ]
+          },
+          {
+            "id": "LG-A-05",
+            "domain": "logique",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Quel est le résultat de 1101 AND 1011 (binaire) ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "1111"
+              },
+              {
+                "k": "B",
+                "text": "1001",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "0010"
+              }
+            ]
+          },
+          {
+            "id": "LG-B-06",
+            "domain": "logique",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Écriture binaire (sur 4 bits) de 13 (base 10) :",
+            "choices": [
+              {
+                "k": "A",
+                "text": "1010"
+              },
+              {
+                "k": "B",
+                "text": "1101",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "1110"
+              }
+            ]
+          },
+          {
+            "id": "WB-A-05",
+            "domain": "web",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Quel en-tête HTTP indique le type MIME du contenu ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Accept"
+              },
+              {
+                "k": "B",
+                "text": "Content-Type",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "User-Agent"
+              }
+            ]
+          },
+          {
+            "id": "AL-B-06",
+            "domain": "lecture_algo",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Complexité de : while n>1: n//=2",
+            "choices": [
+              {
+                "k": "A",
+                "text": "O(n)"
+              },
+              {
+                "k": "B",
+                "text": "O(log n)",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "O(1)"
+              }
+            ]
+          },
+          {
+            "id": "ST-A-09",
+            "domain": "structures",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Que vaut len({1,1,2}) ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "1"
+              },
+              {
+                "k": "B",
+                "text": "2",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "3"
+              }
+            ]
+          },
+          {
+            "id": "DN-B-09",
+            "domain": "donnees",
+            "type": "mcq",
+            "difficulty": "B",
+            "weight": 1,
+            "statement": "Quelle option de csv.reader permet de gérer les espaces après séparateur ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "skipinitialspace=True",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "strip=True"
+              },
+              {
+                "k": "C",
+                "text": "trim=True"
+              }
+            ]
+          },
+          {
+            "id": "WB-A-06",
+            "domain": "web",
+            "type": "mcq",
+            "difficulty": "A",
+            "weight": 1,
+            "statement": "Quel code statut correspond à une redirection permanente ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "301",
+                "correct": true
+              },
+              {
+                "k": "B",
+                "text": "302"
+              },
+              {
+                "k": "C",
+                "text": "307"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "volet_objectifs",
+        "title": "Volet 1b — Objectifs & contraintes (Parcoursup / Bac)",
+        "pages": [
+          {
+            "id": "obj1",
+            "questions": [
+              {
+                "id": "objectif_T1",
+                "type": "select",
+                "statement": "Objectif de moyenne au T1",
+                "options": [
+                  "< 10",
+                  "10–11",
+                  "12–13",
+                  "14–15",
+                  "≥ 16"
+                ],
+                "required": true
+              },
+              {
+                "id": "objectif_T2",
+                "type": "select",
+                "statement": "Objectif de moyenne au T2",
+                "options": [
+                  "< 10",
+                  "10–11",
+                  "12–13",
+                  "14–15",
+                  "≥ 16"
+                ],
+                "required": true
+              },
+              {
+                "id": "stress_eval",
+                "type": "likert5",
+                "statement": "Je me sens stressé·e par Parcoursup / Bac"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "volet_pedagogique_specifique_nsi",
+        "title": "Volet 2 — Mon Profil Pédagogique et Personnel en NSI",
+        "description": "Ce volet nous aidera à mieux comprendre vos préférences d'apprentissage, vos méthodes de travail et vos projets en NSI, pour un accompagnement plus ciblé.",
+        "questions": [
+          {
+            "id": "A1",
+            "domain": "AmbitionOrientation",
+            "type": "single",
+            "statement": "Pourquoi avez-vous choisi de poursuivre la spécialité NSI en Terminale ?",
+            "options": [
+              "Curiosité et intérêt personnel pour l'informatique",
+              "Pour un projet d'études supérieures ou un métier précis",
+              "Pour obtenir une bonne note au Baccalauréat",
+              "J'aime développer ma logique et résoudre des problèmes",
+              "Influence de l'entourage ou par défaut"
+            ],
+            "required": true,
+            "mapsTo": "motivation_principale_nsi"
+          },
+          {
+            "id": "A2",
+            "domain": "AmbitionOrientation",
+            "type": "text",
+            "label": "Quels sont vos projets d'études supérieures ou professionnels après le Bac ? (Ex: école d'ingénieurs en info, licence en maths/info, métier de développeur, chercheur, etc.)",
+            "placeholder": "Décrivez brièvement vos aspirations...",
+            "maxlength": 500,
+            "mapsTo": "projets_post_bac"
+          },
+          {
+            "id": "A3",
+            "domain": "AmbitionOrientation",
+            "type": "single",
+            "statement": "Quelle mention au Baccalauréat visez-vous ?",
+            "options": [
+              "Sans mention particulière",
+              "Assez bien",
+              "Bien",
+              "Très bien",
+              "Très bien avec Félicitations du jury"
+            ],
+            "mapsTo": "mention_visee"
+          },
+          {
+            "id": "A4",
+            "domain": "AmbitionOrientation",
+            "type": "text",
+            "label": "Pour cette année de Terminale NSI, quels résultats ou compétences souhaitez-vous absolument atteindre ? ('À quel(s) résultat(s) est-ce que je souhaite arriver ?')",
+            "placeholder": "Ex: Maîtriser les graphes, faire un projet personnel, obtenir plus de 15 au Bac NSI...",
+            "maxlength": 500,
+            "mapsTo": "attentes_resultats_nsi"
+          },
+          {
+            "id": "A5",
+            "domain": "AmbitionOrientation",
+            "type": "text",
+            "label": "Quelles sont vos attentes vis-à-vis de l'enseignement de NSI cette année ? ('À quoi je m'attends ?')",
+            "placeholder": "Ex: Des cours très pratiques, des projets réguliers, de l'aide sur la programmation...",
+            "maxlength": 500,
+            "mapsTo": "attentes_enseignement_nsi"
+          },
+          {
+            "id": "M1",
+            "domain": "MotivationEngagement",
+            "type": "likert",
+            "statement": "Je me sens très motivé(e) et enthousiaste à l'idée d'apprendre de nouvelles notions en NSI.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "motivation_globale"
+          },
+          {
+            "id": "M2",
+            "domain": "MotivationEngagement",
+            "type": "single",
+            "statement": "Mon attitude face aux cours de NSI est généralement :",
+            "options": [
+              "Très active et participative",
+              "Plutôt active",
+              "Plutôt passive (j'écoute, mais n'interviens pas)",
+              "Très passive (j'ai du mal à suivre)"
+            ],
+            "mapsTo": "attitude_cours"
+          },
+          {
+            "id": "M3",
+            "domain": "MotivationEngagement",
+            "type": "likert",
+            "statement": "Je suis prêt(e) à travailler régulièrement (au moins 2-3h par semaine) sur la NSI en dehors des cours.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "engagement_travail_perso"
+          },
+          {
+            "id": "M4",
+            "domain": "MotivationEngagement",
+            "type": "multi",
+            "statement": "Ce qui vous pousse le plus à vous investir en NSI (choix multiples, max 3) :",
+            "options": [
+              "Le plaisir de résoudre des problèmes / créer",
+              "La perspective des études supérieures / un métier",
+              "L'envie d'obtenir de bonnes notes / la mention au Bac",
+              "L'avis et les attentes de mes parents / enseignants",
+              "Le défi intellectuel / se dépasser",
+              "L'utilité concrète de l'informatique"
+            ],
+            "max": 3,
+            "mapsTo": "leviers_investissement"
+          },
+          {
+            "id": "M5",
+            "domain": "MotivationEngagement",
+            "type": "text",
+            "label": "Quelles sont les principales craintes ou difficultés que vous anticipez pour la NSI cette année (hors difficultés de compréhension technique) ?",
+            "placeholder": "Ex: La quantité de travail, la difficulté des projets, l'épreuve du Grand Oral...",
+            "maxlength": 400,
+            "mapsTo": "craintes_anticipees_nsi"
+          },
+          {
+            "id": "C1",
+            "domain": "ConfianceRapportErreur",
+            "type": "likert",
+            "statement": "Lorsque mon code contient un bug, je persévère pour le débugger seul(e) avant de demander de l'aide.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "persevere_debug_seul"
+          },
+          {
+            "id": "C2",
+            "domain": "ConfianceRapportErreur",
+            "type": "single",
+            "statement": "Face à un problème de programmation complexe, ma première réaction est de :",
+            "options": [
+              "Décomposer le problème en sous-problèmes plus petits",
+              "Chercher des solutions ou indices dans la documentation / sur Internet",
+              "Demander de l'aide rapidement à un camarade ou au professeur",
+              "Me sentir bloqué(e) et découragé(e)"
+            ],
+            "mapsTo": "reaction_blocage"
+          },
+          {
+            "id": "C3",
+            "domain": "ConfianceRapportErreur",
+            "type": "likert",
+            "statement": "Je me sens à l'aise pour demander de l'aide ou des explications complémentaires à mes camarades ou à mon professeur.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "facilite_demande_aide"
+          },
+          {
+            "id": "C4",
+            "domain": "ConfianceRapportErreur",
+            "type": "likert",
+            "statement": "Je crois que mes capacités en informatique peuvent se développer significativement avec la pratique et la persévérance.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "etat_esprit_croissance"
+          },
+          {
+            "id": "C5",
+            "domain": "ConfianceRapportErreur",
+            "type": "likert",
+            "statement": "Je n'ai pas peur de faire des erreurs en codant, je les vois comme une opportunité d'apprendre.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "tolere_erreur"
+          },
+          {
+            "id": "S1",
+            "domain": "StyleApprentissageNSI",
+            "type": "multi",
+            "statement": "Je retiens et comprends mieux les concepts informatiques quand : (Choix multiples, max 3)",
+            "options": [
+              "Je vois des schémas, des diagrammes (ex: UML, graphes, tables)",
+              "J'écoute des explications orales ou des tutoriels vidéo",
+              "Je lis de la documentation, des fiches de synthèse, des livres",
+              "J'expérimente en codant, en testant des programmes",
+              "Je décompose un problème complexe en sous-problèmes",
+              "J'essaie de conceptualiser / abstraire des solutions générales"
+            ],
+            "max": 3,
+            "required": true,
+            "mapsTo": "style_apprentissage_nsi"
+          },
+          {
+            "id": "S2",
+            "domain": "StyleApprentissageNSI",
+            "type": "single",
+            "statement": "Lorsque je conçois un programme ou un algorithme, je préfère :",
+            "options": [
+              "Commencer à coder directement et ajuster au fur et à mesure",
+              "Écrire des étapes claires (pseudo-code, diagramme) avant de coder",
+              "M'inspirer de codes existants et les adapter"
+            ],
+            "mapsTo": "demarche_conception"
+          },
+          {
+            "id": "S3",
+            "domain": "StyleApprentissageNSI",
+            "type": "likert",
+            "statement": "J'ai une bonne capacité à évaluer la complexité (temps, ressources) d'un algorithme simple (Évaluer).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "evalue_complexite"
+          },
+          {
+            "id": "S4",
+            "domain": "StyleApprentissageNSI",
+            "type": "likert",
+            "statement": "Je me sens à l'aise pour modéliser des situations concrètes (ex: un réseau, des données) à l'aide de structures informatiques (graphes, tables, objets) (Modéliser).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "modele_situations"
+          },
+          {
+            "id": "S5",
+            "domain": "StyleApprentissageNSI",
+            "type": "likert",
+            "statement": "Je peux anticiper les étapes nécessaires pour résoudre un problème de programmation avant de l'exécuter (Anticiper).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "anticipe_resolution"
+          },
+          {
+            "id": "S6",
+            "domain": "StyleApprentissageNSI",
+            "type": "likert",
+            "statement": "Je suis capable de décomposer un problème complexe en informatique en sous-problèmes plus petits et gérables (Décomposer).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "competence_decompose"
+          },
+          {
+            "id": "S7",
+            "domain": "StyleApprentissageNSI",
+            "type": "likert",
+            "statement": "J'arrive à généraliser des concepts informatiques pour les appliquer à de nouvelles situations (Généraliser).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "competence_generaliser"
+          },
+          {
+            "id": "S8",
+            "domain": "StyleApprentissageNSI",
+            "type": "likert",
+            "statement": "Je suis capable d'abstraire des détails pour me concentrer sur l'essentiel d'un problème informatique (Abstraire).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "competence_abstraire"
+          },
+          {
+            "id": "T1",
+            "domain": "MethodesTravailNSI",
+            "type": "likert",
+            "statement": "Je lis régulièrement la documentation officielle (Python, bibliothèques, API) quand je rencontre une difficulté ou pour approfondir un sujet.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "utilise_documentation"
+          },
+          {
+            "id": "T2",
+            "domain": "MethodesTravailNSI",
+            "type": "likert",
+            "statement": "Je décompose mes projets ou mes codes en fonctions ou modules plus petits pour faciliter le développement et les tests (approche modulaire).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "decompose_probleme_code"
+          },
+          {
+            "id": "T3",
+            "domain": "MethodesTravailNSI",
+            "type": "likert",
+            "statement": "J'utilise des tests (assertions) pour vérifier le bon fonctionnement de mes fonctions ou de mon code au fur et à mesure de la progression.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "utilise_tests_code"
+          },
+          {
+            "id": "T4",
+            "domain": "MethodesTravailNSI",
+            "type": "likert",
+            "statement": "Je commente et documente mes codes (ex: docstrings Python, README du projet) pour les rendre plus lisibles et compréhensibles.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "documente_code"
+          },
+          {
+            "id": "T5",
+            "domain": "MethodesTravailNSI",
+            "type": "multi",
+            "statement": "Quelles sont les ressources ou méthodes qui vous ont été les plus utiles l'année dernière en NSI pour progresser ? (Choix multiples, max 3)",
+            "options": [
+              "Cours du professeur (notes, polycopiés)",
+              "Manuels scolaires / Livres spécialisés",
+              "Tutoriels vidéo (YouTube, MOOC)",
+              "Sites web / Forums spécialisés (StackOverflow, etc.)",
+              "Travaux pratiques (TP) / Projets personnels",
+              "Exercices guidés / corrigés",
+              "Échanges et collaboration avec des camarades ou le professeur"
+            ],
+            "max": 3,
+            "mapsTo": "ressources_utiles_nsi"
+          },
+          {
+            "id": "T6",
+            "domain": "MethodesTravailNSI",
+            "type": "text",
+            "label": "Décrivez brièvement la méthode de travail que vous trouvez la plus efficace pour apprendre et progresser en NSI (ex: \"Je refais tous les exos\", \"Je programme un petit projet\").",
+            "maxlength": 500,
+            "mapsTo": "methode_efficace_nsi"
+          },
+          {
+            "id": "O1",
+            "domain": "OrganisationGestionTemps",
+            "type": "single",
+            "statement": "Comment organises-tu généralement ton travail hebdomadaire pour la NSI et les autres matières ?",
+            "options": [
+              "Planning écrit détaillé (papier ou numérique)",
+              "Organisation mentale (sans support de planification précis)",
+              "Au jour le jour, en fonction des urgences et de l'inspiration",
+              "Je ne planifie que les évaluations importantes",
+              "J'ai du mal à planifier et je me sens souvent débordé(e)"
+            ],
+            "required": true,
+            "mapsTo": "organisation_hebdo"
+          },
+          {
+            "id": "O2",
+            "domain": "OrganisationGestionTemps",
+            "type": "single",
+            "statement": "Combien de temps par semaine consacres-tu à la NSI (cours, projets, révisions, hors séances en classe) ?",
+            "options": [
+              "Moins d'1h",
+              "1-2h",
+              "2-3h",
+              "3-5h",
+              "Plus de 5h"
+            ],
+            "mapsTo": "temps_nsi_hors_classe"
+          },
+          {
+            "id": "O3",
+            "domain": "OrganisationGestionTemps",
+            "type": "likert",
+            "statement": "Je me sens souvent débordé(e) par la quantité de travail ou par les échéances (projets, devoirs) en NSI.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "surcharge_travail_nsi"
+          },
+          {
+            "id": "O4",
+            "domain": "OrganisationGestionTemps",
+            "type": "multi",
+            "statement": "Quels outils utilises-tu pour t'organiser et suivre tes tâches/projets ? (Choix multiples, max 3)",
+            "options": [
+              "Agenda papier",
+              "Agenda numérique (Google Calendar, Outlook)",
+              "Applications de gestion de tâches/projets (Notion, Trello, Todoist, VS Code Tasks)",
+              "Cahier/Fiches de cours structurées",
+              "Gestionnaire de versions (Git, GitHub)",
+              "Aucun outil spécifique"
+            ],
+            "max": 3,
+            "mapsTo": "outils_organisation"
+          },
+          {
+            "id": "O5",
+            "domain": "OrganisationGestionTemps",
+            "type": "likert",
+            "statement": "Je suis autonome dans la gestion de mes projets de NSI (découpage, planification, suivi).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "autonomie_projets"
+          },
+          {
+            "id": "O6",
+            "domain": "OrganisationGestionTemps",
+            "type": "text",
+            "label": "Décris une journée ou une semaine type où tu te sens très productif/ve en NSI et une autre où tu es moins efficace. Qu'est-ce qui change dans ton approche ou ton environnement ?",
+            "maxlength": 500,
+            "mapsTo": "journee_productive_vs_inefficace"
+          },
+          {
+            "id": "CT1",
+            "domain": "CompetencesTransversales",
+            "type": "likert",
+            "statement": "Je me sens capable de décomposer un problème complexe en informatique en sous-problèmes plus petits et gérables (Décomposer).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "competence_decompose"
+          },
+          {
+            "id": "CT2",
+            "domain": "CompetencesTransversales",
+            "type": "likert",
+            "statement": "J'arrive à concevoir une solution algorithmique avant de passer à l'écriture du code (Concevoir).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "competence_concevoir"
+          },
+          {
+            "id": "CT3",
+            "domain": "CompetencesTransversales",
+            "type": "likert",
+            "statement": "Je peux évaluer la pertinence d'un modèle ou d'une solution algorithmique pour un problème donné (Évaluer).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "competence_evaluer"
+          },
+          {
+            "id": "CT4",
+            "domain": "CompetencesTransversales",
+            "type": "likert",
+            "statement": "J'anticipe bien les étapes et les résultats d'un programme avant de l'exécuter (Anticiper).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "competence_anticiper"
+          },
+          {
+            "id": "CT5",
+            "domain": "CompetencesTransversales",
+            "type": "likert",
+            "statement": "J'arrive à généraliser des concepts informatiques pour les appliquer à de nouvelles situations (Généraliser).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "competence_generaliser"
+          },
+          {
+            "id": "CT6",
+            "domain": "CompetencesTransversales",
+            "type": "likert",
+            "statement": "Je suis capable d'abstraire des détails pour me concentrer sur l'essentiel d'un problème informatique (Abstraire).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "competence_abstraire"
+          },
+          {
+            "id": "COM1",
+            "domain": "CollaborationCommunication",
+            "type": "likert",
+            "statement": "J'aime travailler en binôme ou en groupe sur des projets de NSI (pair programming, projets collaboratifs).",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "pref_travail_groupe"
+          },
+          {
+            "id": "COM2",
+            "domain": "CollaborationCommunication",
+            "type": "likert",
+            "statement": "Je sais expliquer mon code ou mon raisonnement informatique clairement à mes camarades ou à mon professeur.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "communique_code"
+          },
+          {
+            "id": "COM3",
+            "domain": "CollaborationCommunication",
+            "type": "single",
+            "statement": "Quand j'ai une question complexe sur un cours ou un projet de NSI, je préfère :",
+            "options": [
+              "Poser la question à mon professeur pendant le cours ou en privé",
+              "Demander de l'aide à mes camarades",
+              "Rechercher la réponse sur Internet (documentation, forums)",
+              "Essayer de résoudre seul(e) jusqu'à trouver la solution"
+            ],
+            "mapsTo": "canal_aide_prefere"
+          },
+          {
+            "id": "COM4",
+            "domain": "CollaborationCommunication",
+            "type": "single",
+            "statement": "Penses-tu qu'un parrainage par un élève plus expérimenté (de 1ère ou Tle NSI) te serait positif pour ton apprentissage ?",
+            "options": [
+              "Oui, très utile",
+              "Oui, potentiellement utile",
+              "Neutre",
+              "Non, pas nécessaire",
+              "Non, pas du tout utile"
+            ],
+            "mapsTo": "interet_parrainage"
+          },
+          {
+            "id": "DF1",
+            "domain": "DefisPersistanceNSI",
+            "type": "multi",
+            "statement": "Quelles sont les notions ou thèmes de Terminale NSI qui vous semblent les plus complexes ou qui vous inquiètent le plus ? (Choix multiples, max 3)",
+            "options": [
+              "Structures de données avancées (arbres, graphes, tables de hachage)",
+              "Bases de données relationnelles (SQL avancé, transactions)",
+              "Architectures matérielles (Von Neumann, CPU, mémoire cache)",
+              "Systèmes d'exploitation (processus, threads, interblocages)",
+              "Réseaux (routage, protocoles, sécurité)",
+              "Programmation (paradigmes, récursivité, programmation dynamique)",
+              "Algorithmique avancée (complexité, preuves, algorithmes de graphes)",
+              "Projets de grande envergure (gestion d'équipe, cahier des charges)",
+              "Préparation à l'épreuve du Grand Oral (présentation de projet)",
+              "Gestion des bugs complexes et optimisation de code"
+            ],
+            "max": 3,
+            "mapsTo": "themes_complexes_anticipe"
+          },
+          {
+            "id": "DF2",
+            "domain": "DefisPersistanceNSI",
+            "type": "text",
+            "label": "Si vous aviez un accès illimité à un expert NSI, quelle serait la question la plus importante que vous lui poseriez pour vous aider à préparer votre année de Terminale ?",
+            "placeholder": "Ex: Comment mieux aborder les graphes ou la POO en Python ?",
+            "maxlength": 500,
+            "mapsTo": "question_expert_nsi"
+          },
+          {
+            "id": "CM1",
+            "domain": "ContexteMaterielAide",
+            "type": "multi",
+            "statement": "À la maison, je dispose de… (Choix multiples, max 3)",
+            "options": [
+              "Un ordinateur personnel (fixe ou portable) performant",
+              "Un système d'exploitation libre (Linux)",
+              "Une connexion internet stable et rapide",
+              "Un espace calme et dédié au travail sur l'ordinateur",
+              "Des logiciels de programmation/IDE adaptés (VS Code, PyCharm)"
+            ],
+            "max": 3,
+            "mapsTo": "environnement_maison"
+          },
+          {
+            "id": "CM2",
+            "domain": "ContexteMaterielAide",
+            "type": "single",
+            "statement": "Penses-tu que l'utilisation de ton propre appareil numérique (BYOD) en classe te serait bénéfique pour la NSI ?",
+            "options": [
+              "Oui, très bénéfique",
+              "Plutôt bénéfique",
+              "Neutre",
+              "Plutôt pas bénéfique",
+              "Non, pas du tout bénéfique"
+            ],
+            "mapsTo": "byod_benefice"
+          },
+          {
+            "id": "CM3",
+            "domain": "ContexteMaterielAide",
+            "type": "single",
+            "statement": "As-tu un dispositif d'accompagnement scolaire particulier (ex: PAP, PPS, PAI) ou un suivi par un spécialiste (orthophoniste, psychologue, neuropsy, etc.) ?",
+            "options": [
+              "Oui, j'ai un PAP/PPS/PAI",
+              "Oui, je suis suivi(e) par un spécialiste",
+              "Non, aucun dispositif ou suivi"
+            ]
+          },
+          {
+            "id": "CM4",
+            "domain": "ContexteMaterielAide",
+            "type": "text",
+            "label": "Si vous avez un dispositif ou un suivi (question CM3), souhaitez-vous nous en informer pour adapter nos méthodes pédagogiques ? (Ex: dyslexie, TDAH, troubles de l'anxiété, aménagement pour le temps...) ",
+            "maxlength": 500,
+            "mapsTo": "details_accompagnement_specifique"
+          },
+          {
+            "id": "R1",
+            "domain": "ReflexionAutoEvaluation",
+            "type": "text",
+            "label": "Pour commencer cette année de Terminale NSI, où pensez-vous en être dans votre maîtrise des notions informatiques (vos forces, vos points faibles) ? ('Où j'en suis avant de démarrer ?')",
+            "placeholder": "Ex: Je suis bon en Python mais les graphes me semblent complexes...",
+            "maxlength": 500,
+            "mapsTo": "auto_evaluation_depart"
+          },
+          {
+            "id": "R2",
+            "domain": "ReflexionAutoEvaluation",
+            "type": "multi",
+            "statement": "Pour vous aider à suivre vos progrès cette année, quelle(s) forme(s) de \"Fiche d'auto-suivi\" ou de \"cahier évalué\" serait(ent) le plus utile(s) ? (Choix multiples, max 3)",
+            "options": [
+              "Un carnet de bord numérique (ex: Notion, Markdown) pour noter mes réflexions et mes avancées.",
+              "Un cahier papier dédié à mes codes et algorithmes (évalué régulièrement par l'enseignant).",
+              "Des bilans intermédiaires réguliers (chaque mois) avec l'enseignant pour faire le point.",
+              "Un tableau de bord en ligne avec mes scores et badges de progression.",
+              "Des revues de projet individuelles ou en groupe pour évaluer l'avancement."
+            ],
+            "max": 3,
+            "mapsTo": "preferences_auto_suivi"
+          }
+        ]
+      }
+    ]
+  },
+  "scoring": {
+    "sections": {
+      "volet_connaissances": {
+        "mode": "sum_weighted_by_domain",
+        "domainMap": {
+          "python": "Python",
+          "structures": "Structures",
+          "donnees": "Données",
+          "logique": "Logique & Encodage",
+          "web": "Web/HTTP",
+          "lecture_algo": "Lecture d'algorithmes"
+        },
+        "weights": {
+          "python": 0.25,
+          "structures": 0.22,
+          "donnees": 0.20,
+          "logique": 0.12,
+          "web": 0.11,
+          "lecture_algo": 0.10
+        },
+        "criticalPolicy": "flag_below_50"
+      },
+      "volet_objectifs": {
+        "mode": "passthrough"
+      },
+      "volet_pedagogique_specifique_nsi": {
+        "mode": "likert_weighted",
+        "reverseHandling": "auto",
+        "indices": {
+          "IDX_PROJETS_MOTIV_NSI": {
+            "items": [
+              "A1",
+              "A4",
+              "M3"
+            ],
+            "weights": [
+              0.3,
+              0.4,
+              0.3
+            ]
+          },
+          "IDX_RESILIENCE_DEBUG": {
+            "items": [
+              "C1",
+              "C2",
+              "C3",
+              "C5"
+            ],
+            "weights": [
+              0.25,
+              0.25,
+              0.25,
+              0.25
+            ]
+          },
+          "IDX_COMP_INFO_TRANSVERSALES": {
+            "items": [
+              "S3",
+              "S4",
+              "S5",
+              "S6",
+              "S7",
+              "S8"
+            ],
+            "weights": [
+              0.15,
+              0.15,
+              0.15,
+              0.15,
+              0.2,
+              0.2
+            ]
+          },
+          "IDX_ORGANISATION_PROJETS": {
+            "items": [
+              "O1",
+              "O4",
+              "O5"
+            ],
+            "weights": [
+              0.4,
+              0.3,
+              0.3
+            ]
+          },
+          "IDX_CONNAISSANCE_OUTILS_NSI": {
+            "items": [
+              "CM1",
+              "O4"
+            ],
+            "weights": [
+              0.5,
+              0.5
+            ]
+          },
+          "IDX_ADAPTATION_ACCOMPAGNEMENT": {
+            "items": [
+              "B4",
+              "B5",
+              "CM3",
+              "CM4"
+            ],
+            "weights": [
+              0.25,
+              0.25,
+              0.25,
+              0.25
+            ]
+          }
+        }
+      },
+      "consentement": {
+        "mode": "passthrough"
+      }
+    },
+    "tags": [
+      {
+        "id": "TAG_Python_Faible",
+        "rule": "volet_connaissances.python < 0.5"
+      },
+      {
+        "id": "TAG_Structures_Faible",
+        "rule": "volet_connaissances.structures < 0.5"
+      },
+      {
+        "id": "TAG_Tables_Faible",
+        "rule": "volet_connaissances.donnees < 0.5"
+      },
+      {
+        "id": "TAG_Logique_Faible",
+        "rule": "volet_connaissances.logique < 0.5"
+      },
+      {
+        "id": "TAG_Web_Faible",
+        "rule": "volet_connaissances.web < 0.5"
+      },
+      {
+        "id": "TAG_LectureAlgo_Faible",
+        "rule": "volet_connaissances.lecture_algo < 0.5"
+      },
+      {
+        "id": "TAG_Methodes_Faibles",
+        "rule": "(volet_pedagogique_specifique_nsi.T1 <= 2) or (volet_pedagogique_specifique_nsi.T2 <= 2)"
+      },
+      {
+        "id": "TAG_Organisation_Faible",
+        "rule": "(volet_pedagogique_specifique_nsi.O1 == 'J\\'ai du mal à planifier et je me sens souvent débordé(e)') or (volet_pedagogique_specifique_nsi.O5 <= 2)"
+      },
+      {
+        "id": "TAG_Stress_Eleve",
+        "rule": "(volet_pedagogique_specifique_nsi.O3 >= 4)"
+      }
+    ],
+    "risk_flags": [
+      {
+        "id": "ALERTE_Parcoursup",
+        "rule": "(volet_objectifs.objectif_T1 < 12) or (volet_objectifs.objectif_T2 < 12) or (volet_pedagogique_specifique_nsi.A2 == '')"
+      }
+    ]
+  },
+  "reporting": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "api_key_env": "OPENAI_API_KEY",
+    "_comment_pre_analysis_": "NOUVEAU BLOC — pré-analyse des réponses textuelles",
+    "pre_analysis": [
+      {
+        "_comment": "Synthèse des réponses libres pour extraction de thèmes clés (rapide et économique).",
+        "id": "summarize_free_text",
+        "action": "llm_request",
+        "model": "gpt-4o-mini",
+        "temperature": 0.3,
+        "inputs": {
+          "projets": "{{answers.projets_post_bac.value}}",
+          "attentes_resultats": "{{answers.attentes_resultats_nsi.value}}",
+          "attentes_enseignement": "{{answers.attentes_enseignement_nsi.value}}",
+          "craintes": "{{answers.craintes_anticipees_nsi.value}}",
+          "methode_efficace": "{{answers.methode_efficace_nsi.value}}",
+          "auto_evaluation": "{{answers.auto_evaluation_depart.value}}"
+        },
+        "prompt": "Analyse les réponses textuelles d'un élève de Terminale NSI. Extrais les thèmes principaux de manière concise. Renvoie un objet JSON avec les clés : 'synthese_projet' (string), 'forces_percues' (array of strings), 'faiblesses_percues' (array of strings), 'principales_craintes' (array of strings), 'attentes_pedagogiques_cles' (array of strings). Sois factuel et base-toi uniquement sur les textes fournis.",
+        "output_variable": "pre_analysis.summary"
+      }
+    ],
+    "_comment_inputs_": "NOUVEAU BLOC — données compilées pour les prompts finaux",
+    "inputs": {
+      "student": {
+        "given_name": "{{auth.given_name}}",
+        "family_name": "{{auth.family_name}}",
+        "id": "{{context.student_id}}"
+      },
+      "context": {
+        "classe": "{{context.csv_classe}}"
+      },
+      "scores_connaissances": "{{scoring.sections.volet_connaissances}}",
+      "indices_pedago": "{{scoring.sections.volet_pedagogique_specifique_nsi.indices}}",
+      "tags": "{{scoring.tags}}",
+      "risk_flags": "{{scoring.risk_flags}}",
+      "answers_profile_raw": "{{answers.volet_pedagogique_specifique_nsi}}",
+      "text_summary": "{{pre_analysis.summary}}"
+    },
+    "rag": {
+      "sources": [
+        {
+          "path": "/mnt/data/programme_nsi_premiere.pdf",
+          "label": "Programme NSI Première"
+        },
+        {
+          "path": "/mnt/data/programme_nsi_terminale.pdf",
+          "label": "Programme NSI Terminale"
+        },
+        {
+          "path": "/mnt/data/vademecum-snt-nsi_0.pdf",
+          "label": "Vademecum SNT-NSI"
+        },
+        {
+          "path": "/mnt/data/rcp_referentiel_competences_prog.pdf",
+          "label": "Référentiel Compétences Programmation"
+        }
+      ]
+    },
+    "latex_templates": {
+      "eleve": "\\documentclass[11pt]{article}\\n\\usepackage[margin=2cm]{geometry}\\n\\usepackage[french]{babel}\\n\\usepackage{hyperref}\\n\\usepackage{graphicx}\\n\\newcommand{\\score}[1]{\\textbf{#1}}\\n\\begin{document}\\n\\begin{center}\\Large\\textbf{Ton Bilan NSI Terminale 🚀}\\end{center}\\n\\vspace{0.5em}\\hrule\\vspace{0.5em}\\n\\textbf{Nom :} {{student.family_name}} \\textbf{Prénom :} {{student.given_name}} \\textbf{Classe :} {{context.csv_classe}}\\n\\n\\section*{1. Tes Forces et Acquis}\\n{{analysis.strengths_eleve}}\\n\\n\\section*{2. Tes Axes de Progression (2 semaines)}\\n{{analysis.remediations_eleve}}\\n\\n\\section*{3. Méthodes de Travail : Conseils Personnalisés}\\n{{analysis.methodes_conseils}}\\n\\n\\section*{4. Tes Objectifs de l'année et Tes Prochains Pas}\\n{{analysis.objectifs_eleve}}\\n\\n\\section*{5. Ressources pour te Guider}\\n{{analysis.ressources}}\\n\\n\\vspace{1em}\\n\\hrule\\n\\vspace{0.5em}\\n{\\small Ce bilan a été généré par l'équipe enseignante de NSI du Lycée Pierre Mendès France de Tunis. Il s'appuie sur vos réponses au questionnaire et les programmes officiels.}\\n\\end{document}",
+      "enseignant": "\\documentclass[11pt]{article}\\n\\usepackage[margin=2cm]{geometry}\\n\\usepackage[french]{babel}\\n\\usepackage{booktabs}\\n\\usepackage{graphicx}\\n\\usepackage{hyperref}\\n\\begin{document}\\n\\begin{center}\\Large\\textbf{Bilan Pédagogique NSI Terminale (Enseignant)}\\end{center}\\n\\vspace{0.5em}\\hrule\\vspace{0.5em}\\n\\textbf{Élève :} {{student.family_name}} {{student.given_name}} (Classe : {{context.csv_classe}})\\n\\section*{1. Synthèse du Profil Élève}\\n{{analysis.gestes_commentaires}}\\n\\n\\section*{2. Diagnostic Académique et Pédagogique (Prérequis Terminale)}\\n{{analysis.alertes_recos}}\\n\\n\\section*{3. Plan d'Appui Pédagogique (4 semaines)}\\n{{analysis.plan_4_semaines}}\\n\\n\\section*{4. Indicateurs Clés d'Observation en Classe}\\n{{analysis.indicateurs_pedago}}\\n\\n\\section*{5. Historique de Suivi}\\n% {{history_of_sessions_and_reports}}\\n\\n\\vspace{1em}\\n\\hrule\\n\\vspace{0.5em}\\n{\\small Ce bilan est un outil d'aide à la décision pédagogique, généré par l'équipe enseignante de NSI du Lycée Pierre Mendès France de Tunis. Il s'appuie sur les réponses de l'élève au questionnaire et les données du RAG curriculaire.}\\n\\end{document}"
+    },
+    "prompts": {
+      "system_eleve": "Tu es un professeur de NSI du Lycée Pierre Mendès France de Tunis. Tu rédiges un bilan court, positif et concret pour l'élève. Objectif : donner un cap de travail sur 2 semaines, avec micro-actions (20–30 min), et 4–6 conseils de méthode adaptés à son profil NSI. Style : titres clairs, listes à puces, pas de jargon. Ne révèle JAMAIS les corrigés exacts du QCM. Public : Élève de Terminale NSI, en vue de Parcoursup (T1/T2) et du Bac. Longueur cible : 250–350 mots. Adapte le ton si « TAG_Stress_Eleve » est présent (normalise la charge, propose respiration/étapes courtes). Termine par 3 ressources légères internes (banque d’exos chapitres, fiches méthodes, capsules vidéo de la classe) sans lien externe.",
+      "system_enseignant": "Tu es un professeur de NSI du Lycée Pierre Mendès France de Tunis. Tu rédiges une analyse diagnostique exploitable en classe. Objectif : relier explicitement les faiblesses aux attendus de Terminale NSI (structures de données, bases relationnelles/SQL, graphes, POO, réseaux, architectures matérielles, systèmes, sécurité, optimisation). Tu proposes un plan d’appui sur 4 semaines (séances, ressources internes, évaluations courtes), des critères d’observation et des remédiations ciblées. Relie explicitement les faiblesses aux attendus du programme NSI Terminale (référence RAG). Ne révèle JAMAIS les corrigés exacts du QCM. Longueur cible : 500–800 mots."
+    },
+    "post_actions": {
+      "student_dashboard": {
+        "save_pdf": true,
+        "disable_button_id": "start_bilan_button"
+      },
+      "teacher_dashboard": {
+        "collect_all": true,
+        "fields": [
+          "bilan_eleve_pdf",
+          "bilan_enseignant_pdf"
+        ]
+      },
+      "email": {
+        "to": [
+          "labo.maths@ert.tn"
+        ],
+        "subject": "Bilan NSI Terminale — {{student.family_name}} {{student.given_name}}",
+        "attachments": [
+          "bilan_eleve_pdf",
+          "bilan_enseignant_pdf"
+        ]
+      }
+    }
+  },
+  "security": {
+    "data_retention": "fin d'année scolaire",
+    "anonymized_analytics": true
+  }
+}

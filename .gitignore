@@ -1,0 +1,9 @@
+
+# Local env & build
+.env*
+apps/web/.next/
+playwright-report/
+playwright/.cache/
+test-results/
+
+node_modules/

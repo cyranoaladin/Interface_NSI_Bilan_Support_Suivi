@@ -1,0 +1,10 @@
+
+Running 5 tests using 5 workers
+
+  ✓  1 e2e/cas_limites.spec.ts:3:5 › Cas limites et sécurité (389ms)
+  ✓  3 e2e/eleve.spec.ts:3:5 › Parcours élève - smoke (349ms)
+  ✓  4 e2e/enseignant.spec.ts:3:5 › Parcours enseignant complet (437ms)
+  ✓  5 e2e/rag_ingestion.spec.ts:5:5 › Ingestion RAG - upload PDF (477ms)
+  ✓  2 e2e/admin_actions.spec.ts:3:5 › Actions d'administration enseignant (1.9s)
+
+  5 passed (2.9s)

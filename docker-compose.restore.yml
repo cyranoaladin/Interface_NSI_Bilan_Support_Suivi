@@ -1,0 +1,5 @@
+services:
+  postgres:
+    ports: []   # pas de publication de ports
+  minio:
+    ports: []   # pas de publication de ports pour l’instant

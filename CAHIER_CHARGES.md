@@ -1,4 +1,4 @@
-## Cahier des Charges : Application "Nexus Réussite"
+## Cahier des Charges : Application "NSI PMF"
 Projet : Création d'une plateforme web sécurisée pour la gestion des questionnaires et des bilans pédagogiques personnalisés pour les élèves en spécialité NSI.
 URL de Production : nsi.labomaths.tn
 

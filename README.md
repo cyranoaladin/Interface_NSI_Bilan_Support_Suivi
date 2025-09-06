@@ -1,5 +1,5 @@
-## Bilan Pédagogique NSI - Nexus Réussite
-
+## Bilan Pédagogique NSI - NSI PMF
+**Auteur :** Alaeddine BEN RHOUMA
 Outil complet de bilan pédagogique pour élèves de Terminale NSI: questionnaire d'entrée, scoring, pré-analyse IA des réponses libres, génération de bilans (élève et enseignant) via LLM + RAG, compilation LaTeX/PDF, stockage S3 et envoi par e-mail.
 
 ## Table des Matières

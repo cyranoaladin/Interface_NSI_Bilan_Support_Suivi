@@ -7,7 +7,7 @@
 **Contexte du Projet :**
 En tant qu'enseignant de NSI au Lycée Pierre Mendès France de Tunis et chef de projet, l'objectif est de développer et déployer un outil de bilan pédagogique d'entrée en Terminale NSI pour mes élèves. Ce projet s'intègre au sous-domaine `nsi.labomaths.tn` et se concentrera sur le questionnaire et la génération de bilans personnalisés.
 
-Ce cahier des charges fusionne toutes les spécifications fonctionnelles, techniques et pédagogiques nécessaires pour implémenter ce bilan. Il met l'accent sur la qualité, la personnalisation, l'objectivité du diagnostic et l'efficacité de l'accompagnement, le tout dans un cadre **purement pédagogique, sans aucune référence commerciale à Nexus Réussite ou à des offres**. L'IA est ici un outil au service de la pédagogie.
+Ce cahier des charges fusionne toutes les spécifications fonctionnelles, techniques et pédagogiques nécessaires pour implémenter ce bilan. Il met l'accent sur la qualité, la personnalisation, l'objectivité du diagnostic et l'efficacité de l'accompagnement, le tout dans un cadre **purement pédagogique, sans aucune référence commerciale à NSI PMF ou à des offres**. L'IA est ici un outil au service de la pédagogie.
 
 ---
 
@@ -18,7 +18,7 @@ Ce cahier des charges fusionne toutes les spécifications fonctionnelles, techni
     *   Son profil d'apprentissage, ses méthodes de travail et son organisation (Volet 2).
     *   Ses motivations, ses ambitions, ses aptitudes face aux défis informatiques, et ses éventuelles difficultés spécifiques.
     Ce bilan doit être un **outil d'aide à la décision pédagogique** pour l'enseignant et un **guide structurant** pour l'élève en ce début d'année de Terminale.
-*   **1.2. Nature du Rapport :** Le rapport est **strictement pédagogique et interne au lycée**, sans aucune mention de Nexus Réussite, d'offres commerciales, de garanties, ou de tarifs. Il est produit par "l'équipe enseignante de NSI du Lycée Pierre Mendès France de Tunis".
+*   **1.2. Nature du Rapport :** Le rapport est **strictement pédagogique et interne au lycée**, sans aucune mention de NSI PMF, d'offres commerciales, de garanties, ou de tarifs. Il est produit par "l'équipe enseignante de NSI du Lycée Pierre Mendès France de Tunis".
 *   **1.3. Livrables Attendus :**
     1.  **Questionnaire Interactif :** Composé d'un Volet 1 (QCM NSI Première pour entrée Terminale) et d'un Volet 2 (Profil Pédagogique NSI & Personnel).
     2.  **Rapport Élève (HTML/PDF) :** Synthétique, motivant, avec badges de niveau de maîtrise, feuille de route de 2 semaines (micro-actions), et conseils pratiques.
@@ -233,7 +233,7 @@ Ta mission est d'analyser les résultats d'un élève de Terminale NSI (bilan de
 /lib/scoring/
   nsi_qcm_scorer.ts                    # Scoring QCM NSI Terminale + agrégats domaines
   pedago_nsi_indices.ts                # Calcul des IDX_* depuis Volet 2 NSI
-  # offers_decision.ts                 # Pour Nexus Réussite - non utilisé dans ce cadre pédagogique
+  # offers_decision.ts                 # Pour NSI PMF - non utilisé dans ce cadre pédagogique
 
 /lib/pdf/
   BilanPdfNsiTerminaleEleve.tsx        # Variante PDF Élève

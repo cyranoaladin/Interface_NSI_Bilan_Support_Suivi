@@ -2,10 +2,10 @@ import * as React from 'react';
 import { Header } from './Header';
 import { ToastProvider } from './Toast';
 
-export function Layout({ sidebar, children }: { sidebar: React.ReactNode; children: React.ReactNode; }) {
+export function Layout({ sidebar, children, right }: { sidebar: React.ReactNode; children: React.ReactNode; right?: React.ReactNode; }) {
   return (
     <ToastProvider>
-      <Header />
+      <Header right={right} />
       <div className="min-h-[calc(100vh-56px)] grid grid-cols-12">
         <aside className="col-span-12 md:col-span-3 xl:col-span-2 border-r border-white/10 bg-[#0f1723]">
           <div className="p-4">

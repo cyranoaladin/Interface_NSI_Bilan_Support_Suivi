@@ -7,41 +7,67 @@ import { Modal } from '@/components/ui/Modal';
 import { SidebarNav } from '@/components/ui/SidebarNav';
 import { Table, TD, TH, THead, TR } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
-import { ExternalLink, FileText, RotateCcw } from 'lucide-react';
+import { ExternalLink, FileText, LogOut, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function TeacherDashboard() {
   const { push } = useToast();
-  const [groups] = useState([
-    { id: 'g1', name: 'TEDS NSI' },
-    { id: 'g2', name: '1EDS NSI1' },
-  ]);
-  const [selectedId, setSelectedId] = useState('g1');
+  const [ownerName, setOwnerName] = useState<string>('');
+  const [groups, setGroups] = useState<Array<{ id: string; name: string; }>>([]);
+  const [selectedId, setSelectedId] = useState<string>('');
   const [students, setStudents] = useState<Array<{ email: string; name: string; }>>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalRows, setModalRows] = useState<Array<{ id: string; type: string; pdfUrl: string | null; publishedAt: string | null; }>>([]);
   const [modalStudentEmail, setModalStudentEmail] = useState<string | null>(null);
   const [modalFilter, setModalFilter] = useState<'all' | 'eleve' | 'enseignant'>('all');
-  const selected = groups.find(g => g.id === selectedId)!;
 
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setStudents([
-        { email: 'eleve1@ert.tn', name: 'Élève Un' },
-        { email: 'eleve2@ert.tn', name: 'Élève Deux' },
-      ]);
-      setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
+    (async () => {
+      try {
+        const me = await fetch('/api/me');
+        const meJson = await me.json();
+        if (me.ok && meJson.ok && meJson.role === 'TEACHER') {
+          setOwnerName(`${meJson.firstName} ${meJson.lastName}`);
+        }
+      } catch {}
+      try {
+        const r = await fetch('/api/teacher/groups');
+        const d = await r.json();
+        if (r.ok && d.ok) {
+          const gs = d.groups.map((g: any) => ({ id: g.id, name: g.name }));
+          setGroups(gs);
+          if (gs.length > 0) setSelectedId(gs[0].id);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    (async () => {
+      setLoading(true);
+      try {
+        const r = await fetch(`/api/teacher/students?groupId=${encodeURIComponent(selectedId)}`);
+        const d = await r.json();
+        if (r.ok && d.ok) setStudents(d.students);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [selectedId]);
+
+  const selected = groups.find(g => g.id === selectedId) || null;
 
   return (
     <Layout
+      right={<Button variant="ghost" onClick={async () => {
+        try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
+        window.location.href = '/login';
+      }}><LogOut className="h-4 w-4" /> Déconnexion</Button>}
       sidebar={<div className="space-y-2">
         <div className="px-1">
-          <h2 className="text-lg font-poppins">Espace Enseignant</h2>
+          <h2 className="text-lg font-poppins">{ownerName || 'Espace Enseignant'}</h2>
           <p className="text-sm text-[var(--fg)]/70">Gestion des groupes</p>
         </div>
         <SidebarNav items={[{ href: '/dashboard/teacher', label: 'Groupes' }]} />
@@ -58,7 +84,7 @@ export default function TeacherDashboard() {
       </div>}
     >
       <div className="space-y-6">
-        <h1 className="text-2xl">{selected.name}</h1>
+        <h1 className="text-2xl">{selected?.name || 'Mes groupes'}</h1>
 
         <Card>
           <CardHeader>
@@ -106,7 +132,7 @@ export default function TeacherDashboard() {
           </CardHeader>
           <CardContent>
             <form action="/api/rag/upload" method="post" encType="multipart/form-data" className="space-y-3">
-              <input type="file" name="file" className="block w-full text-sm" />
+              <input type="file" name="file" required accept=".pdf,.txt,.md,.mdx,.html,.htm" className="block w-full text-sm" />
               <Button type="submit" variant="primary">Uploader</Button>
             </form>
           </CardContent>
@@ -137,26 +163,28 @@ export default function TeacherDashboard() {
             <p className="text-sm text-[var(--fg)]/70">Aucun bilan pour cet élève.</p>
           ) : (
             <ul className="space-y-2">
-              {modalRows.filter(b => modalFilter === 'all' ? true : (modalFilter === 'eleve' ? b.type === 'eleve' : b.type === 'enseignant')).map(b => (
-                <li key={b.id} className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm">{b.type === 'eleve' ? 'Bilan Élève' : 'Bilan Enseignant'}</div>
-                    <div className="text-xs text-[var(--fg)]/60">{b.publishedAt ?? 'Non publié'}</div>
-                  </div>
-                  <div>
-                    {b.pdfUrl ? (
-                      <div className="flex items-center gap-2">
-                        <a className="text-electric hover:underline" href={b.pdfUrl} download>Télécharger</a>
-                        <a className="inline-flex items-center gap-1 text-[var(--fg)]/80 hover:text-white" href={b.pdfUrl} target="_blank" rel="noreferrer">
-                          Ouvrir <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-[var(--fg)]/60">PDF indisponible</span>
-                    )}
-                  </div>
-                </li>
-              ))}
+              {modalRows
+                .filter(b => (modalFilter === 'all' ? true : (modalFilter === 'eleve' ? b.type === 'eleve' : b.type === 'enseignant')) && !!b.pdfUrl)
+                .map(b => (
+                  <li key={b.id} className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm">{b.type === 'eleve' ? 'Bilan Élève' : 'Bilan Enseignant'}</div>
+                      <div className="text-xs text-[var(--fg)]/60">{b.publishedAt ?? 'Non publié'}</div>
+                    </div>
+                    <div>
+                      {b.id && b.pdfUrl ? (
+                        <div className="flex items-center gap-2">
+                          <a className="text-electric hover:underline" href={`/api/bilan/download/${b.id}`}>Télécharger</a>
+                          <a className="inline-flex items-center gap-1 text-[var(--fg)]/80 hover:text-white" href={`/api/bilan/download/${b.id}`} target="_blank" rel="noreferrer">
+                            Ouvrir <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[var(--fg)]/60">PDF en préparation</span>
+                      )}
+                    </div>
+                  </li>
+                ))}
             </ul>
           )}
         </div>

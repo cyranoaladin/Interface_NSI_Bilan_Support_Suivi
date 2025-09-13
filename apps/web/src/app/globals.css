@@ -17,7 +17,7 @@ body {
 }
 
 body {
-  @apply bg-[color:var(--bg)] text-[color:var(--fg)] font-inter antialiased;
+  @apply bg-[var(--bg)] text-[var(--fg)] font-inter antialiased;
 }
 
 h1,

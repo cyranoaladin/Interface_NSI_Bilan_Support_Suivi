@@ -32,7 +32,21 @@ export function scoreQCM(qcm: QcmData, answers: Record<string, any>): ResultsQCM
     } else if (item.type === 'short') {
       const expected = (item.answer || '').trim();
       const given = String(a || '').trim();
-      if (expected && given && normalize(expected) === normalize(given)) { by_domain[domain].points += weight; totalPoints += weight; }
+      const okExact = expected && given && normalize(expected) === normalize(given);
+      let okFlexible = false;
+      if (item.id === 'DN-C-05') {
+        const g = given.toLowerCase();
+        // Accepte une solution avec boucle for + compteur utilisant csv.reader
+        const hasImport = /import\s+csv/.test(g);
+        const hasOpen = /open\(\s*['"][^'"]*eleves\.csv['"][^)]*\)/.test(g);
+        const hasReader = /csv\.reader\(\s*f\s*\)/.test(g) || /csv\.reader\(/.test(g);
+        const hasCounter = /(count\s*=\s*0|compte\s*=\s*0)/.test(g);
+        const hasFor = /for\s+\w+\s+in\s+csv\.reader\(\s*f\s*\)/.test(g) || /for\s+\w+\s+in\s+csv\.reader\(/.test(g);
+        const inc = /(count|compte)\s*\+\+|\b(count|compte)\s*=\s*\1\s*\+\s*1|\b(count|compte)\s*\+=\s*1/.test(g);
+        const prints = /print\s*\(\s*(count|compte)\s*\)/.test(g);
+        okFlexible = hasImport && hasOpen && hasReader && hasFor && (hasCounter || inc || prints);
+      }
+      if (okExact || okFlexible) { by_domain[domain].points += weight; totalPoints += weight; }
     }
   }
 

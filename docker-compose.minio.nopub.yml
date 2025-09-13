@@ -1,3 +1,0 @@
-services:
-  minio:
-    ports: []   # pas d'exposition 9000/9001

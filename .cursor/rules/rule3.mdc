@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+
+# Cursor Rule 3 — docker compose exec non-interactif (-T, -e)
+
+For non-interactive docker compose exec commands, you MUST ALWAYS use the -T flag to prevent TTY allocation issues. Use the -e flag to pass environment variables explicitly.
+MANDATORY TEMPLATE:
+
+```bash
+docker compose -f <compose_file> exec -T -e VAR1=value1 <service> <command>
+```
+
+For non-interactive docker compose exec commands, you MUST ALWAYS use the -T flag to prevent TTY allocation issues. Use the -e flag to pass environment variables explicitly.
+MANDATORY TEMPLATE:
+
+```bash
+docker compose -f <compose_file> exec -T -e VAR1=value1 <service> <command>
+```

@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { sendMail } from '@/lib/mail';
+export const dynamic = 'force-dynamic';
 import { signMagicToken } from '@/lib/jwt';
+import { sendMail } from '@/lib/mail';
 import { PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const prisma = new PrismaClient();
 const r = new Redis(process.env.REDIS_URL!);
@@ -40,4 +41,3 @@ export async function POST(req: NextRequest) {
   });
   return NextResponse.json({ ok: true });
 }
-

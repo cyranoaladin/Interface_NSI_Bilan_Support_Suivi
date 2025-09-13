@@ -1,8 +1,0 @@
-services:
-  postgres:
-    ports:
-      - "55432:5432"   # au lieu de 5432:5432
-  minio:
-    ports:
-      - "9005:9000"    # au lieu de 9000:9000
-      - "9006:9001"    # au lieu de 9001:9001

@@ -23,14 +23,26 @@ export default function InitierBilan() {
                 <Input placeholder="Email élève (optionnel)" value={studentEmail} onChange={e => setStudentEmail(e.target.value)} />
                 <Button variant="primary" loading={loading} onClick={async () => {
                   setLoading(true); setMsg('');
-                  const r = await fetch('/api/bilan/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentEmail }) });
-                  const data = await r.json();
-                  setLoading(false);
-                  if (r.ok) {
-                    push({ message: 'Bilan créé', variant: 'success' });
-                    window.location.href = `/bilan/${data.bilanId}/questionnaire`;
-                  } else {
-                    const err = data.error || 'Erreur'; setMsg(err);
+                  try {
+                    const payload: any = {};
+                    const val = (studentEmail || '').trim();
+                    if (val.length > 0) payload.studentEmail = val;
+                    const r = await fetch('/api/bilan/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    let data: any = {};
+                    try { data = await r.json(); } catch {}
+                    setLoading(false);
+                    if (r.ok && data?.ok) {
+                      push({ message: 'Bilan créé', variant: 'success' });
+                      window.location.href = `/bilan/${data.bilanId}/questionnaire`;
+                    } else {
+                      const err = data?.error || `Erreur (${r.status})`;
+                      setMsg(err);
+                      push({ message: err, variant: 'error' });
+                    }
+                  } catch (e) {
+                    setLoading(false);
+                    const err = 'Erreur réseau';
+                    setMsg(err);
                     push({ message: err, variant: 'error' });
                   }
                 }}>Créer le bilan</Button>

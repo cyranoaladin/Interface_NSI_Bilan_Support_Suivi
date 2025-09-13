@@ -16,7 +16,7 @@ export default function LoginPage() {
           <Card>
             <CardHeader>
               <h1 className="text-2xl">Connexion</h1>
-              <p className="text-sm text-[var(--fg)]/70">Accédez à la plateforme Nexus Réussite</p>
+              <p className="text-sm text-[var(--fg)]/70">Accédez à la plateforme NSI-PMF</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

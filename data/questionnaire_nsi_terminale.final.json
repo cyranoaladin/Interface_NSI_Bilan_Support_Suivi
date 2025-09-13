@@ -1,8 +1,8 @@
 {
   "version": "terminale-nsi-v_final_2025-09-04",
   "locale": "fr-FR",
-  "title": "NSI Terminale — Questionnaire d’Entrée & Bilan Pédagogique (Lycée Pierre Mendès France)",
-  "description": "Questionnaire complet de rentrée pour les élèves de Terminale NSI. Inclut un QCM sur les prérequis de Première NSI et un Volet sur le profil pédagogique et personnel de l'élève. Les résultats génèrent deux bilans PDF personnalisés (élève & enseignant) via LLM + RAG et LaTeX.",
+  "title": "NSI Terminale — Questionnaire d'Entrée & Bilan Pédagogique (Lycée Pierre Mendès France)",
+  "description": "Questionnaire complet de rentrée pour les élèves de Terminale NSI. Inclut un QCM sur les prérequis de Première NSI et un Volet sur le profil pédagogique et personnel de l'élève. Les résultats génèrent deux bilans PDF personnalisés (élève & enseignant) via LLM + RAG et React-PDF.",
   "owners": [
     "labo.maths@ert.tn"
   ],
@@ -74,7 +74,7 @@
         "pages": [
           {
             "id": "consignes",
-            "markdown": "Bienvenue au questionnaire de rentrée NSI Terminale du Lycée Pierre Mendès France de Tunis. Ce bilan est un outil pédagogique conçu pour vous accompagner au mieux cette année. Il se compose de deux volets : un QCM sur les connaissances de Première NSI, et un questionnaire sur votre profil d'apprentissage et vos projets.\n\nDurée estimée : environ 60 minutes pour le QCM. Répondez seul·e et au mieux de vos capacités. Il n'y a pas de note, mais une analyse personnalisée pour vous et votre enseignant.\n\nLes résultats alimenteront un bilan détaillé (version élève et version enseignant) qui vous sera remis, ainsi qu'un plan d’appui pour bien démarrer l’année."
+            "markdown": "Bienvenue au questionnaire de rentrée NSI Terminale du Lycée Pierre Mendès France de Tunis. Ce bilan est un outil pédagogique conçu pour vous accompagner au mieux cette année. Il se compose de deux volets : un QCM sur les connaissances de Première NSI, et un questionnaire sur votre profil d'apprentissage et vos projets.\n\nDurée estimée : environ 60 minutes pour le QCM. Répondez seul·e et au mieux de vos capacités. Il n'y a pas de note, mais une analyse personnalisée pour vous et votre enseignant.\n\nLes résultats alimenteront un bilan détaillé (version élève et version enseignant) qui vous sera remis, ainsi qu'un plan d'appui pour bien démarrer l'année."
           }
         ]
       },
@@ -151,7 +151,7 @@
             "type": "mcq",
             "difficulty": "B",
             "weight": 1,
-            "statement": "Mutabilité : que vaut L ?",
+            "statement": "Après l'exécution du code suivant, qui met en jeu le partage de référence pour une liste, quelle sera la valeur affichée pour la variable `L` ?",
             "code": "python\nL=[1,2]; M=L; M.append(3); print(L)",
             "choices": [
               {
@@ -176,7 +176,7 @@
             "type": "short",
             "difficulty": "C",
             "weight": 1,
-            "statement": "Écrire une compréhension renvoyant les carrés pairs de 0 à 10 inclus.",
+            "statement": "En utilisant une seule compréhension de liste, construis la liste des carrés des nombres pairs compris entre 0 et 10 (inclus).",
             "answer": "[x*x for x in range(0,11) if x%2==0]"
           },
           {
@@ -213,7 +213,7 @@
             "type": "mcq",
             "difficulty": "B",
             "weight": 1,
-            "statement": "Portée : quel affichage ?",
+            "statement": "En considérant les règles de portée des variables en Python, quel sera l'affichage produit par l'exécution de ce code ?",
             "code": "python\nx=1\ndef g():\n    x=2\n    def h():\n        return x\n    return h()\nprint(g())",
             "choices": [
               {
@@ -260,7 +260,7 @@
             "type": "mcq",
             "difficulty": "A",
             "weight": 1,
-            "statement": "Dictionnaires : que renvoie ?",
+            "statement": "Soit le dictionnaire `d = {'a': 1, 'b': 2}`. Quel est l'affichage exact produit par l'instruction `print('a' in d, 2 in d, 2 in d.values())` ?",
             "code": "python\nd={'a': 1,'b': 2}\\nprint('a' in d, 2 in d, 2 in d.values())",
             "choices": [
               {
@@ -284,7 +284,7 @@
             "type": "mcq",
             "difficulty": "A",
             "weight": 1,
-            "statement": "Tuples : accès valide pour t=(10,20) ?",
+            "statement": "Soit le tuple `t = (10, 20)`. Laquelle de ces opérations est valide ?",
             "choices": [
               {
                 "k": "A",
@@ -307,7 +307,7 @@
             "type": "mcq",
             "difficulty": "B",
             "weight": 1,
-            "statement": "Ensembles : résultat ?",
+            "statement": "Soit les ensembles `A = {1, 2, 3}` et `B = {3, 4}`. Quel est le résultat affiché par l'instruction `print(A|B, A&B, A-B)` ?",
             "code": "python\nA={1,2,3}; B={3,4}\nprint(A|B, A&B, A-B)",
             "choices": [
               {
@@ -331,7 +331,7 @@
             "type": "mcq",
             "difficulty": "B",
             "weight": 1,
-            "statement": "Listes : que vaut L ?",
+            "statement": "Soit la liste `L = [0,1,2,3]`. Après l'exécution de l'instruction `L[1:3] = [9]`, quelle sera la nouvelle valeur de `L` ?",
             "code": "python\nL=[0,1,2,3]\nL[1:3]=[9]\nprint(L)",
             "choices": [
               {
@@ -355,7 +355,7 @@
             "type": "msq",
             "difficulty": "B",
             "weight": 1,
-            "statement": "Opérations dict valides ?",
+            "statement": "Soit un dictionnaire `d`. Lesquelles de ces opérations sont valides ?",
             "choices": [
               {
                 "k": "A",
@@ -384,7 +384,7 @@
             "type": "mcq",
             "difficulty": "A",
             "weight": 1,
-            "statement": "Compréhension de liste :",
+            "statement": "Quelle est la valeur de la liste `L` après l'exécution du code suivant ?",
             "code": "python\nL=[i for i in range(5) if i%2]",
             "choices": [
               {
@@ -431,7 +431,7 @@
             "type": "mcq",
             "difficulty": "A",
             "weight": 1,
-            "statement": "Filtrage de lignes : résultat ?",
+            "statement": "Quel est le résultat affiché par le code suivant ?",
             "code": "python\nrows=[{'classe':'TNSI','nom':'Ali'},{'classe':'1G','nom':'Zoé'}]\nsel=[r for r in rows if r['classe']=='TNSI']\nprint(len(sel))",
             "choices": [
               {
@@ -580,7 +580,7 @@
             "type": "mcq",
             "difficulty": "B",
             "weight": 1,
-            "statement": "Sur 8 bits signé (C2), intervalle représentable :",
+            "statement": "En utilisant l'encodage en complément à deux sur 8 bits pour représenter les entiers signés, quel est l'intervalle de valeurs que l'on peut représenter ?",
             "choices": [
               {
                 "k": "A",
@@ -626,7 +626,7 @@
             "type": "mcq",
             "difficulty": "A",
             "weight": 1,
-            "statement": "Paramètres d’un formulaire GET ?",
+            "statement": "Paramètres d'un formulaire GET ?",
             "choices": [
               {
                 "k": "A",
@@ -718,7 +718,7 @@
             "type": "mcq",
             "difficulty": "A",
             "weight": 1,
-            "statement": "Affichage ?",
+            "statement": "Quel est l'affichage produit par l'exécution de ce code ?",
             "code": "python\n def f(n):\n     s=0\n     for i in range(1,n+1):\n         if i%2==0: s+=i\n     return s\nprint(f(5))",
             "choices": [
               {
@@ -742,7 +742,7 @@
             "type": "mcq",
             "difficulty": "A",
             "weight": 1,
-            "statement": "Résultat ?",
+            "statement": "Quelle est la valeur finale de la liste `L` après l'exécution de ce code ?",
             "code": "python\nL=[3,1,2]\nfor i in range(len(L)):\n    L[i]=L[i]**2\nprint(L)",
             "choices": [
               {
@@ -766,7 +766,7 @@
             "type": "short",
             "difficulty": "B",
             "weight": 1,
-            "statement": "Écrire la valeur renvoyée par la fonction :",
+            "statement": "Quelle est la valeur exacte renvoyée et affichée par l'appel `print(g())` ?",
             "code": "python\n def g(L):\n     m=L[0]\n     for x in L:\n         if x<m: m=x\n     return m\nprint(g([5,2,9,1]))",
             "answer": "1"
           },
@@ -822,7 +822,7 @@
             "type": "mcq",
             "difficulty": "B",
             "weight": 1,
-            "statement": "Immutabilité des chaînes :",
+            "statement": "Après l'exécution du code suivant, quelle est la valeur de la variable `s` qui sera affichée ?",
             "code": "python\ns='abc'\ns.replace('b','x')\nprint(s)",
             "choices": [
               {
@@ -869,7 +869,7 @@
             "type": "mcq",
             "difficulty": "B",
             "weight": 1,
-            "statement": "Dans for k in d: que parcourt-on ?",
+            "statement": "Dans une boucle comme `for element in mon_dict:`, sur quelle partie du dictionnaire l'itération se fait-elle par défaut ?",
             "choices": [
               {
                 "k": "A",
@@ -984,7 +984,7 @@
             "type": "mcq",
             "difficulty": "B",
             "weight": 1,
-            "statement": "Complexité de : while n>1: n//=2",
+            "statement": "Quelle est la complexité temporelle dans le pire des cas de la boucle suivante, en fonction de la valeur initiale de `n` ?",
             "choices": [
               {
                 "k": "A",
@@ -1123,7 +1123,7 @@
             "id": "A1",
             "domain": "AmbitionOrientation",
             "type": "single",
-            "statement": "Pourquoi avez-vous choisi de poursuivre la spécialité NSI en Terminale ?",
+            "statement": "Pourquoi as-tu choisi de poursuivre la spécialité NSI en Terminale ?",
             "options": [
               "Curiosité et intérêt personnel pour l'informatique",
               "Pour un projet d'études supérieures ou un métier précis",
@@ -1138,7 +1138,7 @@
             "id": "A2",
             "domain": "AmbitionOrientation",
             "type": "text",
-            "label": "Quels sont vos projets d'études supérieures ou professionnels après le Bac ? (Ex: école d'ingénieurs en info, licence en maths/info, métier de développeur, chercheur, etc.)",
+            "label": "Quels sont tes projets d'études supérieures ou professionnels après le Bac ? (Ex: école d'ingénieurs en info, licence en maths/info, métier de développeur, chercheur, etc.)",
             "placeholder": "Décrivez brièvement vos aspirations...",
             "maxlength": 500,
             "mapsTo": "projets_post_bac"
@@ -1161,7 +1161,7 @@
             "id": "A4",
             "domain": "AmbitionOrientation",
             "type": "text",
-            "label": "Pour cette année de Terminale NSI, quels résultats ou compétences souhaitez-vous absolument atteindre ? ('À quel(s) résultat(s) est-ce que je souhaite arriver ?')",
+            "label": "En dehors des notes, si tu devais choisir une ou deux choses que tu veux absolument savoir faire en NSI à la fin de l'année, quelles seraient-elles ?",
             "placeholder": "Ex: Maîtriser les graphes, faire un projet personnel, obtenir plus de 15 au Bac NSI...",
             "maxlength": 500,
             "mapsTo": "attentes_resultats_nsi"
@@ -1170,7 +1170,7 @@
             "id": "A5",
             "domain": "AmbitionOrientation",
             "type": "text",
-            "label": "Quelles sont vos attentes vis-à-vis de l'enseignement de NSI cette année ? ('À quoi je m'attends ?')",
+            "label": "Pour que cette année en NSI soit une réussite pour toi, comment imagines-tu le cours idéal ? Qu'est-ce qui t'aiderait le plus à apprendre et à rester motivé(e) ?",
             "placeholder": "Ex: Des cours très pratiques, des projets réguliers, de l'aide sur la programmation...",
             "maxlength": 500,
             "mapsTo": "attentes_enseignement_nsi"
@@ -1208,7 +1208,7 @@
             "id": "M4",
             "domain": "MotivationEngagement",
             "type": "multi",
-            "statement": "Ce qui vous pousse le plus à vous investir en NSI (choix multiples, max 3) :",
+            "statement": "Ce qui te pousse le plus à t'investir en NSI (choix multiples, max 3) :",
             "options": [
               "Le plaisir de résoudre des problèmes / créer",
               "La perspective des études supérieures / un métier",
@@ -1224,7 +1224,7 @@
             "id": "M5",
             "domain": "MotivationEngagement",
             "type": "text",
-            "label": "Quelles sont les principales craintes ou difficultés que vous anticipez pour la NSI cette année (hors difficultés de compréhension technique) ?",
+            "label": "Quelles sont tes principales craintes ou les difficultés que tu anticipes pour la NSI cette année (en dehors de la technique pure) ?",
             "placeholder": "Ex: La quantité de travail, la difficulté des projets, l'épreuve du Grand Oral...",
             "maxlength": 400,
             "mapsTo": "craintes_anticipees_nsi"
@@ -1307,7 +1307,7 @@
             "id": "S3",
             "domain": "StyleApprentissageNSI",
             "type": "likert",
-            "statement": "J'ai une bonne capacité à évaluer la complexité (temps, ressources) d'un algorithme simple (Évaluer).",
+            "statement": "Face à deux algorithmes qui font la même chose, je suis capable de dire lequel est le plus rapide ou le plus efficace.",
             "scaleRef": "scaleLikert5",
             "mapsTo": "evalue_complexite"
           },
@@ -1315,7 +1315,7 @@
             "id": "S4",
             "domain": "StyleApprentissageNSI",
             "type": "likert",
-            "statement": "Je me sens à l'aise pour modéliser des situations concrètes (ex: un réseau, des données) à l'aide de structures informatiques (graphes, tables, objets) (Modéliser).",
+            "statement": "Quand on me décrit un problème (ex: gérer les amitiés sur un réseau social), j'arrive à imaginer comment le représenter avec des outils informatiques (ex: un graphe, une base de données).",
             "scaleRef": "scaleLikert5",
             "mapsTo": "modele_situations"
           },
@@ -1323,7 +1323,7 @@
             "id": "S5",
             "domain": "StyleApprentissageNSI",
             "type": "likert",
-            "statement": "Je peux anticiper les étapes nécessaires pour résoudre un problème de programmation avant de l'exécuter (Anticiper).",
+            "statement": "En lisant un bout de code, j'arrive souvent à deviner ce qu'il va afficher avant même de l'exécuter.",
             "scaleRef": "scaleLikert5",
             "mapsTo": "anticipe_resolution"
           },
@@ -1331,7 +1331,7 @@
             "id": "S6",
             "domain": "StyleApprentissageNSI",
             "type": "likert",
-            "statement": "Je suis capable de décomposer un problème complexe en informatique en sous-problèmes plus petits et gérables (Décomposer).",
+            "statement": "Face à un gros projet de programmation, mon réflexe est de le découper en plusieurs petites missions plus simples à gérer.",
             "scaleRef": "scaleLikert5",
             "mapsTo": "competence_decompose"
           },
@@ -1339,7 +1339,7 @@
             "id": "S7",
             "domain": "StyleApprentissageNSI",
             "type": "likert",
-            "statement": "J'arrive à généraliser des concepts informatiques pour les appliquer à de nouvelles situations (Généraliser).",
+            "statement": "Quand j'apprends une nouvelle technique sur un exercice, j'essaie de voir si je peux l'utiliser pour résoudre d'autres problèmes similaires.",
             "scaleRef": "scaleLikert5",
             "mapsTo": "competence_generaliser"
           },
@@ -1347,7 +1347,7 @@
             "id": "S8",
             "domain": "StyleApprentissageNSI",
             "type": "likert",
-            "statement": "Je suis capable d'abstraire des détails pour me concentrer sur l'essentiel d'un problème informatique (Abstraire).",
+            "statement": "Quand je code, j'arrive à me concentrer sur la logique générale sans me perdre dans les petits détails de syntaxe.",
             "scaleRef": "scaleLikert5",
             "mapsTo": "competence_abstraire"
           },
@@ -1387,7 +1387,7 @@
             "id": "T5",
             "domain": "MethodesTravailNSI",
             "type": "multi",
-            "statement": "Quelles sont les ressources ou méthodes qui vous ont été les plus utiles l'année dernière en NSI pour progresser ? (Choix multiples, max 3)",
+            "statement": "Quelles sont les ressources ou méthodes qui t'ont été les plus utiles l'année dernière en NSI pour progresser ? (Choix multiples, max 3)",
             "options": [
               "Cours du professeur (notes, polycopiés)",
               "Manuels scolaires / Livres spécialisés",
@@ -1473,57 +1473,9 @@
             "id": "O6",
             "domain": "OrganisationGestionTemps",
             "type": "text",
-            "label": "Décris une journée ou une semaine type où tu te sens très productif/ve en NSI et une autre où tu es moins efficace. Qu'est-ce qui change dans ton approche ou ton environnement ?",
+            "label": "Pense à un moment où tu as été très productif(ve) en NSI, et un autre où tu n'arrivais à rien. En quelques mots, qu'est-ce qui était différent ?\n\n**Pour le moment productif :** (Où étais-tu ? À quel moment de la journée ? Quel type de tâche ? Étais-tu seul(e) ou en groupe ?)\n\n**Pour le moment moins efficace :** (Quelles étaient les distractions ? Qu'est-ce qui t'a bloqué(e) ?)",
             "maxlength": 500,
             "mapsTo": "journee_productive_vs_inefficace"
-          },
-          {
-            "id": "CT1",
-            "domain": "CompetencesTransversales",
-            "type": "likert",
-            "statement": "Je me sens capable de décomposer un problème complexe en informatique en sous-problèmes plus petits et gérables (Décomposer).",
-            "scaleRef": "scaleLikert5",
-            "mapsTo": "competence_decompose"
-          },
-          {
-            "id": "CT2",
-            "domain": "CompetencesTransversales",
-            "type": "likert",
-            "statement": "J'arrive à concevoir une solution algorithmique avant de passer à l'écriture du code (Concevoir).",
-            "scaleRef": "scaleLikert5",
-            "mapsTo": "competence_concevoir"
-          },
-          {
-            "id": "CT3",
-            "domain": "CompetencesTransversales",
-            "type": "likert",
-            "statement": "Je peux évaluer la pertinence d'un modèle ou d'une solution algorithmique pour un problème donné (Évaluer).",
-            "scaleRef": "scaleLikert5",
-            "mapsTo": "competence_evaluer"
-          },
-          {
-            "id": "CT4",
-            "domain": "CompetencesTransversales",
-            "type": "likert",
-            "statement": "J'anticipe bien les étapes et les résultats d'un programme avant de l'exécuter (Anticiper).",
-            "scaleRef": "scaleLikert5",
-            "mapsTo": "competence_anticiper"
-          },
-          {
-            "id": "CT5",
-            "domain": "CompetencesTransversales",
-            "type": "likert",
-            "statement": "J'arrive à généraliser des concepts informatiques pour les appliquer à de nouvelles situations (Généraliser).",
-            "scaleRef": "scaleLikert5",
-            "mapsTo": "competence_generaliser"
-          },
-          {
-            "id": "CT6",
-            "domain": "CompetencesTransversales",
-            "type": "likert",
-            "statement": "Je suis capable d'abstraire des détails pour me concentrer sur l'essentiel d'un problème informatique (Abstraire).",
-            "scaleRef": "scaleLikert5",
-            "mapsTo": "competence_abstraire"
           },
           {
             "id": "COM1",
@@ -1572,7 +1524,7 @@
             "id": "DF1",
             "domain": "DefisPersistanceNSI",
             "type": "multi",
-            "statement": "Quelles sont les notions ou thèmes de Terminale NSI qui vous semblent les plus complexes ou qui vous inquiètent le plus ? (Choix multiples, max 3)",
+            "statement": "Quelles sont les notions ou thèmes de Terminale NSI qui te semblent les plus complexes ou qui t'inquiètent le plus ? (Choix multiples, max 3)",
             "options": [
               "Structures de données avancées (arbres, graphes, tables de hachage)",
               "Bases de données relationnelles (SQL avancé, transactions)",
@@ -1592,7 +1544,7 @@
             "id": "DF2",
             "domain": "DefisPersistanceNSI",
             "type": "text",
-            "label": "Si vous aviez un accès illimité à un expert NSI, quelle serait la question la plus importante que vous lui poseriez pour vous aider à préparer votre année de Terminale ?",
+            "label": "Si tu avais un accès illimité à un expert NSI, quelle serait la question la plus importante que tu lui poserais pour t'aider à préparer ton année de Terminale ?",
             "placeholder": "Ex: Comment mieux aborder les graphes ou la POO en Python ?",
             "maxlength": 500,
             "mapsTo": "question_expert_nsi"
@@ -1641,7 +1593,7 @@
             "id": "CM4",
             "domain": "ContexteMaterielAide",
             "type": "text",
-            "label": "Si vous avez un dispositif ou un suivi (question CM3), souhaitez-vous nous en informer pour adapter nos méthodes pédagogiques ? (Ex: dyslexie, TDAH, troubles de l'anxiété, aménagement pour le temps...) ",
+            "label": "Si tu as un dispositif ou un suivi (question CM3), souhaites-tu nous en informer pour adapter nos méthodes pédagogiques ? (Ex: dyslexie, TDAH, troubles de l'anxiété, aménagement pour le temps...) ",
             "maxlength": 500,
             "mapsTo": "details_accompagnement_specifique"
           },
@@ -1649,8 +1601,8 @@
             "id": "R1",
             "domain": "ReflexionAutoEvaluation",
             "type": "text",
-            "label": "Pour commencer cette année de Terminale NSI, où pensez-vous en être dans votre maîtrise des notions informatiques (vos forces, vos points faibles) ? ('Où j'en suis avant de démarrer ?')",
-            "placeholder": "Ex: Je suis bon en Python mais les graphes me semblent complexes...",
+            "label": "En toute honnêteté, pour commencer cette année de Terminale, quels sont selon toi tes points forts et tes points faibles en informatique ?",
+            "placeholder": "Ex: Je suis à l'aise avec la programmation en Python, mais j'ai plus de mal avec la théorie des réseaux ou la logique des bases de données.",
             "maxlength": 500,
             "mapsTo": "auto_evaluation_depart"
           },
@@ -1658,7 +1610,7 @@
             "id": "R2",
             "domain": "ReflexionAutoEvaluation",
             "type": "multi",
-            "statement": "Pour vous aider à suivre vos progrès cette année, quelle(s) forme(s) de \"Fiche d'auto-suivi\" ou de \"cahier évalué\" serait(ent) le plus utile(s) ? (Choix multiples, max 3)",
+            "statement": "Pour t'aider à suivre tes progrès cette année, quelle(s) forme(s) de \"Fiche d'auto-suivi\" ou de \"cahier évalué\" serait(ent) le plus utile(s) ? (Choix multiples, max 3)",
             "options": [
               "Un carnet de bord numérique (ex: Notion, Markdown) pour noter mes réflexions et mes avancées.",
               "Un cahier papier dédié à mes codes et algorithmes (évalué régulièrement par l'enseignant).",
@@ -1875,7 +1827,12 @@
       "text_summary": "{{pre_analysis.summary}}"
     },
     "rag": {
-      "sources": [
+      "primary_guide": {
+        "path": "IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md",
+        "label": "Guide Pédagogique NSI PMF",
+        "strategy": "inject_and_index"
+      },
+      "contextual_sources": [
         {
           "path": "/mnt/data/programme_nsi_premiere.pdf",
           "label": "Programme NSI Première"
@@ -1889,18 +1846,14 @@
           "label": "Vademecum SNT-NSI"
         },
         {
-          "path": "/mnt/data/rcp_referentiel_competences_prog.pdf",
+          "path": "/mnt/data/RCP_Référentiel de compétences en programmation_vue détaillée.pdf",
           "label": "Référentiel Compétences Programmation"
         }
       ]
     },
-    "latex_templates": {
-      "eleve": "\\documentclass[11pt]{article}\\n\\usepackage[margin=2cm]{geometry}\\n\\usepackage[french]{babel}\\n\\usepackage{hyperref}\\n\\usepackage{graphicx}\\n\\newcommand{\\score}[1]{\\textbf{#1}}\\n\\begin{document}\\n\\begin{center}\\Large\\textbf{Ton Bilan NSI Terminale 🚀}\\end{center}\\n\\vspace{0.5em}\\hrule\\vspace{0.5em}\\n\\textbf{Nom :} {{student.family_name}} \\textbf{Prénom :} {{student.given_name}} \\textbf{Classe :} {{context.csv_classe}}\\n\\n\\section*{1. Tes Forces et Acquis}\\n{{analysis.strengths_eleve}}\\n\\n\\section*{2. Tes Axes de Progression (2 semaines)}\\n{{analysis.remediations_eleve}}\\n\\n\\section*{3. Méthodes de Travail : Conseils Personnalisés}\\n{{analysis.methodes_conseils}}\\n\\n\\section*{4. Tes Objectifs de l'année et Tes Prochains Pas}\\n{{analysis.objectifs_eleve}}\\n\\n\\section*{5. Ressources pour te Guider}\\n{{analysis.ressources}}\\n\\n\\vspace{1em}\\n\\hrule\\n\\vspace{0.5em}\\n{\\small Ce bilan a été généré par l'équipe enseignante de NSI du Lycée Pierre Mendès France de Tunis. Il s'appuie sur vos réponses au questionnaire et les programmes officiels.}\\n\\end{document}",
-      "enseignant": "\\documentclass[11pt]{article}\\n\\usepackage[margin=2cm]{geometry}\\n\\usepackage[french]{babel}\\n\\usepackage{booktabs}\\n\\usepackage{graphicx}\\n\\usepackage{hyperref}\\n\\begin{document}\\n\\begin{center}\\Large\\textbf{Bilan Pédagogique NSI Terminale (Enseignant)}\\end{center}\\n\\vspace{0.5em}\\hrule\\vspace{0.5em}\\n\\textbf{Élève :} {{student.family_name}} {{student.given_name}} (Classe : {{context.csv_classe}})\\n\\section*{1. Synthèse du Profil Élève}\\n{{analysis.gestes_commentaires}}\\n\\n\\section*{2. Diagnostic Académique et Pédagogique (Prérequis Terminale)}\\n{{analysis.alertes_recos}}\\n\\n\\section*{3. Plan d'Appui Pédagogique (4 semaines)}\\n{{analysis.plan_4_semaines}}\\n\\n\\section*{4. Indicateurs Clés d'Observation en Classe}\\n{{analysis.indicateurs_pedago}}\\n\\n\\section*{5. Historique de Suivi}\\n% {{history_of_sessions_and_reports}}\\n\\n\\vspace{1em}\\n\\hrule\\n\\vspace{0.5em}\\n{\\small Ce bilan est un outil d'aide à la décision pédagogique, généré par l'équipe enseignante de NSI du Lycée Pierre Mendès France de Tunis. Il s'appuie sur les réponses de l'élève au questionnaire et les données du RAG curriculaire.}\\n\\end{document}"
-    },
     "prompts": {
-      "system_eleve": "Tu es un professeur de NSI du Lycée Pierre Mendès France de Tunis. Tu rédiges un bilan court, positif et concret pour l'élève. Objectif : donner un cap de travail sur 2 semaines, avec micro-actions (20–30 min), et 4–6 conseils de méthode adaptés à son profil NSI. Style : titres clairs, listes à puces, pas de jargon. Ne révèle JAMAIS les corrigés exacts du QCM. Public : Élève de Terminale NSI, en vue de Parcoursup (T1/T2) et du Bac. Longueur cible : 250–350 mots. Adapte le ton si « TAG_Stress_Eleve » est présent (normalise la charge, propose respiration/étapes courtes). Termine par 3 ressources légères internes (banque d’exos chapitres, fiches méthodes, capsules vidéo de la classe) sans lien externe.",
-      "system_enseignant": "Tu es un professeur de NSI du Lycée Pierre Mendès France de Tunis. Tu rédiges une analyse diagnostique exploitable en classe. Objectif : relier explicitement les faiblesses aux attendus de Terminale NSI (structures de données, bases relationnelles/SQL, graphes, POO, réseaux, architectures matérielles, systèmes, sécurité, optimisation). Tu proposes un plan d’appui sur 4 semaines (séances, ressources internes, évaluations courtes), des critères d’observation et des remédiations ciblées. Relie explicitement les faiblesses aux attendus du programme NSI Terminale (référence RAG). Ne révèle JAMAIS les corrigés exacts du QCM. Longueur cible : 500–800 mots."
+      "system_eleve": "Tu es un professeur de NSI bienveillant. Tu t'adresses DIRECTEMENT à l'élève en le tutoyant ('tu', 'tes'). Ta mission est de générer un bilan. Suis CES RÈGLES STRICTEMENT:\n\n1.  **FORMAT DE SORTIE :** Réponds UNIQUEMENT avec un objet JSON. Les clés doivent être EXACTEMENT : `introduction`, `analyse_competences`, `profil_apprentissage`, `feuille_de_route`, `conclusion`.\n\n2.  **CONTENU DÉTAILLÉ :**\n    *   `introduction`: Rédige un paragraphe d'accueil de 2-3 phrases.\n    *   `analyse_competences`: Rédige un paragraphe de 3-4 phrases analysant les scores, en liant les faiblesses aux chapitres de Terminale.\n    *   `profil_apprentissage`: Rédige un paragraphe de 2-3 phrases sur le profil de l'élève.\n    *   `feuille_de_route`: Propose un plan détaillé pour 4 semaines. Chaque semaine doit être une chaîne de caractères contenant 2-3 actions concrètes.\n    *   `conclusion`: Rédige un paragraphe de conclusion de 2 phrases.\n\n3.  **SOURCE :** Base TOUTES tes analyses sur les données de l'élève fournies.",
+      "system_enseignant": "Tu es un expert en pédagogie NSI. Tu génères un rapport pour un enseignant. Suis CES RÈGLES STRICTEMENT:\n\n1.  **FORMAT DE SORTIE :** Réponds UNIQUEMENT avec un objet JSON. Les clés doivent être EXACTEMENT : `synthese_profil`, `diagnostic_pedagogique`, `plan_4_semaines`, `indicateurs_pedagogiques`, `pistes_pedagogiques`.\n\n2.  **CONTENU DÉTAILLÉ :**\n    *   `synthese_profil`: Rédige un paragraphe de 2-3 phrases.\n    *   `diagnostic_pedagogique`: Rédige un paragraphe de 3-4 phrases analysant les faiblesses prioritaires.\n    *   `plan_4_semaines`: Propose un plan détaillé pour 4 semaines. Chaque semaine doit être un objet JSON avec les clés `objectif` (string), `activites` (liste de strings), et `ressources` (liste de strings).\n    *   `indicateurs_pedagogiques`: Propose une liste de 3-4 indicateurs concrets.\n    *   `pistes_pedagogiques`: Rédige un paragraphe de 2-3 phrases basé sur les extraits RAG fournis.\n\n3.  **SOURCE :** Base TOUTES tes analyses sur les données de l'élève et le guide RAG. SOIS SPÉCIFIQUE ET PERSONNALISÉ."
     },
     "post_actions": {
       "student_dashboard": {

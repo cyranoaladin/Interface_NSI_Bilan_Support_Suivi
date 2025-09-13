@@ -10,6 +10,9 @@ module.exports = {
         midnight: '#0B132B', // Bleu Nuit Profond
         electric: '#1F7AE0', // Bleu Électrique
         graphite: '#1C1F24',
+        // Expose CSS variable colors to avoid arbitrary color pitfalls
+        fg: 'var(--fg)',
+        bg: 'var(--bg)',
         soft: {
           gray: '#D6DBE1',
           blue: '#E6F0FF',

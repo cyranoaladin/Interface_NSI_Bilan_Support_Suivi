@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+
+# Cursor Rule 2 — Simple, direct commands (no pipes or subshells)
+
+You MUST NOT use pipes like | cat or complex subshells like sh -lc "..." unless there is no alternative. Your commands must be simple, direct, and transparent.
+FORBIDDEN: docker compose exec ... "cmd1 && cmd2" | cat
+MANDATORY: The simplest command that accomplishes the task.
+You MUST NOT use pipes like | cat or complex subshells like sh -lc "..." unless there is no alternative. Your commands must be simple, direct, and transparent.
+FORBIDDEN: docker compose exec ... "cmd1 && cmd2" | cat
+MANDATORY: The simplest command that accomplishes the task.

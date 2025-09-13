@@ -1,0 +1,151 @@
+% =============================
+% Template LaTeX — Bilan Élève
+% Fichier: bilan_eleve.tex
+% Compilation: pdflatex (UTF-8) ou xelatex
+% Placeholders: moustaches {{ ... }} (injectés par votre pipeline LLM/RAG)
+% =============================
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{booktabs}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+% ——— Macros utiles
+\newcommand{\score}[1]{\textbf{#1\,\%}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+\begin{center}
+  {\Large \textbf{Bilan d'entrée — NSI Terminale (\textit{Élève})}}\\[2mm]
+  \normalsize \textbf{Nom :} {{student.family_name}} \quad \textbf{Prénom :} {{student.given_name}} \quad \textbf{Classe :} {{context.csv_classe}}\\
+  \small Date de génération : {{report.generated_at}}
+\end{center}
+\vspace{0.5em}\hrule\vspace{0.8em}
+
+\section*{1. Synthèse rapide des prérequis (Première)}
+\begin{tabular}{L{6.2cm} L{3cm} L{6.2cm}}
+\toprule
+Python (bases) & \score{ {{scores.python_pct}} } & Web / HTTP & \score{ {{scores.web_pct}} } \\
+Structures (listes/dicos/tuples/ens.) & \score{ {{scores.structures_pct}} } & Lecture / traçage d'algos & \score{ {{scores.lecture_algo_pct}} } \\
+Données en tables (CSV) & \score{ {{scores.donnees_pct}} } & Logique / encodage & \score{ {{scores.logique_pct}} } \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\noindent\textbf{Forces clés :} {{analysis.strengths_eleve}}
+
+\section*{2. Priorités de révision (2 semaines)}
+{{analysis.remediations_eleve}}
+
+\section*{3. Méthodes de travail : conseils personnalisés}
+{{analysis.methodes_conseils}}
+
+\section*{4. Objectifs Parcoursup (T1/T2) et Bac}
+{{analysis.objectifs_eleve}}
+
+\vfill
+\footnotesize Bilan généré automatiquement à partir de tes réponses au questionnaire NSI Terminale. Pour toute question : \href{mailto:alaeddine.benrhouma@ert.tn}{alaeddine.benrhouma@ert.tn} — \href{mailto:pierre.caillabet@ert.tn}{pierre.caillabet@ert.tn}.
+\end{document}
+
+
+% =============================
+% Template LaTeX — Bilan Enseignant
+% Fichier: bilan_enseignant.tex
+% Compilation: pdflatex (UTF-8) ou xelatex
+% Placeholders: moustaches {{ ... }}
+% =============================
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+\begin{center}
+  {\Large \textbf{Bilan d'entrée — NSI Terminale (\textit{Enseignant})}}\\[2mm]
+  \normalsize \textbf{Élève :} {{student.family_name}} {{student.given_name}} \quad ({{context.csv_classe}})\\
+  \small Date de génération : {{report.generated_at}}
+\end{center}
+\vspace{0.5em}\hrule\vspace{0.8em}
+
+\section*{1. Scores détaillés — Pré-requis de Première}
+\begin{tabular}{L{8cm} L{3cm}}
+\toprule
+Python (bases) & {{scores.python_pct}}\,\% \\
+Structures (listes/dicos/tuples/ens.) & {{scores.structures_pct}}\,\% \\
+Données en tables (CSV) & {{scores.donnees_pct}}\,\% \\
+Logique / encodage & {{scores.logique_pct}}\,\% \\
+Web / HTTP & {{scores.web_pct}}\,\% \\
+Lecture / traçage d'algorithmes & {{scores.lecture_algo_pct}}\,\% \\
+\bottomrule
+\end{tabular}
+
+\section*{2. Profil pédagogique (volets commun + NSI)}
+\begin{itemize}[leftmargin=1.2em]
+  \item Indicateurs clés (RCP/gestes, méthodes, organisation) : {{analysis.indicateurs_pedago}}.
+  \item Commentaires ciblés (forces / points d’appui) : {{analysis.gestes_commentaires}}.
+\end{itemize}
+
+\section*{3. Alertes \\& recommandations}
+{{analysis.alertes_recos}}
+
+\section*{4. Diagnostic pédagogique détaillé}
+\noindent {{analysis.diagnostic_pedagogique}}
+
+\section*{5. Plan d'accompagnement (4 semaines)}
+% Chaque semaine: objectifs, activités, ressources
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Semaine 1}\\
+  Objectif: {{analysis.plan_4_semaines.semaine_1.objectif}}\\
+  Activités: {{analysis.plan_4_semaines.semaine_1.activites}}\\
+  Ressources: {{analysis.plan_4_semaines.semaine_1.ressources}}
+  \item \textbf{Semaine 2}\\
+  Objectif: {{analysis.plan_4_semaines.semaine_2.objectif}}\\
+  Activités: {{analysis.plan_4_semaines.semaine_2.activites}}\\
+  Ressources: {{analysis.plan_4_semaines.semaine_2.ressources}}
+  \item \textbf{Semaine 3}\\
+  Objectif: {{analysis.plan_4_semaines.semaine_3.objectif}}\\
+  Activités: {{analysis.plan_4_semaines.semaine_3.activites}}\\
+  Ressources: {{analysis.plan_4_semaines.semaine_3.ressources}}
+  \item \textbf{Semaine 4}\\
+  Objectif: {{analysis.plan_4_semaines.semaine_4.objectif}}\\
+  Activités: {{analysis.plan_4_semaines.semaine_4.activites}}\\
+  Ressources: {{analysis.plan_4_semaines.semaine_4.ressources}}
+\end{itemize}
+
+\section*{6. Indicateurs pédagogiques de suivi}
+\begin{itemize}[leftmargin=1.2em]
+  \item {{analysis.indicateurs_pedagogiques[0]}}
+  \item {{analysis.indicateurs_pedagogiques[1]}}
+  \item {{analysis.indicateurs_pedagogiques[2]}}
+  \item {{analysis.indicateurs_pedagogiques[3]}}
+\end{itemize}
+
+\section*{7. Pistes Pédagogiques Issues des Référentiels}
+{{analysis.pistes_pedagogiques}}
+
+\section*{8. Annexe — Repères Parcoursup / Bac}
+Objectifs déclarés : T1 = {{objectifs.T1}} ; T2 = {{objectifs.T2}}. \quad Stress évaluatif (1–5) : {{objectifs.stress}}.
+
+\vspace{0.6em}
+\noindent\textit{Tags / flags automatiques :} {{tags.auto}}
+
+\vfill
+\footnotesize Généré via pipeline LLM+RAG (programmes NSI Première/Terminale). Contact : \href{mailto:alaeddine.benrhouma@ert.tn}{alaeddine.benrhouma@ert.tn} — \href{mailto:pierre.caillabet@ert.tn}{pierre.caillabet@ert.tn}.
+\end{document}

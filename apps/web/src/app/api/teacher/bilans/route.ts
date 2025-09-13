@@ -12,10 +12,16 @@ export async function GET(req: NextRequest) {
   const studentEmail = searchParams.get('studentEmail');
   if (!studentEmail) return NextResponse.json({ ok: false, error: 'Missing studentEmail' }, { status: 400 });
 
-  // In a real check, ensure teacher has rights on this student via group relation
+  // Étape 1: récupérer les attempts de l'élève
+  const attempts = await prisma.attempt.findMany({ where: { studentEmail }, select: { id: true }, orderBy: { submittedAt: 'desc' } });
+  if (attempts.length === 0) return NextResponse.json({ ok: true, bilans: [] });
+  const attemptIds = attempts.map(a => a.id);
+
+  // Étape 2: récupérer les rapports publiés associés à ces attempts (PDF disponibles)
   const bilans = await prisma.report.findMany({
-    where: { attempt: { student: { email: studentEmail } } },
-    select: { id: true, type: true, pdfUrl: true, publishedAt: true }
+    where: { attemptId: { in: attemptIds }, pdfUrl: { not: null } },
+    select: { id: true, type: true, pdfUrl: true, publishedAt: true },
+    orderBy: { publishedAt: 'desc' }
   });
   return NextResponse.json({ ok: true, bilans });
 }

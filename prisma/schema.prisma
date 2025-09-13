@@ -1,10 +1,12 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 // === AUTH MODELS ===
@@ -23,9 +25,11 @@ model Student {
   // Relations
   attempts    Attempt[]
   profileData StudentProfileData?
-  groupId     String?
-  group       Group?   @relation(fields: [groupId], references: [id])
+  groupId     String
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   bilans      Bilan[]
+
+  @@index([groupId])
 }
 
 model Attempt {
@@ -48,6 +52,7 @@ model Attempt {
   group   Group?   @relation(fields: [groupId], references: [id])
 
   @@index([studentEmail])
+  @@index([groupId])
 }
 
 model Score {
@@ -60,6 +65,7 @@ model Score {
   weight    Float
 
   @@index([attemptId])
+  @@index([attemptId, domain])
 }
 
 model Tag {
@@ -167,4 +173,16 @@ model StudentProfileData {
   pedagoProfile    Json?
   preAnalyzedData  Json?
   lastUpdatedAt    DateTime @default(now())
+}
+
+// === RAG MODELS (DB tables existantes) ===
+model Document {
+  id     String  @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  source String? @db.Text
+  path   String  @db.Text
+  title  String? @db.Text
+  label  String? @db.Text
+  meta   Json?   @db.JsonB
+
+  @@map("documents")
 }

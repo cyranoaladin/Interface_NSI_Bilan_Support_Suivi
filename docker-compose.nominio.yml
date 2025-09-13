@@ -1,9 +1,0 @@
-services:
-  # On laisse minio défini, mais non activé par défaut
-  minio:
-    profiles: ["with-minio"]
-    ports: []  # pas d'exposition si jamais on l'active
-
-  # Ici on ÉCRASE complètement la map depends_on originale
-  worker:
-    depends_on: {}   # <- vide = plus aucune dépendance (donc plus de minio ici)

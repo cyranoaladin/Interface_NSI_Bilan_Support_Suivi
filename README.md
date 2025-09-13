@@ -1,17 +1,28 @@
-## Bilan Pédagogique NSI - NSI PMF
-**Auteur :** Alaeddine BEN RHOUMA
+# Bilan Pédagogique NSI - PMF
+
+Auteur : Alaeddine BEN RHOUMA
+[![CI](https://github.com/cyranoaladin/Interface_NSI_Bilan_Support_Suivi/actions/workflows/ci.yml/badge.svg)](https://github.com/cyranoaladin/Interface_NSI_Bilan_Support_Suivi/actions/workflows/ci.yml)
+
 Outil complet de bilan pédagogique pour élèves de Terminale NSI: questionnaire d'entrée, scoring, pré-analyse IA des réponses libres, génération de bilans (élève et enseignant) via LLM + RAG, compilation LaTeX/PDF, stockage S3 et envoi par e-mail.
 
 ## Table des Matières
 
-- [Architecture Générale](#architecture-générale)
-- [Structure et Arborescence du Projet](#structure-et-arborescence-du-projet)
-- [Base de Données](#base-de-données)
-- [Dépendances et Installation Locale](#dépendances-et-installation-locale)
-- [Workflows et Logique Métier](#workflows-et-logique-métier)
-- [API et Routage](#api-et-routage)
-- [Rôles, Permissions et Dashboards](#rôles-permissions-et-dashboards)
-- [Déploiement en Production (VPS)](#déploiement-en-production-vps)
+- Architecture Générale
+- Structure et Arborescence du Projet
+- Infrastructure Docker Compose
+- Base de Données
+- Dépendances et Installation Locale
+- Workflows et Logique Métier
+- Philosophie et Décisions d'Architecture
+- API et Routage
+- Rôles, Permissions et Dashboards
+- Observabilité et Monitoring
+- Runbook Gestion des Alertes
+- Sécurité & Conformité
+- Robustesse & Exploitation (Production)
+- CI/CD et Qualité du Code
+- Sauvegarde et Restauration
+- Déploiement en Production (VPS)
 
 ## Architecture Générale
 
@@ -27,9 +38,51 @@ Outil complet de bilan pédagogique pour élèves de Terminale NSI: questionnair
   - **MinIO (S3)** pour stocker les PDF générés.
   - **SMTP (Nodemailer)** pour envoyer les bilans.
 
+### Schéma d'architecture
+
+```mermaid
+flowchart LR
+    user[Utilisateur (Élève/Enseignant)]
+    web[Next.js App (apps/web)]
+    api[API Next.js (App Router)]
+    pgbouncer[PgBouncer]
+    pg[(PostgreSQL + pgvector)]
+    redis[(Redis)]
+    bullmq[Files BullMQ]
+    worker[Worker (apps/worker)]
+    s3[(MinIO / S3)]
+    openai[OpenAI]
+    gemini[Gemini]
+    prom[Prometheus]
+    alertm[Alertmanager]
+    graf[Grafana]
+    smtp[SMTP]
+
+    user -->|HTTP(S)| web
+    web --> api
+    api -->|SQL via| pgbouncer --> pg
+    api <-->|Jobs| bullmq
+    bullmq <-->|Broker| redis
+    worker <-->|Jobs| bullmq
+    worker -->|PDF| s3
+    api -->|Upload RAG| s3
+    api -->|LLM calls| openai
+    api -->|LLM/RAG| gemini
+    worker -->|LLM calls| openai
+    worker -->|LLM/RAG| gemini
+
+    prom -->|scrape /api/metrics| web
+    prom --> alertm
+    graf -->|query| prom
+    alertm -->|mail| smtp
+```
+
+[Voir le diagramme en PNG](docs/images/architecture.png) si le rendu ci-dessus ne s'affiche pas.
+
 ## Structure et Arborescence du Projet
 
-```
+```text
+
 /  (monorepo)
 ├─ apps/
 │  ├─ web/                 # Application Next.js
@@ -57,16 +110,29 @@ Outil complet de bilan pédagogique pour élèves de Terminale NSI: questionnair
 │  ├─ schema.prisma         # Schéma Prisma
 │  └─ migrations/...        # Migrations SQL (documents/chunks vector etc.)
 ├─ scripts/
-│  ├─ import_students.ts             # Import CSV élèves
-│  ├─ clear_students.ts              # Vidage des tables élèves et artifacts liés
-│  ├─ create_test_student.ts         # Création rapide d’un élève de test
-│  ├─ fix_students_csv.js            # Nettoyage non-destructif CSV et corrections e-mails
-│  ├─ ingest_rag.ts                  # Ingestion PDF/Doc → chunks + embeddings
-│  ├─ push_job_generate_reports.ts   # Lancer un job (TS)
-│  ├─ push_job_generate_reports_js.js# Lancer un job (JS, dotenv)
-│  └─ test_reporting_pipeline.ts     # Test autonome: pré-analyse + payload final
+│  ├─ clean_all_csv.py                       # Standardisation CSV élèves (Première/Terminale)
+│  ├─ clean_premiere_csv.py                  # Ancien nettoyage Première (conservé si utile)
+│  ├─ clear_students.ts                      # Vidage élèves et liens
+│  ├─ count_entities.ts                      # Compter Students/Teachers/Groups
+│  ├─ create_test_student.ts                 # Créer un élève de test
+│  ├─ create_test_students_per_group.ts      # Créer un élève test par groupe
+│  ├─ fix_students_csv.js                    # Corrections CSV élèves
+│  ├─ fix_teachers.ts                        # Corrections comptes enseignants
+│  ├─ get_latest_teacher_report_id.ts        # Récupérer dernier report enseignant
+│  ├─ ingest_rag.ts                          # Ingestion RAG (PDF → chunks + embeddings)
+│  ├─ push_job_generate_reports.ts           # Lancer un job de génération
+│  ├─ render_pdf_to_png.ts                   # Rendu PDF → PNG
+│  ├─ render_pdf_via_http.ts                 # Rendu PDF via HTTP
+│  ├─ reset_test_student_password.ts         # Reset mot de passe élève test
+│  ├─ run_full_test_scenario.ts              # Scénario E2E complet scripté
+│  ├─ sanitize_json_strings.js               # Sanitation JSON pour LaTeX/rapports
+│  ├─ seed_production_data.ts                # Peuplement complet (groupes, enseignants, élèves)
+│  ├─ seed_users_from_csv.ts                 # Peuplement utilisateurs depuis CSV
+│  ├─ test_reporting_pipeline.ts             # Test pré‑analyse + payload final
+│  └─ validate_groups_and_counts.ts          # Validation des effectifs/associations
 ├─ README.md
 └─ ...
+
 ```
 
 ### Fichiers clés
@@ -79,6 +145,34 @@ Outil complet de bilan pédagogique pour élèves de Terminale NSI: questionnair
     - `rag.sources`: liste des documents à ingérer/consommer pour RAG.
     - `latex_templates`: templates LaTeX pour versions élève/enseignant.
     - `prompts.system_eleve` / `prompts.system_enseignant`.
+
+## Infrastructure Docker Compose
+
+La stack Docker (répertoire `infra/`) inclut:
+
+- `postgres` (pgvector): base de données principale PostgreSQL (extension `pgvector` pour RAG).
+- `pgbouncer`: pooler de connexions. En production, les services applicatifs pointent vers `pgbouncer:5432`. En développement/test (mode trust), la variable `DATABASE_URL` peut être simplifiée:
+
+  ```bash
+  # Développement/test via PgBouncer (mode trust)
+  DATABASE_URL=postgresql://nsi@pgbouncer:5432/nsi
+  ```
+
+  Objectif: lisser les pics de connexions et améliorer la stabilité.
+
+- `redis`: broker BullMQ (jobs asynchrones) et rate limiting.
+- `minio`: stockage objet S3 des PDF générés.
+- `web`: application Next.js (App Router) exposée sur `3000`.
+- `worker`: exécute les jobs BullMQ (`generate_reports`, `rag_ingest`).
+- `prometheus`: collecte les métriques depuis `web` (scrape `http://web:3000/api/metrics`).
+- `grafana`: visualisation des métriques (dashboards pré‑provisionnés). Accès: `http://localhost:3001` (admin/admin en local).
+- `alertmanager`: gestionnaire d’alertes (chaîne: Prometheus → Alertmanager → E‑mail SMTP).
+
+Notes:
+
+- Le fichier `infra/prometheus/prometheus.yml` pointe vers `/api/metrics` de `web`.
+- Les règles d’alertes sont dans `infra/prometheus/rules.yml`.
+- La configuration Alertmanager est dans `infra/alertmanager/config.yml` (récepteur e‑mail + webhook de log).
 
 ## Base de Données
 
@@ -262,21 +356,20 @@ npx prisma db push
 
 ### Peuplement des Données (Seeding)
 
-- Enseignants (3 comptes — mot de passe par défaut haché):
+Le peuplement de la base de données (création des groupes, des enseignants, importation des élèves et création des comptes de test) est géré par un **script unique et intelligent** pour garantir la cohérence des données.
 
-  - Script: `prisma/seed.ts`
+- **Script :** `scripts/seed_production_data.ts`
+- **Commande d'exécution (via Docker) :**
 
-  ```bash
-  npx ts-node -P tsconfig.scripts.json prisma/seed.ts
-  ```
+    ```bash
+    docker compose -f infra/docker-compose.yml exec -T web npx ts-node -P tsconfig.scripts.json /app/scripts/seed_production_data.ts
+    ```
 
-- Élèves (24 entrées — import CSV + mot de passe par défaut haché):
+- **Raccourci `package.json` :** Un script `npm` a été ajouté pour simplifier cet appel.
 
-  - Script: `scripts/import_students.ts` (par défaut, lit `TERMINALE_NSI_24_eleves_corrige.csv` et applique `bcrypt.hash('password123')`)
-
-  ```bash
-  npx ts-node -P tsconfig.scripts.json scripts/import_students.ts
-  ```
+    ```bash
+    npm run seed:production
+    ```
 
 ## Dépendances et Installation Locale
 
@@ -325,9 +418,13 @@ SMTP_PASS=********
 SMTP_FROM=NSI <labo.maths@ert.tn>
 MAGIC_LINK_FROM=labo.maths@ert.tn
 JWT_SECRET=change-me-long
+
+# Observabilité / Alertes
+SENTRY_DSN=... # requis pour Sentry web/worker
+ALERTS_TO=alerts@example.com # destinataire des alertes Alertmanager
 ```
 
-Important: `DATABASE_URL` doit pointer vers l’instance PostgreSQL locale accessible (ex: `127.0.0.1` ou `localhost`). N’utilisez pas le nom de service Docker (`postgres`) en exécution locale hors réseau Docker, sous peine d’erreurs `ENOTFOUND`/connexion.
+Important: `DATABASE_URL` doit pointer vers l’instance PostgreSQL locale accessible (ex: `127.0.0.1` ou `localhost`) lorsqu’on exécute hors Docker. En Docker Compose, utilisez idéalement `pgbouncer:5432` (mode trust en dev) ou `postgres:5432` avec mot de passe selon le contexte.
 
 Lancer l’infrastructure Docker:
 
@@ -347,38 +444,45 @@ Démarrer en développement:
 npm run dev -w nsi-web
 ```
 
+## Philosophie et Décisions d'Architecture
+
+- Monorepo: un seul dépôt pour `apps/web` et `apps/worker` afin de partager facilement le code (types Prisma, logique de scoring, utils) et de simplifier les workflows CI/CD et la gestion des versions.
+- BullMQ/Redis: séparation des tâches longues et faillibles (génération IA, LaTeX, S3) dans un worker dédié pour préserver la réactivité de l’UI et permettre le retry/scaling horizontal indépendant du web.
+- PgBouncer: point d’entrée DB unique pour lisser les pics de connexions, éviter l’épuisement `max_connections` PostgreSQL et améliorer la stabilité sous charge.
+- RAG (Retrieval‑Augmented Generation): ancrer les réponses IA dans les référentiels NSI (programmes officiels, référentiels compétences) pour augmenter la pertinence, la traçabilité et la valeur pédagogique des bilans.
+
 ## Workflows et Logique Métier
 
-### Workflow 1: Parcours Élève
+### Workflow 1 : Parcours Élève
 
-1) **Arrivée et Authentification**
+#### 1. Arrivée et Authentification
 
 - Connexion par e‑mail/mot de passe:
   - L’API tente d’abord une correspondance dans `Teacher.email`; si trouvé, compare le mot de passe via `bcrypt.compare`.
   - Sinon, cherche dans `Student.email` et compare le mot de passe.
   - En cas de succès, un JWT est émis (alg HS256) et stocké en cookie HTTP‑Only; le payload inclut le rôle `TEACHER` ou `STUDENT` pour gérer les permissions et les redirections frontend.
 
-2) **Remplissage du Questionnaire**
+#### 2. Remplissage du Questionnaire
 
 - Le questionnaire est défini dans `data/questionnaire_nsi_terminale.final.json`.
 - Le frontend récupère la structure, affiche les volets, valide côté client, soumet les réponses.
 
-3) **Soumission et Création du Job**
+#### 3. Soumission et Création du Job
 
 - À la soumission, les réponses QCM et profil sont sauvegardées (API bilan). Les scores sont calculés (QCM + indices). Un job BullMQ `generate_reports` est ajouté dans Redis.
 
-### Workflow 2: Pipeline de Génération des Bilans (Worker)
+### Workflow 2 : Pipeline de Génération des Bilans (Worker)
 
-1) **Prise en charge du Job**
+#### 1. Prise en charge du Job
 
 - `apps/worker/src/index.js` (BullMQ `Worker`) récupère `attemptId` et charge l’élève, les scores, etc.
 
-2) **Scoring**
+#### 2. Scoring
 
 - QCM: `apps/web/src/lib/scoring/nsi_qcm_scorer.ts`
 - Indices pédagogiques: `apps/web/src/lib/scoring/pedago_nsi_indices.ts`
 
-3) **Pré-analyse IA (Textes Libres)**
+#### 3. Pré-analyse IA (Textes Libres)
 
 - Définie dans `reporting.pre_analysis` (JSON). Chaque étape `llm_request` envoie un payload `{inputs: {...}}` au modèle `gpt-4o-mini`.
 - Prompt type (extrait):
@@ -401,7 +505,7 @@ npm run dev -w nsi-web
 
 - Sortie attendue (JSON): `text_summary` (nous le référençons via `{{pre_analysis.summary}}`), ex: `{ "synthese_projet": "...", "forces_percues": ["..."], ... }`.
 
-4) **Génération des Bilans IA (RAG)**
+#### 4. Génération des Bilans IA (RAG)
 
 - **Embedding & Ingestion**:
   - Documents: `programme_nsi_premiere.pdf`, `programme_nsi_terminale.pdf`, `vademecum-snt-nsi_0.pdf`, `rcp_referentiel_competences_prog.pdf`.
@@ -431,13 +535,13 @@ npm run dev -w nsi-web
   - Deux prompts systèmes: `reporting.prompts.system_eleve` et `...system_enseignant`.
   - Le `payload` + extraits RAG sont passés en `user` (JSON); réponse forcée en JSON → champs utilisés ensuite pour LaTeX.
 
-5) **Compilation LaTeX**
+#### 5. Compilation LaTeX
 
 - Templates: `reporting.latex_templates`
 - Compilation via `latexmk` (docker worker installe texlive) → PDF(s).
 - Tolérance erreurs: si compilation/MinIO indisponible, logs et poursuite des étapes suivantes.
 
-6) **Stockage & E-mail**
+#### 6. Stockage & E-mail
 
 - Upload S3 (MinIO) si configuré (`S3_*`).
 - Insertion `Report` en DB (json + pdfUrl si disponible).
@@ -544,36 +648,183 @@ npm run dev -w nsi-web
 - **Dashboard Élève**: aperçu scores, liens PDF, prochaines étapes.
 - **Dashboard Enseignant**: liste élèves, filtres classe, indicateurs (scores moyens, tags de risque), accès bilans individuels.
 
+## Observabilité et Monitoring
+
+### Suivi des erreurs (Sentry)
+
+- Intégration Sentry pour capture proactive des erreurs:
+  - Web: `@sentry/nextjs` (fichiers `sentry.client.config.ts`, `sentry.server.config.ts`).
+  - Worker: `@sentry/node` (init au démarrage du worker; capture des exceptions de jobs `generate_reports` et `rag_ingest`).
+- Variable requise: `SENTRY_DSN`.
+
+### Métriques (Prometheus)
+
+- Endpoint d’exposition: `GET /api/metrics` (service `web`).
+- Métriques personnalisées exposées:
+  - `llm_api_latency_seconds` (Histogram) avec label `provider` — latence des appels LLM (Gemini, OpenAI).
+  - `bullmq_jobs{queue,status}` (Gauges) — état des files BullMQ (`generate_reports`, `rag_ingest`).
+  - Métriques Node par défaut (CPU, RSS, event loop lag, etc.).
+- Prometheus scrape `http://web:3000/api/metrics` toutes les 15s (`infra/prometheus/prometheus.yml`).
+
+### Visualisation (Grafana)
+
+- Accès local: `http://localhost:3001` (admin/admin).
+- Dashboards pré‑provisionnés (`infra/grafana/provisioning/dashboards`):
+  - `NSI Observability`: santé applicative (LLM p95, BullMQ waiting/active/failed, RSS).
+  - `NSI Runtime`: santé runtime (CPU user/system, event loop lag p95).
+
+### Alerting (Alertmanager)
+
+- Règles d’alertes: `infra/prometheus/rules.yml`.
+- Alertes pré‑configurées:
+  - `HighLLMLatencyP95` — p95 latence LLM > 5s.
+  - `BullMQJobsFailed` — au moins un job en échec.
+  - `BullMQWaitingHigh` — trop de jobs en attente (> 25 sur 5 minutes).
+  - `WebDown` — application web non joignable (inclut cas `absent(up{job="web"})`).
+- Notifications E‑mail (Alertmanager):
+  - Configurées via `infra/alertmanager/config.yml`.
+  - Variables d’environnement utilisées: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `ALERTS_TO`.
+  - Chaîne: Prometheus (alerte firing) → Alertmanager → SMTP (e‑mail) + webhook de log.
+
+## Sécurité & Conformité
+
+- Authentification: sessions JWT (HTTP‑Only cookies), rôles `TEACHER`/`STUDENT` avec contrôle fin en API (`getSession` / `getSessionEmail`).
+- Mots de passe: hachage `argon2` ou `bcrypt` (selon scripts).
+- Données personnelles: e‑mails, noms, scores; limiter l’accès aux endpoints selon le rôle et minimiser les logs sensibles.
+- Secrets: `.env` en prod géré via vault/secrets manager, jamais commité.
+- Téléversement fichiers (RAG):
+  - Validation MIME de base, écriture dans volume `/data/rag_uploads` (droits UID/GID app), insertion DB `documents`, job `rag_ingest`.
+  - Fichiers pris en charge: pdf, docx, txt, md, images (OCR), doc (via conversion LibreOffice).
+- Limitation de débit (anti‑brute force):
+  - `POST /api/auth/login`: rate limiting Redis (par IP) — 10 tentatives / 60s.
+  - `POST /api/auth/magic-link`: rate limiting Redis (par e‑mail) — 5 tentatives / 300s.
+
+## Checklist d’Audit
+
+- Données:
+  - Cohérence `Group`/`Student`/`Teacher` et académique `academicYear`.
+  - Comptes tests présents et actifs.
+- API:
+  - Auth: login/logout, reset password.
+  - Bilan: create → submit-answers → status GENERATED → PDFs accessibles.
+  - RAG: upload → documents/chunks non nuls.
+- LLM & RAG:
+  - Clés actives (OpenAI/Gemini), latence acceptable, retry functional.
+  - Extraits RAG présents dans les réponses (champ `rag_references`).
+- PDFs:
+  - Contenu lisible, sections remplies, erreurs LaTeX absentes, stockage S3 confirmé.
+- Observabilité:
+  - Logs exempts d’erreurs récurrentes; queues vides en régime nominal.
+
+## CI/CD et Qualité du Code
+
+- Intégration Continue (GitHub Actions) — `.github/workflows/ci.yml`:
+  - Exécuté sur `push`/`pull_request` (`main`).
+  - Étapes: installation, ESLint, tests, build Next.js, build images Docker Compose.
+- Analyse des dépendances — `.github/dependabot.yml`:
+  - Détection automatique de mises à jour npm & docker (hebdomadaire), PRs d’update.
+
+### Tests Unitaires (Jest)
+
+- Couverture: logique de scoring (QCM et indices pédagogiques), validation des permissions des API, validation des payloads Zod (env et entrées), et composants UI de base.
+- Commande: `npm test` (Jest au niveau monorepo/workspace).
+
+### Tests de Bout-en-Bout (Playwright)
+
+- Scénarios couverts:
+  - Workflow élève complet: login → questionnaire → soumission → génération → téléchargement du PDF.
+  - Workflow enseignant: login → consultation d’un bilan existant et de ses PDF.
+  - Workflow d’ingestion RAG (enseignant): upload/ingestion de documents et vérifications basiques.
+  - Validation pipeline IA/RAG: interception des appels réseau pour vérifier l’injection des extraits RAG dans le prompt final (`rag_extraits`).
+
+Note: la configuration Playwright actuelle (`playwright.config.ts`) est optimisée pour s’exécuter contre un serveur déjà lancé (webServer commenté/désactivé). C’est idéal pour la CI ou un environnement de staging où le service `web` tourne déjà.
+
+**Note sur la Stabilité des Tests E2E :**
+Pour garantir des exécutions fiables en CI/CD, plusieurs stratégies ont été implémentées :
+
+- **Désactivation du Rate-Limiter :** Les requêtes de login effectuées par Playwright incluent un en-tête HTTP spécial (`x-test-mode: 'true'`) qui désactive le rate-limiting côté API, évitant ainsi les erreurs `429 Too Many Requests`.
+- **Sérialisation des Tests :** La suite de tests est configurée pour s'exécuter avec un nombre limité de workers (ex: `workers: 1`) afin d'éviter de surcharger la base de données et PgBouncer avec des rafales de requêtes simultanées.
+- **Attentes Explicites :** Les tests utilisent des mécanismes d'attente robustes (`waitForResponse`, `waitForURL`) pour gérer l'asynchronisme de l'application, plutôt que des délais fixes.
+
+- Tests de charge (k6):
+  - Script: `tests/load/k6_scenario.js`.
+  - Exemple exécution locale:
+
+    ```bash
+    k6 run -e BASE_URL=http://localhost:3000 -e EMAIL=user@example.com -e PASS=password123 tests/load/k6_scenario.js
+    ```
+
+  - Intégration CI (exemple) — créer `.github/workflows/load-test.yml` si souhaité:
+
+    ```yaml
+    name: Load Test
+    on: workflow_dispatch
+    jobs:
+      k6:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - uses: grafana/setup-k6-action@v1
+          - run: k6 run tests/load/k6_scenario.js
+            env:
+              BASE_URL: http://localhost:3000
+              EMAIL: ${{ secrets.K6_EMAIL }}
+              PASS: ${{ secrets.K6_PASS }}
+    ```
+
+## Sauvegarde et Restauration
+
+Scripts fournis (répertoire `scripts/`):
+
+- `backup_postgres.sh` — sauvegarde PostgreSQL (pg_dump):
+
+  ```bash
+  POSTGRES_PASSWORD=... ./scripts/backup_postgres.sh ./backups/postgres
+  ```
+
+- `restore_postgres.sh` — restauration PostgreSQL:
+
+  ```bash
+  POSTGRES_PASSWORD=... ./scripts/restore_postgres.sh ./backups/postgres/nsi-YYYYMMDD_HHMMSS.sql
+  ```
+
+- `backup_minio.sh` — sauvegarde MinIO/S3 via `mc`:
+
+  ```bash
+  S3_ENDPOINT=http://localhost:9000 S3_ACCESS_KEY=minioadmin S3_SECRET_KEY=minioadmin S3_BUCKET=reports \
+  ./scripts/backup_minio.sh ./backups/minio
+  ```
+
 ## Déploiement en Production (VPS)
 
 ### Check-list
 
-1) **Variables d’Environnement**: configurer `.env` production (voir section Installation) + secrets (OpenAI, Gemini, SMTP, JWT, S3, DB, Redis).
-2) **Build & Static**:
+1. **Variables d’Environnement**: configurer `.env` production (voir section Installation) + secrets (OpenAI, Gemini, SMTP, JWT, S3, DB, Redis).
+1. **Build & Static**:
 
 ```bash
 npm run build -w nsi-web
 ```
 
-3) **Base de Données**:
+1. **Base de Données**:
 
 ```bash
 npx prisma migrate deploy
 ```
 
-4) **Lancement**:
+1. **Lancement**:
 
 ```bash
 npm start -w nsi-web
 ```
 
-5) **Worker**: démarrage permanent (ex: pm2/systemd)
+1. **Worker**: démarrage permanent (ex: pm2/systemd)
 
 ```bash
 pm2 start apps/worker/src/index.js --name nsi-worker
 ```
 
-6) **RAG**: ingestion des PDF sources
+1. **RAG**: ingestion des PDF sources
 
 ```bash
 HF_TOKEN=... DATABASE_URL=... npx ts-node -P tsconfig.scripts.json scripts/ingest_rag.ts
@@ -581,10 +832,10 @@ HF_TOKEN=... DATABASE_URL=... npx ts-node -P tsconfig.scripts.json scripts/inges
 
 ### Opérations utiles
 
-- Import élèves depuis CSV:
+-- Seeding unifié (remplace import_students/seed_teachers):
 
 ```bash
-npx ts-node -P tsconfig.scripts.json scripts/import_students.ts --file=TERMINALE_NSI_24_eleves_corrige.csv
+npm run seed:production
 ```
 
 - Lancer un job reporting:
@@ -632,9 +883,7 @@ module.exports = {
         SMTP_SECURE: process.env.SMTP_SECURE || 'false',
         SMTP_USER: process.env.SMTP_USER,
         SMTP_PASS: process.env.SMTP_PASS,
-        SMTP_FROM: process.env.SMTP_FROM,
-        MAGIC_LINK_FROM: process.env.MAGIC_LINK_FROM,
-        JWT_SECRET: process.env.JWT_SECRET
+        SMTP_FROM: process.env.SMTP_FROM
       }
     },
     {
@@ -678,13 +927,17 @@ pm2 save
 pm2 startup  # pour persister au reboot
 ```
 
+### Considérations sur l'Environnement de Production
+
+- **Configuration de PgBouncer** : s’assurer que PgBouncer connaît la base applicative, via un `pgbouncer.ini` monté (service `pgbouncer` dans `infra/`) ou via variables d’environnement de l’image Bitnami (voir `infra/docker-compose.yml`). Les services applicatifs doivent pointer vers `pgbouncer:5432`.
+- **Exécution des Scripts de Maintenance** : lancer les scripts (ex: `scripts/ingest_rag.ts`) depuis un conteneur du réseau Docker afin d’accéder aux services (DB, Redis): `docker compose -f infra/docker-compose.yml exec -T web npx ts-node -P tsconfig.scripts.json scripts/ingest_rag.ts`.
+- **Persistance des Données** : utiliser des bind mounts pour les données critiques afin de faciliter sauvegardes/supervision:
+  - PostgreSQL: monter le répertoire de données (`pgdata`) vers un chemin hôte persistant.
+  - MinIO: monter `/data` (ex: `/var/nsi/minio-data:/data`).
+
 ## 9. Scripts Utilitaires
 
-- `scripts/import_students.ts` — Import des 24 élèves depuis `TERMINALE_NSI_24_eleves_corrige.csv` (hash des mots de passe par défaut)
-
-```bash
-npx ts-node -P tsconfig.scripts.json scripts/import_students.ts
-```
+Remplacé par `scripts/seed_production_data.ts` (voir plus haut)
 
 - `scripts/push_job_generate_reports.ts` — Lancer un job de génération de bilan pour un élève (debug/dev)
 
@@ -703,3 +956,133 @@ npx ts-node -P tsconfig.scripts.json scripts/count_entities.ts
 - Embeddings par **Gemini** (768 dims) configurables via `EMBEDDING_PROVIDER=gemini` (fallback HF). Le worker et le web normalisent et pad/trim les vecteurs à `VECTOR_DIM`.
 - Le pipeline de génération est piloté **exclusivement** par `reporting.pre_analysis` et `reporting.inputs` pour séparer configuration et exécution.
 - Les templates LaTeX sont personnalisables par établissement; l’upload S3 et l’e-mail sont facultatifs selon l’environnement.
+
+## Runbook Gestion des Alertes
+
+### Alerte : `HighLLMLatencyP95`
+
+- **Description :** La latence p95 des appels LLM (OpenAI/Gemini) dépasse le seuil (ex: > 5s sur 5 min). Impact: génération des bilans ralentie, UX dégradée, risque de timeouts.
+- **Sévérité :** `Warning`
+- **Étapes de Diagnostic Immédiates :**
+  1. Consulter le dashboard Grafana `NSI Observability` (panneau p95 LLM) et confirmer la période concernée.
+  2. Vérifier les logs du service `web` et `worker` pour erreurs réseau/timeouts vers OpenAI/Gemini: `docker compose -f infra/docker-compose.yml logs --since=30m web | cat` et idem pour `worker`.
+  3. Vérifier l’état de l’alerte dans Alertmanager (annotations, liens) et la série Prometheus `llm_api_latency_seconds`.
+- **Causes Possibles :**
+  - L’API LLM externe (OpenAI/Gemini) est lente ou connaît un incident.
+  - Surcharge locale (worker saturé, CPU élevé, event loop lag).
+  - Problèmes réseau (résolution DNS, débit sortant limité, proxy).
+- **Procédure de Résolution :**
+  - Vérifier la page de statut du fournisseur (OpenAI/Gemini) et adapter le trafic (réessais, file d’attente).
+  - Redémarrer le `worker` si saturation: `docker compose -f infra/docker-compose.yml restart worker`.
+  - Ajuster le parallélisme du worker (env `CONCURRENCY`) et/ou backoff plus agressif côté BullMQ.
+  - En cas d’indisponibilité LLM prolongée, basculer temporairement sur un provider alternatif si configuré (fallback HF).
+
+### Alerte : `BullMQJobsFailed`
+
+- **Description :** Au moins un job BullMQ est en échec (queue `generate_reports` ou `rag_ingest`). Impact: bilans non générés ou ingestion RAG interrompue.
+- **Sévérité :** `Warning`
+- **Étapes de Diagnostic Immédiates :**
+  1. Consulter Grafana `NSI Observability` (panneaux BullMQ failed) pour identifier la queue affectée et la période.
+  2. Inspecter les logs `worker` pour la trace d’erreur du job: `docker compose -f infra/docker-compose.yml logs --since=60m worker | cat`.
+  3. Vérifier les annotations de l’alerte dans Alertmanager (jobId si journalisé).
+- **Causes Possibles :**
+  - Erreur de code (exception non gérée dans une étape: LLM, LaTeX, S3, SMTP).
+  - Dépendance externe indisponible (OpenAI, MinIO/S3, SMTP).
+  - Données en entrée invalides (payload invalide, schéma Zod refusé).
+- **Procédure de Résolution :**
+  - Corriger la cause (ex: clé API manquante, panne S3) puis relancer le(s) job(s) en échec via script d’admin ou ré‑enqueue.
+  - Ajuster `attempts`/`backoff` côté `Queue.add` si échecs transitoires.
+  - Ajouter/renforcer la validation (Zod) et des valeurs par défaut pour éviter des crashs.
+
+### Alerte : `BullMQWaitingHigh`
+
+- **Description :** Trop de jobs en attente dans BullMQ (> seuil sur 5 min). Impact: latence accrue pour les utilisateurs.
+- **Sévérité :** `Warning`
+- **Étapes de Diagnostic Immédiates :**
+  1. Grafana `NSI Observability` → panneaux `waiting`/`active` par queue.
+  2. Logs `worker` pour détecter une baisse de débit (erreurs répétées, lenteurs externes).
+  3. Vérifier la charge machine (CPU/RAM) du conteneur worker.
+- **Causes Possibles :**
+  - Afflux massif de demandes (pic d’utilisation).
+  - Goulot d’étranglement (LLM lent, S3 lent, LaTeX lourd).
+  - Concurrency du worker trop faible.
+- **Procédure de Résolution :**
+  - Augmenter temporairement la concurrence du worker (env ou scaling horizontal de `worker`).
+  - Étaler/planifier les jobs (limiter la création de jobs côté `web`).
+  - Optimiser les étapes lentes (cache d’appels, prompts plus courts, etc.).
+
+### Alerte : `WebDown`
+
+- **Description :** Le service `web` ne répond plus (métrique `up` absente ou `http_5xx` persistants). Impact: application indisponible.
+- **Sévérité :** `Critical`
+- **Étapes de Diagnostic Immédiates :**
+  1. Vérifier `NSI Observability` (panneaux `up`/`health`) et tenter un accès direct à `http://<host>:3000/`.
+  2. Consulter les logs `web` : `docker compose -f infra/docker-compose.yml logs --since=30m web | cat`.
+  3. Vérifier l’état de Postgres/PgBouncer/Redis (services requis) et la santé du conteneur.
+- **Causes Possibles :**
+  - Crash de l’app (erreur non gérée, build corrompu).
+  - Dépendance critique HS (DB, Redis) → erreurs lors du boot.
+  - OOM/ressources insuffisantes.
+- **Procédure de Résolution :**
+  - Redémarrer `web`: `docker compose -f infra/docker-compose.yml restart web`.
+  - Si dépendance en cause, restaurer le service concerné (Postgres/Redis) puis redémarrer `web`.
+  - Si crash au boot, reconstruire et relancer (`docker compose build web && docker compose up -d web`) après correction.
+
+## Implémentation de l'IA et du RAG
+
+### Stratégie RAG à Double Niveau
+
+- **Niveau 1 (Injection Globale)** : le contenu du guide pédagogique principal (`IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md`) est injecté en totalité dans le `system_prompt` des prompts finaux. Il définit le cadre, la philosophie et les instructions de base que l’IA doit toujours respecter.
+- **Niveau 2 (Récupération Ciblée)** : pour chaque bilan, une recherche sémantique est effectuée sur l’ensemble de la base de connaissances (guide + programmes PDF). Les extraits les plus pertinents sont injectés dans le `user_prompt` sous la clé `rag_extraits` pour contextualiser la réponse au profil de l’élève.
+- **Conclusion** : cette approche garantit à la fois une vision globale (cadre pédagogique constant) et la précision contextuelle (extraits ciblés) pour le cas traité.
+
+### Anatomie d'un Prompt Final (exemple)
+
+```json
+{
+  "system": "Tu es un professeur de NSI... (system_enseignant)",
+  "user": {
+    "eleve": {"prenom": "Alice", "nom": "Durand", "classe": "TNSI-1"},
+    "scores": {"python": 0.62, "algo": 0.48, "bdd": 0.70},
+    "pre_analyse": {{pre_analysis.summary}},
+    "rag_extraits": ["...extrait1...", "...extrait2..."],
+    "contexte": {"matiere": "NSI", "niveau": "Terminale"}
+  },
+  "contraintes": {"format": "JSON strict", "clés": ["synthese_profil","diagnostic_pedagogique","plan_4_semaines","indicateurs_pedago","rag_references"]}
+}
+```
+
+- Injections:
+  - `scores`: issus de `Score` (ou fallback `Bilan.qcmScores.by_domain`).
+  - `pre_analyse`: sortie des étapes `reporting.pre_analysis`.
+  - `rag_extraits`: top‐k chunks retournés par `semanticSearch`.
+
+### Logique d'Ingestion RAG (`scripts/ingest_rag.ts`)
+
+- Extraction texte: `pdf-parse`/`mammoth`/OCR selon le type.
+- Chunking: par défaut taille ~500–1000 tokens avec chevauchement (ex. 100 tokens) pour conserver le contexte.
+- Embeddings: Gemini (`text-embedding-004`, `VECTOR_DIM=768`), fallback HF.
+- Persistance: table `documents` (métadonnées) et `chunks` (texte + vecteur) via `pgvector`.
+
+## Architecture Frontend
+
+- Gestion d’état: hooks React (`useState`/`useReducer`) et/ou `useContext` pour l’état multi‑étapes du questionnaire; persistance temporaire dans l’URL ou local storage si nécessaire.
+- Data fetching: routes API Next.js; usage côté serveur (Server Components) ou client (fetch/SWR) selon la page; polling du statut après `202 Accepted`.
+- Composants clés:
+  - `<QuestionnaireStep>`: rend un groupe de questions, gère la validation locale.
+  - `<ResultsDashboard>`: affiche scores par domaine, liens vers PDF et bilans précédents.
+- Routage protégé: App Router + middleware lisant le JWT (rôle `TEACHER`/`STUDENT`); redirection si non autorisé.
+
+## Guide du Développeur
+
+- Déboguer le worker:
+  - Lancer en local avec `node --inspect apps/worker/src/index.js` et attacher un debugger (Chrome/VSCode) pour inspecter un job.
+- Exécuter les tests localement:
+  - Unitaire: `npm test` (Jest). E2E: `npm run e2e` (Playwright) si configuré.
+- Créer un utilisateur de test complet:
+  - `ts-node -P tsconfig.scripts.json scripts/create_test_student.ts`
+  - Se connecter puis remplir un questionnaire; ou pousser un job: `scripts/push_job_generate_reports.ts --email=...`
+- Ajouter une nouvelle question au questionnaire:
+  - Modifier `data/questionnaire_nsi_terminale.final.json` (clé de question, validations).
+  - Si la question influe sur le scoring, adapter `lib/scoring/*` et, si nécessaire, `reporting.inputs` pour référencer la nouvelle donnée.
+  - Vérifier la prise en compte côté prompts (si utile) et la validation JSON avant LaTeX.

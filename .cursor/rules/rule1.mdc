@@ -1,0 +1,20 @@
+---
+alwaysApply: false
+---
+
+# --- MANDATORY COMMAND EXECUTION PROTOCOL ---
+
+## RULE 1: STRICTLY ONE ACTION PER COMMAND. NO CHAINING
+
+You MUST execute each logical operation as a separate, single command. NEVER chain commands using `&&`, `;`, or pipes like `|`. I need to see the individual output and exit code for every step to diagnose failures.
+
+- **FORBIDDEN:** `docker compose exec ... cmd1 && docker compose exec ... cmd2`
+- **MANDATORY:**
+
+  ```bash
+  # Step 1: Run the first command
+  docker compose exec ... cmd1
+
+  # Step 2: After the first command completes, run the second
+  docker compose exec ... cmd2
+  ```

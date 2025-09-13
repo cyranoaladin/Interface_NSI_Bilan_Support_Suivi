@@ -3,19 +3,37 @@ services:
     image: pgvector/pgvector:pg15
     environment:
       POSTGRES_USER: nsi
-      POSTGRES_PASSWORD: ${PG_PASSWORD:-CHANGE_ME}
+      # Le mot de passe est défini mais ne sera pas utilisé pour les connexions internes
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME}
       POSTGRES_DB: nsi
+    ports:
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./init/01_pg_init.sql:/docker-entrypoint-initdb.d/01_pg_init.sql:ro
-      - ./init/02_pgcrypto.sql:/docker-entrypoint-initdb.d/02_pgcrypto.sql:ro
-    ports:
-      - "${PG_PORT:-5432}:5432"
+      # LIGNE CRUCIALE : Force le mode "trust" pour toutes les connexions
+      - ./postgres/override-pg-hba.conf:/etc/postgresql/pg_hba.conf:ro
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "nsi"]
+      test: ["CMD", "pg_isready", "-U", "nsi", "-d", "nsi"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  pgbouncer:
+    image: bitnami/pgbouncer:1
+    ports:
+      - "6432:5432"
+    environment:
+      - PGBOUNCER_DATABASE=nsi
+      - PGBOUNCER_USERNAME=nsi
+      - PGBOUNCER_PASSWORD=${POSTGRES_PASSWORD}
+      - PGBOUNCER_AUTH_TYPE=trust
+      - PGBOUNCER_PORT=5432
+      - POSTGRESQL_HOST=postgres
+      - POSTGRESQL_USERNAME=nsi
+      - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_started
 
   redis:
     image: redis:7-alpine
@@ -43,45 +61,107 @@ services:
       context: ..
       dockerfile: apps/web/Dockerfile
       args:
-        OPENAI_API_KEY: ${OPENAI_API_KEY}
-        HF_TOKEN: ${HF_TOKEN}
         APP_BASE_URL: ${APP_BASE_URL}
-        DATABASE_URL: ${DATABASE_URL}
-        REDIS_URL: ${REDIS_URL}
-        S3_ENDPOINT: ${S3_ENDPOINT}
-        S3_ACCESS_KEY: ${S3_ACCESS_KEY}
-        S3_SECRET_KEY: ${S3_SECRET_KEY}
-        SMTP_HOST: ${SMTP_HOST}
-        SMTP_USER: ${SMTP_USER}
-        SMTP_PASS: ${SMTP_PASS}
-        SMTP_FROM: ${SMTP_FROM}
-        MAGIC_LINK_FROM: ${MAGIC_LINK_FROM}
-        JWT_SECRET: ${JWT_SECRET}
+        NEXT_BASE_PATH: ${NEXT_BASE_PATH}
     env_file: ../.env
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      pgbouncer:
+        condition: service_started
+    environment:
+      NEXT_BASE_PATH: ""
+      SKIP_ENV_VALIDATION: "1"
+      CI: "true"
+      # URL via PgBouncer (port interne 5432)
+      DATABASE_URL: postgresql://nsi@pgbouncer:5432/nsi
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
     ports:
-      - "3100:3000"
+      - "3000:3000"
     volumes:
       - ragdata:/data/rag_uploads
+      - ./data/rag_sources:/mnt/data:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   worker:
     build:
       context: ..
       dockerfile: apps/worker/Dockerfile
     env_file: ../.env
+    environment:
+      SKIP_ENV_VALIDATION: "1"
+      # URL via PgBouncer (port interne 5432)
+      DATABASE_URL: postgresql://nsi@pgbouncer:5432/nsi
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      NODE_OPTIONS: --max-old-space-size=4096
     depends_on:
-      - postgres
-      - redis
-      - minio
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      pgbouncer:
+        condition: service_started
     volumes:
       - ragdata:/data/rag_uploads
+      - ..:/app
+
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - web
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    command:
+      - --config.file=/etc/alertmanager/config.yml
+    volumes:
+      - ./alertmanager/config.yml:/etc/alertmanager/config.yml:ro
+    environment:
+      - SMTP_SMARTHOST=${SMTP_HOST}:${SMTP_PORT}
+      - SMTP_AUTH_USERNAME=${SMTP_USER}
+      - SMTP_AUTH_PASSWORD=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+      - SMTP_TO=${ALERTS_TO:-alerts@example.com}
+    ports:
+      - "9093:9093"
+
+  grafana:
+    image: grafana/grafana:10.4.6
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+    ports:
+      - "3001:3001"
+    depends_on:
+      - prometheus
 
 volumes:
   pgdata:
   minio:
   ragdata:
-
+  prometheus_data:
+  grafana_data:

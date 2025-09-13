@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { mailer } from '@/lib/mail';
 import { getSessionEmail } from '@/lib/session';
 import { PrismaClient } from '@prisma/client';

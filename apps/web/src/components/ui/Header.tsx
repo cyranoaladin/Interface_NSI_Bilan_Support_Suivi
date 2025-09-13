@@ -8,7 +8,7 @@ export function Header({ right }: { right?: React.ReactNode; }) {
       <div className="container flex items-center justify-between h-14">
         <Link href="/" className="inline-flex items-center gap-2">
           <Logo size={28} />
-          <span className="font-poppins text-[var(--fg)]">Nexus Réussite</span>
+          <span className="font-poppins text-[var(--fg)]">NSI-PMF</span>
         </Link>
         <div className="flex items-center gap-2">
           {right}

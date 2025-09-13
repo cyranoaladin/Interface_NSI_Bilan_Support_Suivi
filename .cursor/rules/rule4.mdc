@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+# Cursor Rule 4 — Scripts doivent terminer proprement
+
+Any script you execute, especially Node.js scripts, MUST be designed to terminate automatically upon completion. If a script uses persistent connections (e.g., Prisma, BullMQ), it is your responsibility to ensure the code includes explicit disconnection logic (e.g., prisma.$disconnect(), queue.close()) followed by process.exit(0) for success or process.exit(1) for failure. A script that hangs indefinitely is a failed execution.
+Any script you execute, especially Node.js scripts, MUST be designed to terminate automatically upon completion. If a script uses persistent connections (e.g., Prisma, BullMQ), it is your responsibility to ensure the code includes explicit disconnection logic (e.g., prisma.$disconnect(), queue.close()) followed by process.exit(0) for success or process.exit(1) for failure. A script that hangs indefinitely is a failed execution.

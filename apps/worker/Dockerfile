@@ -4,8 +4,9 @@ WORKDIR /app
 # Outils nécessaires (LaTeX, Tesseract, LibreOffice) pour le job de génération
 RUN apt-get update && apt-get install -y --no-install-recommends \
     texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk \
-    tesseract-ocr libreoffice \
- && rm -rf /var/lib/apt/lists/*
+    texlive-lang-french lmodern \
+    tesseract-ocr libreoffice poppler-utils jq postgresql-client \
+&& rm -rf /var/lib/apt/lists/*
 
 # IMPORTANT : copier le package.json racine + celui du workspace avant npm ci
 COPY package*.json ./

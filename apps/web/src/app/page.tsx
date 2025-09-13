@@ -17,7 +17,7 @@ export default function HomePage() {
         <div className="max-w-md mx-auto">
           <Card>
             <CardHeader>
-              <h1 className="text-2xl">Nexus Réussite</h1>
+              <h1 className="text-2xl">NSI-PMF</h1>
               <p className="text-sm mt-1 text-[var(--fg)]/70">Plateforme pédagogique NSI — Connexion</p>
             </CardHeader>
             <CardContent>
@@ -30,8 +30,13 @@ export default function HomePage() {
                   setLoading(false);
                   if (!r.ok) { setMsg('Identifiants invalides'); push({ message: 'Identifiants invalides', variant: 'error' }); return; }
                   const data = await r.json();
-                  if (data.mustChangePassword) window.location.href = '/change-password';
-                  else window.location.href = '/dashboard';
+                  if (data.mustChangePassword) {
+                    window.location.href = '/change-password';
+                  } else {
+                    if (data.role === 'STUDENT') window.location.href = '/bilan/initier';
+                    else if (data.role === 'TEACHER') window.location.href = '/dashboard/teacher';
+                    else window.location.href = '/dashboard';
+                  }
                 }}>Se connecter</Button>
                 {msg && <p className="text-red-400 text-sm">{msg}</p>}
               </div>

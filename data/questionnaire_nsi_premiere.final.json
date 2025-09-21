@@ -1,0 +1,308 @@
+{
+  "version": "premiere-nsi-v1.0_2025-09-04",
+  "locale": "fr-FR",
+  "title": "NSI Première — Questionnaire de Positionnement (Lycée Pierre Mendès France)",
+  "description": "Questionnaire de rentrée pour les élèves de Première NSI. Évalue les prérequis de Seconde (SNT, Python en Maths, pensée algorithmique) et le profil d'apprentissage de l'élève pour un accompagnement personnalisé.",
+  "owners": [
+    "labo.maths@ert.tn"
+  ],
+  "audience": {
+    "niveau": "Première",
+    "groupes": ["G1", "G2", "G3"]
+  },
+  "workflow": {
+    "stages": [
+      {
+        "id": "intro",
+        "title": "Bienvenue en Spécialité NSI",
+        "pages": [
+          {
+            "id": "consignes",
+            "markdown": "Bienvenue au questionnaire de rentrée de la spécialité Numérique et Sciences Informatiques (NSI). Ce questionnaire n'est pas une évaluation notée. Son seul objectif est de nous aider à mieux te connaître et à comprendre tes acquis pour t'accompagner au mieux dans cette nouvelle matière passionnante.\n\nRéponds aux questions suivantes le plus honnêtement possible. Cela nous permettra de personnaliser notre enseignement dès le début de l'année."
+          }
+        ]
+      },
+      {
+        "id": "volet_connaissances",
+        "title": "Volet 1 — Tes Acquis et ta Logique",
+        "description": "Cette partie évalue ta pensée algorithmique et tes connaissances issues des cours de Seconde (Mathématiques, SNT). Fais de ton mieux, il n'y a pas de piège !",
+        "delivery": {
+          "randomize": true,
+          "timeLimitMin": 30,
+          "showSolutions": false,
+          "shuffleChoices": true
+        },
+        "items": [
+          {
+            "id": "ALGO-A-01",
+            "domain": "pensee_algorithmique",
+            "type": "mcq",
+            "difficulty": "A",
+            "statement": "Pour préparer un gâteau, une recette indique : 1) Préchauffer le four. 2) Mélanger les ingrédients secs. 3) Ajouter les ingrédients liquides. 4) Enfourner. Que se passe-t-il si on inverse les étapes 1 et 4 ?",
+            "choices": [
+              { "k": "A", "text": "Le gâteau sera meilleur." },
+              { "k": "B", "text": "L'ordre des étapes est crucial, le résultat sera complètement raté.", "correct": true },
+              { "k": "C", "text": "Cela ne change rien au résultat final." }
+            ]
+          },
+          {
+            "id": "ALGO-B-01",
+            "domain": "pensee_algorithmique",
+            "type": "mcq",
+            "difficulty": "B",
+            "statement": "Un jeu a la règle suivante : 'Si le joueur a plus de 100 points ET qu'il possède l'objet 'clé', alors il gagne'. Dans quel cas le joueur gagne-t-il ?",
+            "choices": [
+              { "k": "A", "text": "Il a 150 points mais pas de 'clé'." },
+              { "k": "B", "text": "Il a 90 points et il a la 'clé'." },
+              { "k": "C", "text": "Il a 120 points et il a la 'clé'.", "correct": true }
+            ]
+          },
+          {
+            "id": "ALGO-C-01",
+            "domain": "pensee_algorithmique",
+            "type": "short",
+            "difficulty": "C",
+            "statement": "Pour trouver un mot dans un dictionnaire papier, quelle est la méthode la plus rapide : lire toutes les pages une par une depuis le début, ou ouvrir le dictionnaire au milieu et décider dans quelle moitié chercher ?",
+            "answer": "Ouvrir au milieu"
+          },
+          {
+            "id": "ALGO-B-02",
+            "domain": "pensee_algorithmique",
+            "type": "mcq",
+            "difficulty": "B",
+            "statement": "Pour chercher un nombre dans une liste de nombres triés, quelle stratégie est la plus efficace ?",
+            "choices": [
+              { "k": "A", "text": "Parcourir chaque élément de gauche à droite." },
+              { "k": "B", "text": "Diviser la liste en deux à chaque étape (recherche dichotomique).", "correct": true },
+              { "k": "C", "text": "Mélanger la liste puis regarder le premier élément." }
+            ]
+          },
+          {
+            "id": "PYTHON-A-01",
+            "domain": "python_maths",
+            "type": "mcq",
+            "difficulty": "A",
+            "statement": "En Python, quelle est la bonne syntaxe pour créer une variable 'age' qui contient la valeur 16 ?",
+            "choices": [
+              { "k": "A", "text": "age = 16", "correct": true },
+              { "k": "B", "text": "16 = age" },
+              { "k": "C", "text": "variable age: 16" }
+            ]
+          },
+          {
+            "id": "PYTHON-A-02",
+            "domain": "python_maths",
+            "type": "mcq",
+            "difficulty": "A",
+            "statement": "Quelle sera la valeur de `b` après l'exécution de ce code ?\n```python\na = 5\nb = a\na = 10\n```",
+            "choices": [
+              { "k": "A", "text": "10" },
+              { "k": "B", "text": "5", "correct": true },
+              { "k": "C", "text": "Erreur" }
+            ]
+          },
+          {
+            "id": "PYTHON-B-01",
+            "domain": "python_maths",
+            "type": "mcq",
+            "difficulty": "B",
+            "statement": "Combien de fois le mot 'Bonjour' sera-t-il affiché par ce code ?\n```python\nfor i in range(3):\n    print('Bonjour')\n```",
+            "choices": [
+              { "k": "A", "text": "2 fois" },
+              { "k": "B", "text": "3 fois", "correct": true },
+              { "k": "C", "text": "4 fois" }
+            ]
+          },
+          {
+            "id": "PYTHON-C-01",
+            "domain": "python_maths",
+            "type": "mcq",
+            "difficulty": "C",
+            "statement": "Que fait la fonction `mystere` suivante ?\n```python\ndef mystere(n):\n    if n % 2 == 0:\n        return True\n    else:\n        return False\n```",
+            "choices": [
+              { "k": "A", "text": "Elle vérifie si un nombre est positif." },
+              { "k": "B", "text": "Elle vérifie si un nombre est pair.", "correct": true },
+              { "k": "C", "text": "Elle calcule le double d'un nombre." }
+            ]
+          },
+          {
+            "id": "SNT-A-01",
+            "domain": "culture_numerique_snt",
+            "type": "mcq",
+            "difficulty": "A",
+            "statement": "Quand vous utilisez un navigateur web pour consulter un site, votre navigateur agit en tant que :",
+            "choices": [
+              { "k": "A", "text": "Client", "correct": true },
+              { "k": "B", "text": "Serveur" },
+              { "k": "C", "text": "Protocole" }
+            ]
+          },
+          {
+            "id": "SNT-A-02",
+            "domain": "culture_numerique_snt",
+            "type": "mcq",
+            "difficulty": "A",
+            "statement": "À quoi sert une adresse IP ?",
+            "choices": [
+              { "k": "A", "text": "À stocker des fichiers en ligne." },
+              { "k": "B", "text": "À identifier de manière unique un appareil sur un réseau.", "correct": true },
+              { "k": "C", "text": "À définir le style visuel d'une page web." }
+            ]
+          },
+          {
+            "id": "SNT-B-01",
+            "domain": "culture_numerique_snt",
+            "type": "mcq",
+            "difficulty": "B",
+            "statement": "Dans une page web, quel langage est principalement responsable de la **structure** et du **contenu** (titres, paragraphes) ?",
+            "choices": [
+              { "k": "A", "text": "CSS" },
+              { "k": "B", "text": "Python" },
+              { "k": "C", "text": "HTML", "correct": true }
+            ]
+          },
+          {
+            "id": "SNT-C-01",
+            "domain": "culture_numerique_snt",
+            "type": "mcq",
+            "difficulty": "C",
+            "statement": "Qu'est-ce qu'une 'métadonnée' d'une image numérique ?",
+            "choices": [
+              { "k": "A", "text": "Les pixels qui composent l'image." },
+              { "k": "B", "text": "Des informations sur l'image, comme la date de prise de vue ou le type d'appareil.", "correct": true },
+              { "k": "C", "text": "Un filtre appliqué à l'image." }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "volet_pedagogique",
+        "title": "Volet 2 — Toi et l'Informatique",
+        "description": "Cette dernière partie, sans bonnes ou mauvaises réponses, nous aide à mieux comprendre tes attentes et ta manière d'aborder une nouvelle matière.",
+        "questions": [
+          {
+            "id": "MOTIV-01",
+            "type": "single",
+            "statement": "Qu'est-ce qui t'a le plus motivé(e) à choisir la spécialité NSI ?",
+            "options": [
+              "La curiosité, j'ai envie de découvrir comment 'ça marche'.",
+              "J'ai déjà un projet d'études ou de métier en tête.",
+              "J'aime la logique et résoudre des énigmes.",
+              "Je pense que c'est une compétence utile pour l'avenir.",
+              "Un peu par hasard, pour voir ce que c'est."
+            ]
+          },
+          {
+            "id": "ATTENTE-01",
+            "type": "text",
+            "label": "Qu'espères-tu apprendre ou savoir faire à la fin de cette année de Première en NSI ?",
+            "placeholder": "Ex: créer un petit jeu, comprendre comment fonctionne un réseau, savoir programmer en Python...",
+            "maxlength": 500
+          },
+          {
+            "id": "PROFIL-01",
+            "type": "single",
+            "statement": "Face à un problème (en maths, dans un jeu, etc.), tu as plutôt tendance à :",
+            "options": [
+              "Essayer différentes solutions rapidement pour voir ce qui fonctionne.",
+              "Prendre du temps pour analyser le problème avant d'agir.",
+              "Chercher de l'aide ou un exemple similaire pour m'inspirer.",
+              "Me sentir un peu découragé(e) si je ne trouve pas tout de suite."
+            ]
+          },
+          {
+            "id": "APPREHENSION-01",
+            "type": "likert5",
+            "statement": "L'idée de devoir écrire un programme pour résoudre un problème me semble...",
+            "labels": {
+              "1": "Très intimidante",
+              "5": "Très stimulante"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scoring": {
+    "sections": {
+      "volet_connaissances": {
+        "mode": "sum_weighted_by_domain",
+        "domainMap": {
+          "pensee_algorithmique": "Pensée Algorithmique",
+          "python_maths": "Bases de Python",
+          "culture_numerique_snt": "Culture Numérique"
+        },
+        "weights": {
+          "pensee_algorithmique": 0.40,
+          "python_maths": 0.35,
+          "culture_numerique_snt": 0.25
+        },
+        "criticalPolicy": "flag_below_50"
+      }
+    }
+  },
+  "reporting": {
+    "provider": "gemini",
+    "model": "gemini-1.5-pro",
+    "api_key_env": "GEMINI_API_KEY",
+    "pre_analysis": [
+      {
+        "id": "premiere_text_summary",
+        "action": "llm_request",
+        "model": "gemini-1.5-flash",
+        "temperature": 0.3,
+        "inputs": {
+          "attentes": "{{answers.ATTENTE-01.value}}"
+        },
+        "prompt": "Analyse la réponse libre d'un élève de Première NSI à la question 'Qu'espères-tu apprendre ?'. Extrait 2 à 4 thèmes clés et 3 à 6 mots-clés. Réponds STRICTEMENT en JSON: {\"themes\":[...],\"mots_cles\":[...]}. Ne rajoute aucun commentaire hors JSON.",
+        "output_variable": "pre_analysis.summary"
+      }
+    ],
+    "inputs": {
+      "student": {
+        "given_name": "{{auth.given_name}}",
+        "family_name": "{{auth.family_name}}",
+        "id": "{{context.student_id}}"
+      },
+      "context": {
+        "classe": "{{context.csv_classe}}",
+        "groupe": "{{context.csv_group}}"
+      },
+      "scores_connaissances": "{{scoring.sections.volet_connaissances}}",
+      "answers_profile_raw": "{{answers.volet_pedagogique}}",
+      "text_summary": "{{pre_analysis.summary}}"
+    },
+    "rag": {
+      "primary_guide": {
+        "path": "/app/data/rag_sources/IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md",
+        "label": "Guide Pédagogique NSI PMF",
+        "strategy": "inject_and_index"
+      },
+      "contextual_sources": [
+        { "path": "/app/data/rag_sources/IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md", "label": "Guide Pédagogique NSI PMF (RAG Feed)" },
+        { "path": "/app/data/rag_sources/BILAN_PREMIUM_REQUIREMENTS.md", "label": "Exigences Bilan Premium" },
+        { "path": "/app/data/rag_sources/programme_nsi_premiere.pdf", "label": "Programme NSI Première" },
+        { "path": "/app/data/rag_sources/vademecum-snt-nsi_0.pdf", "label": "Vademecum SNT-NSI" },
+        { "path": "/app/data/rag_sources/Questionnaire_Rentrée.pdf", "label": "Questionnaire de Rentrée (référentiel)" },
+        { "path": "/app/data/rag_sources/RCP_Référentiel de compétences en programmation_vue détaillée.pdf", "label": "Référentiel Compétences Programmation (détaillé)" },
+        { "path": "/app/data/rag_sources/RCP _ Référentiel de compétences en programmation - vue formulaire.pdf", "label": "Référentiel Compétences Programmation (formulaire)" }
+      ]
+    },
+    "prompts": {
+      "system_eleve": "Tu es un enseignant de NSI qui s'adresse à un élève débutant dans la matière. Ton ton doit être particulièrement encourageant et bienveillant. En t'appuyant EXCLUSIVEMENT sur les extraits du RAG fournis (en particulier le guide pédagogique), rédige un court bilan en JSON strict avec les clés EXACTES: introduction, points_appui, motivations, conseils, conclusion, rag_references. Exigences: 1) introduction chaleureuse utilisant le prénom de l'élève; 2) analyse des scores de prérequis en termes de 'points d'appui' (ex: 'Ta bonne logique te sera très utile'); 3) commentaire positif sur ses motivations/attentes (Volet 2); 4) 2 ou 3 conseils très simples et concrets pour bien démarrer l'année; 5) conclusion motivante insistant sur l'idée que tout est à construire et que la curiosité est une qualité clé.",
+      "system_enseignant": "Tu es un enseignant de NSI analysant le profil d'un nouvel élève. Rédige une synthèse technique et concise pour le dossier de l'enseignant en JSON strict avec les clés EXACTES: resume_profil (liste 2-3 points), prerequis_fragiles (liste 1-2 entrées), levier_motivation (string), rag_references. Bâti-toi EXCLUSIVEMENT sur les extraits du RAG fournis (en particulier le guide pédagogique). 1) Résume le profil en 2-3 points (ex: 'Profil curieux avec une bonne base logique, mais appréhension face au code'); 2) Identifie le(s) prérequis les plus fragiles à cibler lors des premières séances; 3) Propose un levier de motivation (ex: 'S'appuyer sur son intérêt pour les jeux pour introduire l'algorithmique')."
+    },
+    "post_actions": {
+      "student_dashboard": {
+        "save_pdf": true
+      },
+      "teacher_dashboard": {
+        "collect_all": true,
+        "fields": [
+          "bilan_eleve_pdf",
+          "bilan_enseignant_pdf"
+        ]
+      }
+    }
+  }
+}

@@ -4,16 +4,15 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Layout } from '@/components/ui/Layout';
 import { Modal } from '@/components/ui/Modal';
-import { SidebarNav } from '@/components/ui/SidebarNav';
 import { Table, TD, TH, THead, TR } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
-import { ExternalLink, FileText, LogOut, RotateCcw } from 'lucide-react';
+import { ExternalLink, FileText, KeyRound, LogOut, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function TeacherDashboard() {
   const { push } = useToast();
   const [ownerName, setOwnerName] = useState<string>('');
-  const [groups, setGroups] = useState<Array<{ id: string; name: string; }>>([]);
+  const [groups, setGroups] = useState<Array<{ id: string; name: string; code: string; count?: number; }>>([]);
   const [selectedId, setSelectedId] = useState<string>('');
   const [students, setStudents] = useState<Array<{ email: string; name: string; }>>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +20,7 @@ export default function TeacherDashboard() {
   const [modalRows, setModalRows] = useState<Array<{ id: string; type: string; pdfUrl: string | null; publishedAt: string | null; }>>([]);
   const [modalStudentEmail, setModalStudentEmail] = useState<string | null>(null);
   const [modalFilter, setModalFilter] = useState<'all' | 'eleve' | 'enseignant'>('all');
+  const [pdfReadyMap, setPdfReadyMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     (async () => {
@@ -35,7 +35,7 @@ export default function TeacherDashboard() {
         const r = await fetch('/api/teacher/groups');
         const d = await r.json();
         if (r.ok && d.ok) {
-          const gs = d.groups.map((g: any) => ({ id: g.id, name: g.name }));
+          const gs = d.groups.map((g: any) => ({ id: g.id, name: g.name, code: g.code, count: g.count ?? undefined }));
           setGroups(gs);
           if (gs.length > 0) setSelectedId(gs[0].id);
         }
@@ -50,33 +50,71 @@ export default function TeacherDashboard() {
       try {
         const r = await fetch(`/api/teacher/students?groupId=${encodeURIComponent(selectedId)}`);
         const d = await r.json();
-        if (r.ok && d.ok) setStudents(d.students);
+        if (r.ok && d.ok) {
+          setStudents(d.students);
+          // maj du compteur sur le groupe sélectionné (hors élèves de test)
+          const filteredCount = (Array.isArray(d.students) ? d.students : []).filter((s: any) => {
+            const e = String(s?.email || '').toLowerCase();
+            return !(e.includes('+eleve_') || e.startsWith('test.'));
+          }).length;
+          setGroups(prev => prev.map(g => g.id === selectedId ? { ...g, count: filteredCount } : g));
+        }
       } finally {
         setLoading(false);
       }
     })();
   }, [selectedId]);
 
+  // Optionally auto-check readiness in background for visible rows
+  useEffect(() => {
+    let timer: any;
+    async function checkRows() {
+      const next = { ...pdfReadyMap };
+      for (const b of modalRows) {
+        if (!b?.id || !b?.pdfUrl) continue;
+        if (next[b.id]) continue;
+        try {
+          const res = await fetch(`/api/bilan/download/${b.id}`, { method: 'HEAD' });
+          if (res.ok) next[b.id] = true;
+        } catch {}
+      }
+      setPdfReadyMap(next);
+    }
+    (async () => {
+      await checkRows();
+      timer = setInterval(checkRows, 5000);
+    })();
+    return () => { if (timer) clearInterval(timer); };
+  }, [modalRows]);
+
   const selected = groups.find(g => g.id === selectedId) || null;
 
   return (
     <Layout
-      right={<Button variant="ghost" onClick={async () => {
-        try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
-        window.location.href = '/login';
-      }}><LogOut className="h-4 w-4" /> Déconnexion</Button>}
+      right={<div className="flex items-center gap-2">
+        <Button variant="ghost" onClick={() => { window.location.href = '/change-password'; }} title="Changer mon mot de passe">
+          <KeyRound className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" onClick={async () => {
+          try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
+          window.location.href = '/login';
+        }}><LogOut className="h-4 w-4" /> Déconnexion</Button>
+      </div>}
       sidebar={<div className="space-y-2">
         <div className="px-1">
           <h2 className="text-lg font-poppins">{ownerName || 'Espace Enseignant'}</h2>
-          <p className="text-sm text-[var(--fg)]/70">Gestion des groupes</p>
+          <p className="text-sm text-[var(--fg)]/70">Sélectionner un groupe</p>
         </div>
-        <SidebarNav items={[{ href: '/dashboard/teacher', label: 'Groupes' }]} />
         <div className="mt-4">
-          <h3 className="text-sm text-[var(--fg)]/70 px-3 mb-1">Mes Groupes</h3>
+          <h3 className="text-sm text-[var(--fg)]/70 px-3 mb-1">Mes groupes</h3>
           <ul className="space-y-1">
             {groups.map(g => (
               <li key={g.id}>
-                <button className={`block w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 ${selectedId === g.id ? 'bg-white/10' : ''}`} onClick={() => setSelectedId(g.id)}>{g.name}</button>
+                <button className={`block w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 ${selectedId === g.id ? 'bg-white/10' : ''}`} onClick={() => setSelectedId(g.id)}>
+                  <span className="font-medium">{g.name}</span>
+                  <span className="ml-2 text-xs text-[var(--fg)]/60">({g.code})</span>
+                  {typeof g.count === 'number' && <span className="ml-2 text-xs text-[var(--fg)]/50">— {g.count} élèves</span>}
+                </button>
               </li>
             ))}
           </ul>
@@ -84,7 +122,7 @@ export default function TeacherDashboard() {
       </div>}
     >
       <div className="space-y-6">
-        <h1 className="text-2xl">{selected?.name || 'Mes groupes'}</h1>
+        <h1 className="text-2xl">{selected ? `${selected.name} (${selected.code})` : 'Mes groupes'}</h1>
 
         <Card>
           <CardHeader>
@@ -117,6 +155,10 @@ export default function TeacherDashboard() {
                           const r = await fetch('/api/teacher/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: s.email }) });
                           push({ message: r.ok ? 'Mot de passe réinitialisé' : 'Erreur de réinitialisation', variant: r.ok ? 'success' : 'error' });
                         }}><RotateCcw className="h-4 w-4" /> Réinitialiser mot de passe</Button>
+                        <Button variant="secondary" onClick={async () => {
+                          const r = await fetch('/api/teacher/students/reactivate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: s.email }) });
+                          push({ message: r.ok ? 'Soumission réactivée' : 'Erreur de réactivation', variant: r.ok ? 'success' : 'error' });
+                        }}>Réactiver la soumission</Button>
                       </div>
                     </TD>
                   </TR>
@@ -154,8 +196,13 @@ export default function TeacherDashboard() {
                 if (!modalStudentEmail) return;
                 const r = await fetch(`/api/teacher/bilans?studentEmail=${encodeURIComponent(modalStudentEmail)}`);
                 const d = await r.json();
-                if (r.ok && d.ok) { setModalRows(d.bilans); push({ message: 'Liste rafraîchie', variant: 'success' }); }
-                else { push({ message: d.error || 'Erreur de rafraîchissement', variant: 'error' }); }
+                if (r.ok && d.ok) {
+                  setModalRows(d.bilans);
+                  // reset readiness map and recheck
+                  const next: Record<string, boolean> = {};
+                  setPdfReadyMap(next);
+                  push({ message: 'Liste rafraîchie', variant: 'success' });
+                } else { push({ message: d.error || 'Erreur de rafraîchissement', variant: 'error' }); }
               }}>Rafraîchir</Button>
             </div>
           </div>
@@ -174,10 +221,20 @@ export default function TeacherDashboard() {
                     <div>
                       {b.id && b.pdfUrl ? (
                         <div className="flex items-center gap-2">
-                          <a className="text-electric hover:underline" href={`/api/bilan/download/${b.id}`}>Télécharger</a>
-                          <a className="inline-flex items-center gap-1 text-[var(--fg)]/80 hover:text-white" href={`/api/bilan/download/${b.id}`} target="_blank" rel="noreferrer">
+                          <Button variant="link" onClick={async () => {
+                            try {
+                              const res = await fetch(`/api/bilan/download/${b.id}`, { method: 'HEAD' });
+                              if (res.ok) {
+                                window.open(`/api/bilan/download/${b.id}`, '_blank', 'noopener,noreferrer');
+                              } else {
+                                push({ message: 'PDF en préparation — réessaie dans quelques instants.', variant: 'warning' });
+                              }
+                            } catch {
+                              push({ message: 'Impossible d\'ouvrir le PDF pour le moment.', variant: 'error' });
+                            }
+                          }} className="text-electric">
                             Ouvrir <ExternalLink className="h-4 w-4" />
-                          </a>
+                          </Button>
                         </div>
                       ) : (
                         <span className="text-xs text-[var(--fg)]/60">PDF en préparation</span>

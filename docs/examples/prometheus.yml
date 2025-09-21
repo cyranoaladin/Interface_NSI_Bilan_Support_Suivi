@@ -1,0 +1,7 @@
+# docs/examples/prometheus.yml (exemple minimal pour scraper les métriques de l'app web)
+scrape_configs:
+  - job_name: 'web'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['web:3000']
+    metrics_path: /api/metrics

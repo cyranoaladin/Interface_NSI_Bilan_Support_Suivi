@@ -2,7 +2,7 @@
 
 ## 1) Objet & périmètre
 Construire une plateforme web de diagnostic et de suivi pour la Terminale NSI :
-- Page de **connexion** (magic link, domaine `@ert.tn`).
+- Page de **connexion** (e‑mail/mot de passe, domaine `@ert.tn`).
 - **Dashboard élève** (questionnaire, génération & dépôt du bilan PDF élève, historique).
 - **Dashboard enseignant** (accès aux bilans élève+enseignant, synthèses classe, export CSV).
 - **Import CSV** des élèves (pré‑remplissage base de données).
@@ -21,10 +21,9 @@ Hors périmètre : authentification SSO ENT, paiement en ligne, mobile natif.
 ---
 
 ## 3) Parcours clés
-### 3.1 Connexion (magic link)
-1. Saisie e‑mail → vérification domaine `ert.tn` + existence dans table `students`.
-2. Envoi lien signé (validité 15 min) → création session JWT.
-3. Redirection vers `dashboard` (rôle‑aware).
+### 3.1 Connexion
+1. Saisie e‑mail + mot de passe → vérification domaine `ert.tn` + existence dans table `students`.
+2. Création session JWT (HTTP‑only) → redirection vers `dashboard` (rôle‑aware).
 
 ### 3.2 Passation questionnaire (salle D201, 24 postes)
 - Chargement du **Questionnaire NSI Terminale — v2.0** (fourni), aléa ordre items, minuterie 60 min, **autosave** toutes 10 s.
@@ -36,7 +35,7 @@ Hors périmètre : authentification SSO ENT, paiement en ligne, mobile natif.
 
 ## 4) Fonctionnalités détaillées
 ### 4.1 Authentification & sécurité
-- Magic link (passwordless), domain‑allowlist `ert.tn`.
+- E‑mail/mot de passe (password-based), domain‑allowlist `ert.tn`.
 - Sessions JWT (HTTP‑only cookies, rotation), CSRF, rate‑limit /auth.
 - RBAC : `student`, `teacher`, `admin`.
 
@@ -57,7 +56,7 @@ Hors périmètre : authentification SSO ENT, paiement en ligne, mobile natif.
 - Upload `TERMINALE_NSI.csv` → mapping champs → validation → insertion/upsert → rapport.
 
 ### 4.6 Notifications
-- E‑mails : magic link, confirmation bilan (élève + copie enseignants).
+- Pas d’e‑mails applicatifs (magic link/confirmations supprimés).
 
 ---
 
@@ -75,7 +74,6 @@ Hors périmètre : authentification SSO ENT, paiement en ligne, mobile natif.
 ### 5.2 Schéma déploiement (VPS)
 ```
 [Internet] → Nginx (443) → WebApp (Next.js) → Postgres | Redis | Qdrant/pgvector | Worker | MinIO
-                                          ↘ SMTP (envoi mails)
 ```
 
 ### 5.3 Conteneurs (Docker Compose)
@@ -103,8 +101,7 @@ Index : `students.email` unique, vecteur `chunks.embedding` (pgvector) ou Qdrant
 ---
 
 ## 7) API (exemples)
-- `POST /auth/magic-link {email}` → 200 | 400 | 404
-- `GET  /auth/callback?token=…` → cookie session + redirect
+- `POST /auth/login {email,password}` → 200 | 401 | 429 (rate-limit)
 - `GET  /me` → profil + rôle
 - `GET  /questionnaire/current` → JSON v2.0
 - `POST /attempts/start` → id + timer
@@ -131,7 +128,7 @@ JWT scopes : `student:*`, `teacher:read`, `admin:*`.
 ### 8.3 Génération → LaTeX → PDF
 - Appel OpenAI (modèle `gpt-4o`, temperature 0.3/0.4 selon profil).
 - Validation JSON (schema), injection dans **templates LaTeX** (fournis), compilation conteneur TeX Live.
-- Upload PDF → stockage (MinIO/local) → mise à jour `reports` + dashboards + envoi e‑mail.
+- Upload PDF → stockage (MinIO/local) → mise à jour `reports` + dashboards.
 
 ---
 
@@ -154,10 +151,6 @@ S3_ACCESS_KEY=...
 S3_SECRET_KEY=...
 S3_BUCKET=reports
 JWT_SECRET=...
-SMTP_HOST=...
-SMTP_USER=...
-SMTP_PASS=...
-MAGIC_LINK_FROM=no-reply@ert.tn
 APP_BASE_URL=https://nsi.ert.tn
 ```
 
@@ -171,7 +164,7 @@ Secrets stockés hors dépôt (Vault/.env chiffré). Rotation semestrielle.
 - **Docker** + **Compose** : services isolés ; **volumes** pour Postgres/MinIO.
 - **Backups** : `pg_dump` quotidien + rétention 30 j ; synchronisation PDFs ; tests de restauration mensuels.
 - **Logs** : JSON (app/nginx), rotation (`logrotate`).
-- **Monitoring** : Healthchecks + métriques (p95 latence API, jobs en file, erreurs 5xx). Alertes e‑mail.
+- Monitoring : Healthchecks + métriques (p95 latence API, jobs en file, erreurs 5xx). Alertes via dashboards.
 
 ---
 

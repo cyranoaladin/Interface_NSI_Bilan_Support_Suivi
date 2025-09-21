@@ -91,14 +91,21 @@ async function assignTeachersToGroups(groupIdByCode: Record<GroupCode, string>) 
 }
 
 function resolveCsvPaths(): string[] {
-  const files = [
-    'TERMINALE_NSI.csv',
+  const cwd = process.cwd();
+  // Fichiers réels fournis par l'utilisateur à la racine du projet
+  const preferred = [
+    'TERMINALE_NSI_24_eleves_corrige.csv',
     'PREMIERE_NSI_G1.csv',
     'PREMIERE_NSI_G2.csv',
     'PREMIERE_NSI_G3.csv',
-  ];
-  const cwd = process.cwd();
-  return files.map((f) => path.resolve(cwd, f));
+  ].map((f) => path.resolve(cwd, f));
+
+  // Compatibilité: anciens noms éventuellement présents
+  const fallback = [
+    'TERMINALE_NSI.csv',
+  ].map((f) => path.resolve(cwd, f));
+
+  return [...preferred, ...fallback];
 }
 
 function detectGroupCodeFromClasse(classe: string): GroupCode | undefined {

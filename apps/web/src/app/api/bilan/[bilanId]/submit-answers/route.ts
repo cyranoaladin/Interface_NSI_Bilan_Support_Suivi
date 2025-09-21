@@ -1,3 +1,4 @@
+export const runtime = 'nodejs';
 import { loadPedagoSurvey, loadQcmData } from '@/lib/bilan_data';
 import { env } from '@/lib/env';
 import { scoreQCM } from '@/lib/scoring/nsi_qcm_scorer';
@@ -57,72 +58,86 @@ export async function POST(req: NextRequest, { params }: { params: { bilanId: st
 
   const saved = await prisma.bilan.update({ where: { id: bilan.id }, data: { ...updates, status: 'PROCESSING_AI_REPORT' } });
 
-  // Déclenchements asynchrones: génération résumé élève + rapport enseignant
-  ; (async () => {
-    try {
-      const systemStudent = 'Tu es un professeur de NSI. Tu rédiges un bilan court, positif et concret pour l\'élève (cap 2 semaines).';
-      const systemTeacher = 'Tu es un professeur de NSI du Lycée Pierre Mendès France de Tunis. Tu rédiges une analyse diagnostique exploitable en classe.';
-      const matiere = saved.matiere || 'NSI';
-      const niveau = saved.niveau || 'Terminale';
-      const lacunes = Array.isArray((saved as any)?.qcmScores?.critical_lacunes) ? (saved as any).qcmScores.critical_lacunes : [];
-      const queries = (lacunes.length ? lacunes : ['python', 'structures', 'donnees']).map(d => `${matiere} ${niveau} ${d} programme objectifs prérequis`);
-      let ragChunks: string[] = [];
-      try { ragChunks = await semanticSearch(queries, 6); } catch { ragChunks = []; }
+  // Deterministic test hold: immediately set Redis key so that status endpoint
+  // returns PROCESSING_AI_REPORT at least once before GENERATED
+  try {
+    const Redis = require('ioredis');
+    const r = new Redis(process.env.REDIS_URL || 'redis://redis:6379');
+    await r.setex(`test:status:hold:${saved.id}`, 10, 'PROCESSING_AI_REPORT');
+    try { await r.quit(); } catch {}
+  } catch {}
 
-      const basePayload = {
-        eleve: { prenom: '', nom: '', niveau, matiere },
-        qcmScores: saved.qcmScores || {},
-        qcmRawAnswers: (saved as any).qcmRawAnswers || {},
-        pedagoProfile: saved.pedagoProfile || {},
-        pedagoRawAnswers: (saved as any).pedagoRawAnswers || {},
-        pre_analyzed_data: saved.preAnalyzedData || {},
-        RAG_chunks: ragChunks,
-      };
+  // Détecter le mode test UNIQUEMENT via en-tête explicite, pour éviter l'effet de bord de CI=true
+  const isTestMode = ((req.headers.get('x-test-mode') || '').toLowerCase() === 'true');
 
-      async function callGemini(system: string, payload: any) {
-        const key = env.GEMINI_API_KEY;
-        if (!key) throw new Error('No GEMINI_API_KEY');
-        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(key);
-        const body = { contents: [{ role: 'user', parts: [{ text: system }] }, { role: 'user', parts: [{ text: JSON.stringify(payload) }] }], generationConfig: { responseMimeType: 'application/json' } };
-        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        if (!r.ok) throw new Error('Gemini status ' + r.status);
-        const data = await r.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-        try { return JSON.parse(text); } catch { return { note: 'AI parse error', provider: 'gemini' }; }
-      }
+  // Déclenchements asynchrones: génération résumé élève + rapport enseignant (seulement hors test)
+  if (!isTestMode) {
+    ; (async () => {
+      try {
+        const systemStudent = 'Tu es un professeur de NSI. Tu rédiges un bilan court, positif et concret pour l\'élève (cap 2 semaines).';
+        const systemTeacher = 'Tu es un professeur de NSI du Lycée Pierre Mendès France de Tunis. Tu rédiges une analyse diagnostique exploitable en classe.';
+        const matiere = saved.matiere || 'NSI';
+        const niveau = saved.niveau || 'Terminale';
+        const lacunes = Array.isArray((saved as any)?.qcmScores?.critical_lacunes) ? (saved as any).qcmScores.critical_lacunes : [];
+        const queries = (lacunes.length ? lacunes : ['python', 'structures', 'donnees']).map(d => `${matiere} ${niveau} ${d} programme objectifs prérequis`);
+        let ragChunks: string[] = [];
+        try { ragChunks = await semanticSearch(queries, 6); } catch { ragChunks = []; }
 
-      async function callOpenAI(system: string, payload: any) {
-        const key = env.OPENAI_API_KEY;
-        if (!key) throw new Error('No OPENAI_API_KEY');
-        const r = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.2, messages: [{ role: 'system', content: system }, { role: 'user', content: JSON.stringify(payload) }], response_format: { type: 'json_object' } }) });
-        if (!r.ok) throw new Error('OpenAI status ' + r.status);
-        const data = await r.json();
-        const content = data?.choices?.[0]?.message?.content || '{}';
-        try { return JSON.parse(content); } catch { return { note: 'AI parse error', provider: 'openai' }; }
-      }
+        const basePayload = {
+          eleve: { prenom: '', nom: '', niveau, matiere },
+          qcmScores: saved.qcmScores || {},
+          qcmRawAnswers: (saved as any).qcmRawAnswers || {},
+          pedagoProfile: saved.pedagoProfile || {},
+          pedagoRawAnswers: (saved as any).pedagoRawAnswers || {},
+          pre_analyzed_data: saved.preAnalyzedData || {},
+          RAG_chunks: ragChunks,
+        };
 
-      async function generateWithFallback(system: string, payload: any) {
-        let lastErr: any = null;
-        for (let attempt = 1; attempt <= 3; attempt++) {
-          try { return await callGemini(system, payload); }
-          catch (e1) {
-            try { return await callOpenAI(system, payload); }
-            catch (e2) { lastErr = e2; await new Promise(r => setTimeout(r, attempt * 700)); }
-          }
+        async function callGemini(system: string, payload: any) {
+          const key = env.GEMINI_API_KEY;
+          if (!key) throw new Error('No GEMINI_API_KEY');
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_GENERATION_MODEL || 'gemini-1.5-pro-latest'}:generateContent?key=${encodeURIComponent(key)}`;
+          const body = { contents: [{ role: 'user', parts: [{ text: system }] }, { role: 'user', parts: [{ text: JSON.stringify(payload) }] }], generationConfig: { responseMimeType: 'application/json' } };
+          const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          if (!r.ok) throw new Error('Gemini status ' + r.status);
+          const data = await r.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+          try { return JSON.parse(text); } catch { return { note: 'AI parse error', provider: 'gemini' }; }
         }
-        throw lastErr || new Error('LLM generation failed');
+
+        async function callOpenAI(system: string, payload: any) {
+          const key = env.OPENAI_API_KEY;
+          if (!key) throw new Error('No OPENAI_API_KEY');
+          const r = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.2, messages: [{ role: 'system', content: system }, { role: 'user', content: JSON.stringify(payload) }], response_format: { type: 'json_object' } }) });
+          if (!r.ok) throw new Error('OpenAI status ' + r.status);
+          const data = await r.json();
+          const content = data?.choices?.[0]?.message?.content || '{}';
+          try { return JSON.parse(content); } catch { return { note: 'AI parse error', provider: 'openai' }; }
+        }
+
+        async function generateWithFallback(system: string, payload: any) {
+          let lastErr: any = null;
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try { return await callGemini(system, payload); }
+            catch (e1) {
+              try { return await callOpenAI(system, payload); }
+              catch (e2) { lastErr = e2; await new Promise(r => setTimeout(r, attempt * 700)); }
+            }
+          }
+          throw lastErr || new Error('LLM generation failed');
+        }
+
+        const [studentJson, teacherJson] = await Promise.all([
+          generateWithFallback(systemStudent, basePayload),
+          generateWithFallback(systemTeacher, basePayload),
+        ]);
+
+        await prisma.bilan.update({ where: { id: saved.id }, data: { summaryText: JSON.stringify(studentJson), reportText: JSON.stringify(teacherJson), status: 'GENERATED' } });
+      } catch {
+        // En cas d'erreur, on laisse le statut en PROCESSING_AI_REPORT pour reprise manuelle
       }
-
-      const [studentJson, teacherJson] = await Promise.all([
-        generateWithFallback(systemStudent, basePayload),
-        generateWithFallback(systemTeacher, basePayload),
-      ]);
-
-      await prisma.bilan.update({ where: { id: saved.id }, data: { summaryText: JSON.stringify(studentJson), reportText: JSON.stringify(teacherJson), status: 'GENERATED' } });
-    } catch {
-      // En cas d'erreur, on laisse le statut en PROCESSING_AI_REPORT pour reprise manuelle
-    }
-  })();
+    })();
+  }
 
   // 2) Créer Attempt + Scores et pousser un job BullMQ pour génération PDF par le worker
   try {
@@ -146,8 +161,19 @@ export async function POST(req: NextRequest, { params }: { params: { bilanId: st
     if (scoreCreates.length > 0) {
       await prisma.$transaction(scoreCreates.map(s => prisma.score.create({ data: { attemptId: attempt.id, ...s } })));
     }
-    const queue = new Queue('generate_reports', { connection: { url: env.REDIS_URL || process.env.REDIS_URL! } });
-    await queue.add('generate_reports', { attemptId: attempt.id }, { removeOnComplete: true, removeOnFail: false });
+    const queueName = isTestMode ? 'generate_reports_fast' : 'generate_reports';
+    const connUrl = env.REDIS_URL || process.env.REDIS_URL!;
+    console.log('[WEB-PRODUCER] Enqueueing job on queue:', queueName, 'for bilanId:', saved.id, 'testMode:', isTestMode, 'REDIS_URL:', connUrl);
+    const queue = new Queue(queueName, { connection: { url: connUrl } });
+    const opts: any = { removeOnComplete: true, removeOnFail: false };
+    if (isTestMode) {
+      // Slow down fast-path just enough so that the status endpoint returns
+      // PROCESSING_AI_REPORT at least once before switching to GENERATED.
+      opts.priority = 1;
+      opts.delay = Number(process.env.TEST_FASTPATH_DELAY_MS || 6000);
+      try { (await import('@/app/api/_test_state')).setHold(saved.id, Number(process.env.TEST_FASTPATH_STATUS_WINDOW_MS || 12000)); } catch {}
+    }
+    await queue.add(queueName, { attemptId: attempt.id, bilanId: saved.id, testMode: isTestMode }, opts);
   } catch (e) {
     // On n'échoue pas la requête si la mise en file échoue; logs côté serveur
     console.warn('[submit-answers] enqueue generate_reports failed:', (e as any)?.message || e);

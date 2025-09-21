@@ -1,9 +1,10 @@
 # Bilan Pédagogique NSI - PMF
 
 Auteur : Alaeddine BEN RHOUMA
-[![CI](https://github.com/cyranoaladin/Interface_NSI_Bilan_Support_Suivi/actions/workflows/ci.yml/badge.svg)](https://github.com/cyranoaladin/Interface_NSI_Bilan_Support_Suivi/actions/workflows/ci.yml)
 
-Outil complet de bilan pédagogique pour élèves de Terminale NSI: questionnaire d'entrée, scoring, pré-analyse IA des réponses libres, génération de bilans (élève et enseignant) via LLM + RAG, compilation LaTeX/PDF, stockage S3 et envoi par e-mail.
+Outil complet de bilan pédagogique pour élèves de Terminale NSI: questionnaire d'entrée, scoring, pré-analyse IA des réponses libres, génération de bilans (élève et enseignant) via LLM + RAG, rendu React-PDF, stockage S3.
+
+Note importante: le badge CI pointait vers un autre dépôt et a été retiré pour éviter toute confusion.
 
 ## Table des Matières
 
@@ -23,20 +24,35 @@ Outil complet de bilan pédagogique pour élèves de Terminale NSI: questionnair
 - CI/CD et Qualité du Code
 - Sauvegarde et Restauration
 - Déploiement en Production (VPS)
+- Points Legacy/Known Issues
 
 ## Architecture Générale
+
+### Architecture PDF (depuis septembre 2025)
+Depuis septembre 2025, la génération des bilans est 100 % React-PDF (plus de LaTeX). La chaîne utilise des composants mutualisés et une mise en page moderne:
+- Composants: MarkdownRenderer, ScoreTable, Header/Footer (police Inter, palette moderne).
+- Génération: `apps/worker/src/index.js` génère les PDF via `@react-pdf/renderer` (`renderToFile`) en s’appuyant sur:
+  - `apps/worker/src/pdf-components.js`
+  - `apps/worker/src/EleveBilan.js`
+  - `apps/worker/src/EnseignantBilan.js`
+- Stockage: upload S3/MinIO, URL enregistrée en base.
+
+Pour approfondir:
+- Voir [CHANGELOG.md](CHANGELOG.md) pour les détails de la migration.
+- Consulter [docs/_legacy/](docs/_legacy/) pour les anciens fichiers LaTeX/Mustache archivés.
+
+Note: Ce README ne documente plus l’ancien pipeline LaTeX; pour l’historique, voir docs/_legacy/. En production, seul React-PDF est utilisé.
 
 - **Frontend (apps/web - Next.js 14 App Router)**: Affiche le questionnaire, collecte les réponses, expose des routes API pour authentification, scoring, génération RAG et déclenchement des bilans.
 - **Backend**:
   - **Routes API Next.js** pour la logique synchrone (auth, enregistrement réponses, déclenchement de jobs).
-  - **Worker autonome (apps/worker)** utilisant BullMQ/Redis pour exécuter le pipeline de génération (pré-analyse IA, RAG, prompts finaux, LaTeX/PDF, S3, e-mail).
+  - **Worker autonome (apps/worker)** utilisant BullMQ/Redis pour exécuter le pipeline de génération (pré-analyse IA, RAG, prompts finaux, React-PDF, S3, e-mail).
 - **Base de Données**: PostgreSQL (pgvector pour RAG), gérée via **Prisma**.
 - **Cache & Jobs**: **Redis** + **BullMQ** pour file d'attente `generate_reports` et `rag_ingest`.
 - **Services Externes**:
   - **OpenAI API** (gpt-4o, gpt-4o-mini) pour pré-analyse et génération des textes des bilans.
   - **Gemini Embeddings** (`text-embedding-004`, 768 dims) pour l’indexation RAG (fallback HuggingFace all-MiniLM-L6-v2).
   - **MinIO (S3)** pour stocker les PDF générés.
-  - **SMTP (Nodemailer)** pour envoyer les bilans.
 
 ### Schéma d'architecture
 
@@ -54,9 +70,7 @@ flowchart LR
     openai[OpenAI]
     gemini[Gemini]
     prom[Prometheus]
-    alertm[Alertmanager]
     graf[Grafana]
-    smtp[SMTP]
 
     user -->|HTTP(S)| web
     web --> api
@@ -72,9 +86,7 @@ flowchart LR
     worker -->|LLM/RAG| gemini
 
     prom -->|scrape /api/metrics| web
-    prom --> alertm
     graf -->|query| prom
-    alertm -->|mail| smtp
 ```
 
 [Voir le diagramme en PNG](docs/images/architecture.png) si le rendu ci-dessus ne s'affiche pas.
@@ -125,7 +137,7 @@ flowchart LR
 │  ├─ render_pdf_via_http.ts                 # Rendu PDF via HTTP
 │  ├─ reset_test_student_password.ts         # Reset mot de passe élève test
 │  ├─ run_full_test_scenario.ts              # Scénario E2E complet scripté
-│  ├─ sanitize_json_strings.js               # Sanitation JSON pour LaTeX/rapports
+│  ├─ sanitize_json_strings.js               # Sanitation JSON pour le rendu React-PDF/rapports
 │  ├─ seed_production_data.ts                # Peuplement complet (groupes, enseignants, élèves)
 │  ├─ seed_users_from_csv.ts                 # Peuplement utilisateurs depuis CSV
 │  ├─ test_reporting_pipeline.ts             # Test pré‑analyse + payload final
@@ -143,7 +155,6 @@ flowchart LR
     - `pre_analysis`: étapes d’appel LLM (gpt-4o-mini) pour synthétiser les réponses libres → `pre_analysis.summary`.
     - `inputs`: schéma de payload final injecté dans les prompts finaux (student, context, scores_connaissances, indices_pedago, tags, risk_flags, answers_profile_raw, text_summary).
     - `rag.sources`: liste des documents à ingérer/consommer pour RAG.
-    - `latex_templates`: templates LaTeX pour versions élève/enseignant.
     - `prompts.system_eleve` / `prompts.system_enseignant`.
 
 ## Infrastructure Docker Compose
@@ -166,13 +177,11 @@ La stack Docker (répertoire `infra/`) inclut:
 - `worker`: exécute les jobs BullMQ (`generate_reports`, `rag_ingest`).
 - `prometheus`: collecte les métriques depuis `web` (scrape `http://web:3000/api/metrics`).
 - `grafana`: visualisation des métriques (dashboards pré‑provisionnés). Accès: `http://localhost:3001` (admin/admin en local).
-- `alertmanager`: gestionnaire d’alertes (chaîne: Prometheus → Alertmanager → E‑mail SMTP).
 
 Notes:
 
 - Le fichier `infra/prometheus/prometheus.yml` pointe vers `/api/metrics` de `web`.
 - Les règles d’alertes sont dans `infra/prometheus/rules.yml`.
-- La configuration Alertmanager est dans `infra/alertmanager/config.yml` (récepteur e‑mail + webhook de log).
 
 ## Base de Données
 
@@ -373,6 +382,39 @@ Le peuplement de la base de données (création des groupes, des enseignants, im
 
 ## Dépendances et Installation Locale
 
+### Guide d'Exécution des Tests en Local
+
+1) Démarrer l'infrastructure:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d
+```
+
+2) Préparer Playwright dans le conteneur web (si nécessaire après rebuild):
+
+```bash
+docker compose -f infra/docker-compose.yml exec -T web npx playwright install chromium
+```
+
+3) Préparer les données de test (automatique via /api/test/setup dans les tests). Optionnel: seed étendu:
+
+```bash
+npm run seed:production
+```
+
+4) Lancer les tests:
+
+```bash
+# Suite API
+docker compose -f infra/docker-compose.yml exec -T web env E2E_REPORTS_TIMEOUT_MS=120000 npm -w nsi-web run e2e:api
+
+# Toutes les suites UI+API
+docker compose -f infra/docker-compose.yml exec -T web env E2E_REPORTS_TIMEOUT_MS=120000 npm -w nsi-web run e2e
+
+# Test de charge
+docker compose -f infra/docker-compose.yml exec -T web env E2E_REPORTS_TIMEOUT_MS=120000 npm -w nsi-web run e2e:load
+```
+
 ### Prérequis
 
 - Node.js 18+
@@ -410,13 +452,7 @@ S3_BUCKET=reports
 S3_REGION=us-east-1
 S3_FORCE_PATH_STYLE=true
 
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=labo.maths@ert.tn
-SMTP_PASS=********
-SMTP_FROM=NSI <labo.maths@ert.tn>
-MAGIC_LINK_FROM=labo.maths@ert.tn
+# SMTP/Magic link supprimés du projet
 JWT_SECRET=change-me-long
 
 # Observabilité / Alertes
@@ -447,7 +483,7 @@ npm run dev -w nsi-web
 ## Philosophie et Décisions d'Architecture
 
 - Monorepo: un seul dépôt pour `apps/web` et `apps/worker` afin de partager facilement le code (types Prisma, logique de scoring, utils) et de simplifier les workflows CI/CD et la gestion des versions.
-- BullMQ/Redis: séparation des tâches longues et faillibles (génération IA, LaTeX, S3) dans un worker dédié pour préserver la réactivité de l’UI et permettre le retry/scaling horizontal indépendant du web.
+- BullMQ/Redis: séparation des tâches longues et faillibles (génération IA, React-PDF, S3) dans un worker dédié pour préserver la réactivité de l’UI et permettre le retry/scaling horizontal indépendant du web.
 - PgBouncer: point d’entrée DB unique pour lisser les pics de connexions, éviter l’épuisement `max_connections` PostgreSQL et améliorer la stabilité sous charge.
 - RAG (Retrieval‑Augmented Generation): ancrer les réponses IA dans les référentiels NSI (programmes officiels, référentiels compétences) pour augmenter la pertinence, la traçabilité et la valeur pédagogique des bilans.
 
@@ -533,25 +569,29 @@ npm run dev -w nsi-web
 
 - **Appel gpt-4o**:
   - Deux prompts systèmes: `reporting.prompts.system_eleve` et `...system_enseignant`.
-  - Le `payload` + extraits RAG sont passés en `user` (JSON); réponse forcée en JSON → champs utilisés ensuite pour LaTeX.
+  - Le `payload` + extraits RAG sont passés en `user` (JSON); réponse forcée en JSON → champs utilisés ensuite pour le rendu React-PDF.
 
-#### 5. Compilation LaTeX
+#### 5. Rendu PDF (React-PDF)
 
-- Templates: `reporting.latex_templates`
-- Compilation via `latexmk` (docker worker installe texlive) → PDF(s).
-- Tolérance erreurs: si compilation/MinIO indisponible, logs et poursuite des étapes suivantes.
+- Génération via `@react-pdf/renderer` (`renderToFile`) depuis le worker.
+- Composants:
+  - `apps/worker/src/pdf-components.js`
+  - `apps/worker/src/EleveBilan.js`
+  - `apps/worker/src/EnseignantBilan.js`
+- Polices: Inter embarquée; prévoir fallback/embarquée en environnements fermés.
+- Résilience: journalisation des erreurs de rendu; si le rendu échoue, les JSON d’analyse sont tout de même persistés.
 
-#### 6. Stockage & E-mail
+#### 6. Stockage & Publication
 
 - Upload S3 (MinIO) si configuré (`S3_*`).
 - Insertion `Report` en DB (json + pdfUrl si disponible).
-- Envoi e-mail vers élève + copie enseignants (optionnel, géré via env SMTP_*).
+- Aucun envoi d’e‑mail (fonctionnalité supprimée).
 
 ### Robustesse & Exploitation (Production)
 
 - **Jobs qui échouent (BullMQ)**
   - Lors de la création du job (`scripts/push_job_generate_reports.ts/js`), on utilise `removeOnComplete: true` et `removeOnFail: false`, ce qui conserve les jobs en échec dans Redis pour analyse et relance.
-  - Le worker enveloppe les étapes sensibles dans des `try/catch` (pré‑analyse LLM, OpenAI final, LaTeX, S3, SMTP). Les erreurs sont loguées (console.warn/console.error) et le pipeline poursuit quand c’est acceptable (ex: si LaTeX/S3 échoue, on stocke tout de même les JSON d’analyse et on envoie un e‑mail simple sans pièces jointes).
+  - Le worker enveloppe les étapes sensibles dans des `try/catch` (pré‑analyse LLM, OpenAI final, React-PDF, S3). Les erreurs sont loguées (console.warn/console.error) et le pipeline poursuit quand c’est acceptable (ex: si React-PDF/S3 échoue, on stocke tout de même les JSON d’analyse).
   - Recommandation (prod): configurer `attempts` et `backoff` côté `Queue.add` (ex: `attempts: 3, backoff: { type: 'exponential', delay: 10000 }`) pour les erreurs réseau transitoires (OpenAI, S3, SMTP).
   - Relance manuelle: via un script d’admin (ou UI Bull, si déployée) en rejouant le job avec le même `attemptId`.
 
@@ -578,32 +618,18 @@ npm run dev -w nsi-web
     const safeEleve = EleveSchema.safeParse(analysisEleve).success ? EleveSchema.parse(analysisEleve) : EleveSchema.parse({});
     ```
 
-  - Avant templating LaTeX, on applique systématiquement des valeurs par défaut (`|| ''`) pour éviter toute chaîne `undefined`.
+  - Avant rendu React-PDF, on applique systématiquement des valeurs par défaut (`|| ''`) pour éviter toute chaîne `undefined`.
   - Option: si la validation échoue, renvoyer une requête de correction à l’IA avec un prompt très contraint (mode dégradé).
 
-- **Gestion des erreurs de compilation LaTeX**
-  - La compilation est encapsulée (try/catch). En cas d’erreur (`latexmk`), on logue l’erreur et on continue (création des `Report` sans PDF, e‑mails sans PJ) pour ne pas bloquer la file.
-  - Spécialement pour les caractères LaTeX, une fonction de sanitation est recommandée:
-
-    ```ts
-    function sanitizeLatex(input: string): string {
-      const map: Record<string,string> = {
-        '\\': '\\textbackslash{}', '{': '\\{', '}': '\\}', '#': '\\#', '$': '\\$',
-        '%': '\\%', '&': '\\&', '_': '\\_', '~': '\\textasciitilde{}', '^': '\\textasciicircum{}'
-      };
-      return (input || '').replace(/[\\{}#$%&_~^]/g, (m) => map[m]);
-    }
-    // Appliquer avant d’injecter dans LaTeX
-    const safeTex = sanitizeLatex(textFromLLM);
-    ```
-
-  - `latexmk -halt-on-error -interaction=nonstopmode` est utilisé; en cas d’échec, les logs `.log` peuvent être persistés et consultés.
-  - Recommandation (prod): monter un dossier de travail persistant pour collecter les `.log` LaTeX et déclencher une alerte (mail/Slack) si le taux d’erreur dépasse un seuil.
+- **Gestion des erreurs de rendu React-PDF**
+  - Le rendu est encapsulé (try/catch). En cas d’erreur (`renderToFile`), on logue l’erreur et on continue (création des `Report` sans `pdfUrl`) pour ne pas bloquer la file.
+  - Gestion des polices: embarquer Inter dans l’image ou prévoir un fallback si l’accès réseau est restreint.
+  - Validation/normalisation: veiller à fournir des chaînes sûres (pas d’`undefined`) et un JSON conforme avant rendu.
   - Si MinIO/S3 est indisponible, l’upload est ignoré avec avertissement; l’URL PDF est laissée vide. Le `Report.json` reste disponible en base.
 
 ### Emplacement des PDF sur le serveur
 
-- Par défaut, les PDF sont compilés dans un répertoire temporaire (`/tmp/nsi-XXXX`) puis uploadés vers **MinIO/S3** (clé objet):
+- Par défaut, les PDF sont générés dans un répertoire temporaire (`/tmp/nsi-XXXX`) puis uploadés vers **MinIO/S3** (clé objet):
   - `s3://reports/reports/{studentId}/{attemptId}/eleve.pdf`
   - `s3://reports/reports/{studentId}/{attemptId}/enseignant.pdf`
 - En Docker Compose, le service `minio` écrit dans un volume nommé `minio`. Physiquement (Docker volumes):
@@ -618,7 +644,7 @@ npm run dev -w nsi-web
     ```
 
     Les PDF seront alors visibles sous `/var/nsi/minio-data/reports/...` sur le serveur.
-- Sans S3, vous pouvez persister localement en copiant les PDF compilés vers un dossier (ex: `/var/nsi/reports`) et en stockant le chemin dans `Report.pdfUrl` (schéma déjà compatible).
+- Sans S3, vous pouvez persister localement en copiant les PDF générés vers un dossier (ex: `/var/nsi/reports`) et en stockant le chemin dans `Report.pdfUrl` (schéma déjà compatible).
 
 ## API et Routage
 
@@ -634,10 +660,9 @@ npm run dev -w nsi-web
 - `POST /api/bilan/[bilanId]/submit-answers` → sauvegarde réponses, calcule scores, met à jour `Bilan`
 - `POST /api/bilan/generate-report-text` → génère texte enseignant (RAG + LLM) côté web
 - `POST /api/bilan/generate-summary-text` → génère texte élève (RAG + LLM) côté web
-- `GET  /api/bilan/pdf/[bilanId]?variant=eleve|enseignant` → PDF LaTeX
-- `POST /api/bilan/email/[bilanId]` → envoi e-mails
-- `POST /api/rag/upload` → upload documents pour ingestion RAG
-- `POST /api/auth/login`, `POST /api/auth/magic-link`, `GET /api/auth/callback`, ...
+- `GET  /api/bilan/pdf/[bilanId]?variant=eleve|enseignant` → PDF React-PDF
+- `POST /api/rag/upload` → upload documents pour RAG
+- `POST /api/auth/login`, `POST /api/auth/logout`
 
 ## Rôles, Permissions et Dashboards
 
@@ -664,27 +689,47 @@ npm run dev -w nsi-web
   - `llm_api_latency_seconds` (Histogram) avec label `provider` — latence des appels LLM (Gemini, OpenAI).
   - `bullmq_jobs{queue,status}` (Gauges) — état des files BullMQ (`generate_reports`, `rag_ingest`).
   - Métriques Node par défaut (CPU, RSS, event loop lag, etc.).
-- Prometheus scrape `http://web:3000/api/metrics` toutes les 15s (`infra/prometheus/prometheus.yml`).
+- Exemple minimal de configuration Prometheus (si vous n’avez pas les fichiers sous `infra/prometheus/`):
+
+```yaml
+# docs/examples/prometheus.yml (exemple)
+scrape_configs:
+  - job_name: 'web'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['web:3000']
+    metrics_path: /api/metrics
+```
 
 ### Visualisation (Grafana)
 
 - Accès local: `http://localhost:3001` (admin/admin).
-- Dashboards pré‑provisionnés (`infra/grafana/provisioning/dashboards`):
-  - `NSI Observability`: santé applicative (LLM p95, BullMQ waiting/active/failed, RSS).
-  - `NSI Runtime`: santé runtime (CPU user/system, event loop lag p95).
+- Si vous n’avez pas de provisioning prêt, voici un datasource Prometheus minimal:
 
-### Alerting (Alertmanager)
+```yaml
+# docs/examples/grafana-datasource.yaml
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+```
 
-- Règles d’alertes: `infra/prometheus/rules.yml`.
-- Alertes pré‑configurées:
-  - `HighLLMLatencyP95` — p95 latence LLM > 5s.
-  - `BullMQJobsFailed` — au moins un job en échec.
-  - `BullMQWaitingHigh` — trop de jobs en attente (> 25 sur 5 minutes).
-  - `WebDown` — application web non joignable (inclut cas `absent(up{job="web"})`).
-- Notifications E‑mail (Alertmanager):
-  - Configurées via `infra/alertmanager/config.yml`.
-  - Variables d’environnement utilisées: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `ALERTS_TO`.
-  - Chaîne: Prometheus (alerte firing) → Alertmanager → SMTP (e‑mail) + webhook de log.
+- Dashboards suggérés:
+  - NSI Observability: LLM p95, BullMQ waiting/active/failed, RSS.
+  - NSI Runtime: CPU user/system, event loop lag p95.
+
+### Alerting
+
+- Non configuré par défaut dans ce projet (pas d’envoi d’e‑mail). Vous pouvez brancher des webhooks externes à Prometheus ou un autre système d’alerting si nécessaire.
+
+- Exemples d’alertes utiles:
+  - HighLLMLatencyP95 — p95 latence LLM > 5s.
+  - BullMQJobsFailed — au moins un job en échec.
+  - BullMQWaitingHigh — trop de jobs en attente (> 25 sur 5 minutes).
+  - WebDown — application web non joignable (inclut cas `absent(up{job="web"})`).
 
 ## Sécurité & Conformité
 
@@ -712,11 +757,28 @@ npm run dev -w nsi-web
   - Clés actives (OpenAI/Gemini), latence acceptable, retry functional.
   - Extraits RAG présents dans les réponses (champ `rag_references`).
 - PDFs:
-  - Contenu lisible, sections remplies, erreurs LaTeX absentes, stockage S3 confirmé.
+  - Rendu React-PDF OK (contenu lisible, sections remplies), stockage S3 confirmé.
 - Observabilité:
   - Logs exempts d’erreurs récurrentes; queues vides en régime nominal.
 
 ## CI/CD et Qualité du Code
+
+### Tests de Bout-en-Bout (Playwright)
+
+- Scénarios principaux:
+  - api_validation: création/soumission bilan via API, polling statut jusqu'à GENERATED, validation rapports. Assertion: succès si GENERATED atteint; si PROCESSING_AI_REPORT est vu, GENERATED ne le précède pas. Pour pdfUrl s3://, acceptation 200/404 sur /api/bilan/pdf/:bilanId?variant=... et /api/bilan/download/:reportId.
+  - student_golden_path: login UI robuste (placeholders), génération via API (fiable en test), validation PDF (200/404 acceptés).
+  - teacher_consultation: login UI puis vérifications via API; validation PDF (200/404).
+  - load_class: 24 élèves en parallèle, drainage des files, vérification rapports.
+
+- Stratégie fast-path:
+  - Queue generate_reports_fast + worker dédié. Rapports stub et passage rapide à GENERATED pour déterminisme.
+  - PROCESSING_AI_REPORT peut ne pas être observé; les tests valident l'état final.
+
+- Commandes npm:
+  - npm -w nsi-web run e2e:api
+  - npm -w nsi-web run e2e
+  - npm -w nsi-web run e2e:load
 
 - Intégration Continue (GitHub Actions) — `.github/workflows/ci.yml`:
   - Exécuté sur `push`/`pull_request` (`main`).
@@ -796,6 +858,257 @@ Scripts fournis (répertoire `scripts/`):
   ```
 
 ## Déploiement en Production (VPS)
+
+Cette section fournit un guide exhaustif, concret et opérationnel pour déployer le projet en mode production sur un VPS (Ubuntu/Debian), avec un objectif de service stable, observable et sécurisé.
+
+Résumé (TL;DR)
+- Frontend (Next.js) tournant derrière Nginx en HTTPS (TLS 1.2+), port interne 3000
+- Worker BullMQ (Node) en service de fond (pm2/systemd)
+- PostgreSQL (avec extensions pgvector et pgcrypto) + Redis + MinIO (ou AWS S3)
+- Variables d’environnement dans un fichier .env géré comme secret (jamais commit)
+- Observabilité: /api/metrics exposé pour Prometheus; Sentry recommandé
+
+### 1) Prérequis VPS
+- OS: Ubuntu 22.04/24.04 LTS (ou Debian stable)
+- Ressources: 2 vCPU, 4 Go RAM (minimum recommandé), 40+ Go disque
+- Nom de domaine (FQDN) pointant vers l’IP du VPS (ex: nsi.example.com)
+- Accès SSH (clé), firewall (UFW) ouvert sur 80/tcp, 443/tcp, 22/tcp
+
+Sécurisation de base (exemple Ubuntu)
+```bash
+sudo apt-get update && sudo apt-get upgrade -y
+sudo apt-get install -y ufw fail2ban
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+### 2) Dépendances système
+```bash
+# Node.js LTS (via NodeSource ou nvm)
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs build-essential
+
+# PostgreSQL + extensions
+sudo apt-get install -y postgresql postgresql-contrib
+# Redis
+sudo apt-get install -y redis-server
+# Nginx + Certbot (TLS)
+sudo apt-get install -y nginx certbot python3-certbot-nginx
+```
+
+Option S3 local (MinIO) si vous ne disposez pas d’un S3 managé
+```bash
+# Binaire MinIO (service unique) ou via Docker
+# (Facultatif, vous pouvez utiliser AWS S3, Scaleway, Wasabi, etc.)
+```
+
+### 3) Base de données (PostgreSQL)
+Créer l’utilisateur, la base et activer les extensions (pgvector, pgcrypto)
+```bash
+sudo -u postgres psql <<'SQL'
+CREATE ROLE nsi LOGIN PASSWORD 'votre_mot_de_passe_solide';
+CREATE DATABASE interface_nsi_rag OWNER nsi;
+\c interface_nsi_rag
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pgcrypto; -- pour gen_random_uuid()
+SQL
+```
+
+Créer les index vectoriels (si pas créés par les migrations/ingestions)
+```sql
+-- depuis psql sur la base interface_nsi_rag
+CREATE INDEX IF NOT EXISTS idx_chunks_embedding_cosine
+  ON chunks USING ivfflat (embedding vector_cosine_ops)
+  WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks (document_id);
+```
+
+### 4) Redis
+```bash
+sudo systemctl enable --now redis-server
+redis-cli ping  # doit répondre PONG
+```
+
+### 5) Stockage S3
+- Choisir: MinIO local ou S3 managé (AWS/équivalent)
+- Créer le bucket (ex: reports)
+- Noter endpoint/region/clé/secret → variables d’environnement S3_*
+
+### 6) Récupération du code & installation
+```bash
+cd /opt
+sudo mkdir -p /opt/nsi && sudo chown "$USER":"$USER" /opt/nsi
+cd /opt/nsi
+# git clone <votre_repo>
+# cd <nom_repo>
+npm ci
+```
+
+### 7) Variables d’environnement (production)
+Créer /opt/nsi/.env.production (non versionné) avec les clés requises:
+```env
+APP_BASE_URL=https://nsi.example.com
+
+# Base de données (host:port selon votre setup)
+DATABASE_URL=postgresql://nsi:VOTRE_MDP@127.0.0.1:5432/interface_nsi_rag
+REDIS_URL=redis://127.0.0.1:6379
+
+# RAG / LLM
+EMBEDDING_PROVIDER=gemini
+GEMINI_API_KEY=... # clé Gemini
+GEMINI_EMBEDDINGS_MODEL=text-embedding-004
+VECTOR_DIM=768
+# Fallback optionnel
+HF_TOKEN=
+
+# S3 (MinIO ou cloud S3)
+S3_ENDPOINT=http://127.0.0.1:9000
+S3_ACCESS_KEY=...
+S3_SECRET_KEY=...
+S3_BUCKET=reports
+S3_REGION=us-east-1
+S3_FORCE_PATH_STYLE=true
+
+# Auth & sécurité
+JWT_SECRET=change-me-super-long
+
+# Observabilité (recommandé)
+SENTRY_DSN=
+```
+Important: ne JAMAIS committer ce fichier. Stockez‑le en dehors du repo si possible (ex: /etc/nsi/.env). Utilisez un gestionnaire de secrets (Vault/SSM) si disponible.
+
+### 8) Migrations & build
+```bash
+# Charger l’environnement en shell de déploiement
+set -a; source /opt/nsi/.env.production; set +a
+# Appliquer les migrations Prisma (prod)
+npx prisma migrate deploy
+# Build Next.js
+npm run build -w nsi-web
+```
+
+### 9) Ingestion RAG (documents PDF/MD)
+Copier vos sources RAG sur le serveur (ou vérifier data/rag_sources). Puis:
+```bash
+# Variables déjà chargées via set -a ...
+npx ts-node -P tsconfig.scripts.json scripts/ingest_rag.ts
+# Vérification rapide
+psql "$DATABASE_URL" -c "SELECT COUNT(*) docs FROM documents; SELECT COUNT(*) chunks FROM chunks;"
+```
+
+### 10) Démarrage en production (pm2)
+Créer un ecosystem.config.js (adapté au chemin et à l’emplacement du .env), par ex.:
+```js
+module.exports = {
+  apps: [
+    {
+      name: 'nsi-web',
+      cwd: './apps/web',
+      script: './node_modules/next/dist/bin/next',
+      args: 'start -p 3000',
+      env: require('dotenv').config({ path: '/opt/nsi/.env.production' }).parsed
+    },
+    {
+      name: 'nsi-worker',
+      cwd: '.',
+      script: 'apps/worker/src/index.js',
+      env: require('dotenv').config({ path: '/opt/nsi/.env.production' }).parsed
+    }
+  ]
+};
+```
+Lancer et persister:
+```bash
+pm2 start ecosystem.config.js
+pm2 status
+pm2 save
+pm2 startup  # pour restaurer au reboot
+```
+
+Zero‑downtime déploiement
+```bash
+# Sur mise à jour de code/config
+npm ci
+npm run build -w nsi-web
+pm2 reload nsi-web
+pm2 restart nsi-worker  # si nécessaire
+```
+
+### 11) Reverse proxy Nginx + TLS
+Exemple de bloc serveur minimal (Let’s Encrypt via certbot):
+```nginx
+server {
+  listen 80;
+  server_name nsi.example.com;
+  location / { return 301 https://$host$request_uri; }
+}
+server {
+  listen 443 ssl http2;
+  server_name nsi.example.com;
+
+  ssl_certificate     /etc/letsencrypt/live/nsi.example.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/nsi.example.com/privkey.pem;
+  add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+  location / {
+    proxy_pass         http://127.0.0.1:3000;
+    proxy_set_header   Host $host;
+    proxy_set_header   X-Real-IP $remote_addr;
+    proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header   X-Forwarded-Proto $scheme;
+  }
+}
+```
+Générer/renouveler les certificats:
+```bash
+sudo certbot --nginx -d nsi.example.com --redirect
+```
+
+### 12) Observabilité
+- Prometheus: scrapper https://nsi.example.com/api/metrics
+- Grafana: créer dashboards (latence LLM, BullMQ, CPU/RAM)
+- Sentry: définir SENTRY_DSN dans l’environnement, vérifier la capture d’erreurs web/worker
+
+### 13) Tests de recette post‑déploiement
+- Santé web: GET https://nsi.example.com/
+- RAG search: https://nsi.example.com/api/rag/search?q=méthodes%20de%20travail&k=3 et page https://nsi.example.com/rag
+- Génération bilan (scénario minimal):
+  1. Créer/peupler des comptes (seed)
+  2. Remplir un questionnaire
+  3. Vérifier qu’un job `generate_reports` s’exécute (queues BullMQ) et que les PDF apparaissent (S3)
+
+### 14) Sauvegardes
+- PostgreSQL (pg_dump / pg_backrest) — planifier quotidiennement + rétention
+- MinIO/S3 — réplication/versions selon la criticité
+- Sauvegardes de configuration (ecosystem pm2, .env, nginx)
+
+### 15) Sécurité & bonnes pratiques
+- Secrets via gestionnaire de secrets (Vault/SSM), pas en clair ni en repo
+- JWT_SECRET fort et long; cookies HTTPOnly/SameSite
+- TLS forcé (HSTS), redirections 80→443, CSP (next.config.mjs / headers)
+- Mises à jour régulières (OS, npm deps), scans (npm audit)
+- Logs et métriques surveillés, alertes configurées
+
+—
+
+Notes spécifiques au projet
+- Les fonctionnalités e‑mail/magic‑link sont retirées/neutralisées (410) — pas de SMTP en prod.
+- Endpoints RAG: /api/rag/search (et UI /rag) disponibles en prod; protégés selon vos besoins (auth/rate‑limit) via middleware.
+- Le worker et l’app web s’appuient sur la même base; assurez PgBouncer en cas de charge élevée.
+
+⚠️ HTTPS en production: placer l’app derrière un Nginx/Traefik configuré en TLS 1.2+ avec certificats valides (Let’s Encrypt). Exemple d’upstream simple est fourni sous `infra/nginx/nsi.labomaths.tn.conf` (à adapter et sécuriser).
+
+Fichier .env exigible pour la production
+- Un exemple prêt à l’emploi est fourni: docs/examples/.env.production.example
+- Exigences clés:
+  - JWT_SECRET: chaîne longue et aléatoire
+  - LLM: au moins GEMINI_API_KEY (provider par défaut) ou OPENAI_API_KEY (fallback si activé)
+  - Embeddings: EMBEDDING_PROVIDER + GEMINI_EMBEDDINGS_MODEL + VECTOR_DIM (ou HF_TOKEN pour fallback)
+  - S3: S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET
+  - DB/Redis: DATABASE_URL (via PgBouncer si utilisé), REDIS_URL
+  - Observabilité: SENTRY_DSN (recommandé)
 
 ### Check-list
 
@@ -878,12 +1191,6 @@ module.exports = {
         S3_BUCKET: process.env.S3_BUCKET || 'reports',
         S3_REGION: process.env.S3_REGION || 'us-east-1',
         S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE || 'true',
-        SMTP_HOST: process.env.SMTP_HOST,
-        SMTP_PORT: process.env.SMTP_PORT || '587',
-        SMTP_SECURE: process.env.SMTP_SECURE || 'false',
-        SMTP_USER: process.env.SMTP_USER,
-        SMTP_PASS: process.env.SMTP_PASS,
-        SMTP_FROM: process.env.SMTP_FROM
       }
     },
     {
@@ -906,12 +1213,6 @@ module.exports = {
         S3_BUCKET: process.env.S3_BUCKET || 'reports',
         S3_REGION: process.env.S3_REGION || 'us-east-1',
         S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE || 'true',
-        SMTP_HOST: process.env.SMTP_HOST,
-        SMTP_PORT: process.env.SMTP_PORT || '587',
-        SMTP_SECURE: process.env.SMTP_SECURE || 'false',
-        SMTP_USER: process.env.SMTP_USER,
-        SMTP_PASS: process.env.SMTP_PASS,
-        SMTP_FROM: process.env.SMTP_FROM
       }
     }
   ]
@@ -929,6 +1230,19 @@ pm2 startup  # pour persister au reboot
 
 ### Considérations sur l'Environnement de Production
 
+Checklist Production (VPS)
+- Variables d’environnement: utiliser un gestionnaire de secrets. Voir docs/examples/.env.production.example
+- HTTPS/TLS: Nginx/Traefik avec certificats valides; activer HSTS.
+- Postgres: activer pgvector et pgcrypto. PgBouncer en mode transaction. Sauvegardes régulières (pg_dump). Volumes persistants.
+- Redis: surveillance et persistance selon besoin; volumes si nécessaire.
+- MinIO/S3: bucket reports créé; clés d’accès en secrets; volume /data persisté.
+- Migrations: npx prisma migrate deploy avant la mise en ligne.
+- RAG: exécuter scripts/ingest_rag.ts pour alimenter documents/chunks.
+- Worker: exécution en service (pm2/systemd), concurrency paramétrable.
+- Observabilité: Prometheus/Grafana/Alertmanager configurés (exemples fournis) + Sentry DSN.
+- Sécurité applicative: JWT_SECRET fort; rate limiting activé; CSP configurée dans next.config.mjs; cookies HTTPOnly.
+- Tests de validation: script d’acceptance minimal post-déploiement (login → créer bilan → soumettre → génération → téléchargement PDF).
+
 - **Configuration de PgBouncer** : s’assurer que PgBouncer connaît la base applicative, via un `pgbouncer.ini` monté (service `pgbouncer` dans `infra/`) ou via variables d’environnement de l’image Bitnami (voir `infra/docker-compose.yml`). Les services applicatifs doivent pointer vers `pgbouncer:5432`.
 - **Exécution des Scripts de Maintenance** : lancer les scripts (ex: `scripts/ingest_rag.ts`) depuis un conteneur du réseau Docker afin d’accéder aux services (DB, Redis): `docker compose -f infra/docker-compose.yml exec -T web npx ts-node -P tsconfig.scripts.json scripts/ingest_rag.ts`.
 - **Persistance des Données** : utiliser des bind mounts pour les données critiques afin de faciliter sauvegardes/supervision:
@@ -936,6 +1250,14 @@ pm2 startup  # pour persister au reboot
   - MinIO: monter `/data` (ex: `/var/nsi/minio-data:/data`).
 
 ## 9. Scripts Utilitaires
+
+- Validation du Volet 1 (20 questions, domaines, poids):
+
+```bash
+bash scripts/validate_volet1.sh
+```
+
+Les scripts ci-dessous existent dans `scripts/` et/ou peuvent être adaptés. Évitez d’y stocker des secrets; passez-les via variables d’environnement.
 
 Remplacé par `scripts/seed_production_data.ts` (voir plus haut)
 
@@ -955,7 +1277,7 @@ npx ts-node -P tsconfig.scripts.json scripts/count_entities.ts
 
 - Embeddings par **Gemini** (768 dims) configurables via `EMBEDDING_PROVIDER=gemini` (fallback HF). Le worker et le web normalisent et pad/trim les vecteurs à `VECTOR_DIM`.
 - Le pipeline de génération est piloté **exclusivement** par `reporting.pre_analysis` et `reporting.inputs` pour séparer configuration et exécution.
-- Les templates LaTeX sont personnalisables par établissement; l’upload S3 et l’e-mail sont facultatifs selon l’environnement.
+- Les composants React-PDF sont personnalisables par établissement; l’upload S3 est facultatif selon l’environnement.
 
 ## Runbook Gestion des Alertes
 
@@ -986,7 +1308,7 @@ npx ts-node -P tsconfig.scripts.json scripts/count_entities.ts
   2. Inspecter les logs `worker` pour la trace d’erreur du job: `docker compose -f infra/docker-compose.yml logs --since=60m worker | cat`.
   3. Vérifier les annotations de l’alerte dans Alertmanager (jobId si journalisé).
 - **Causes Possibles :**
-  - Erreur de code (exception non gérée dans une étape: LLM, LaTeX, S3, SMTP).
+  - Erreur de code (exception non gérée dans une étape: LLM, React-PDF, S3).
   - Dépendance externe indisponible (OpenAI, MinIO/S3, SMTP).
   - Données en entrée invalides (payload invalide, schéma Zod refusé).
 - **Procédure de Résolution :**
@@ -1004,7 +1326,7 @@ npx ts-node -P tsconfig.scripts.json scripts/count_entities.ts
   3. Vérifier la charge machine (CPU/RAM) du conteneur worker.
 - **Causes Possibles :**
   - Afflux massif de demandes (pic d’utilisation).
-  - Goulot d’étranglement (LLM lent, S3 lent, LaTeX lourd).
+  - Goulot d’étranglement (LLM lent, S3 lent, rendu PDF lourd).
   - Concurrency du worker trop faible.
 - **Procédure de Résolution :**
   - Augmenter temporairement la concurrence du worker (env ou scaling horizontal de `worker`).
@@ -1029,6 +1351,12 @@ npx ts-node -P tsconfig.scripts.json scripts/count_entities.ts
   - Si crash au boot, reconstruire et relancer (`docker compose build web && docker compose up -d web`) après correction.
 
 ## Implémentation de l'IA et du RAG
+
+Variables d’environnement clés:
+- EMBEDDING_PROVIDER: `gemini` (par défaut) ou `hf`
+- GEMINI_API_KEY et GEMINI_EMBEDDINGS_MODEL (ex: text-embedding-004) quand provider=gemini
+- HF_TOKEN quand provider=hf
+- VECTOR_DIM: 768 (Gemini) ou 384 (HF MiniLM)
 
 ### Stratégie RAG à Double Niveau
 
@@ -1075,6 +1403,9 @@ npx ts-node -P tsconfig.scripts.json scripts/count_entities.ts
 
 ## Guide du Développeur
 
+- Conventions: TypeScript strict sur web, ESLint/Prettier (à réactiver au build si désactivés); PEP8 pour scripts Python.
+- Secrets: ne jamais committer de clés API; utiliser `.env.local` en dev et un gestionnaire de secrets en prod.
+
 - Déboguer le worker:
   - Lancer en local avec `node --inspect apps/worker/src/index.js` et attacher un debugger (Chrome/VSCode) pour inspecter un job.
 - Exécuter les tests localement:
@@ -1085,4 +1416,12 @@ npx ts-node -P tsconfig.scripts.json scripts/count_entities.ts
 - Ajouter une nouvelle question au questionnaire:
   - Modifier `data/questionnaire_nsi_terminale.final.json` (clé de question, validations).
   - Si la question influe sur le scoring, adapter `lib/scoring/*` et, si nécessaire, `reporting.inputs` pour référencer la nouvelle donnée.
-  - Vérifier la prise en compte côté prompts (si utile) et la validation JSON avant LaTeX.
+  - Vérifier la prise en compte côté prompts (si utile) et la validation JSON avant le rendu React-PDF.
+
+## Points Legacy/Known Issues
+
+- Observabilité: les chemins `infra/prometheus/*`, `infra/grafana/*`, `infra/alertmanager/*` ne sont pas présents dans ce dépôt. Des exemples minimalistes ont été ajoutés dans ce README (section Observabilité) pour démarrer rapidement.
+- Badge CI: retiré car pointe vers un ancien dépôt.
+- Endpoint email bilan: la route `apps/web/src/app/api/bilan/email/[bilanId]/route.ts` référence un modèle `User` qui n’existe plus dans le schéma Prisma actuel; considérer une refonte (utiliser Teacher/Student + autorisations) avant usage.
+- Sélection de fonts/Inter pour PDF React-PDF: le worker tente de télécharger des fontes Inter à l’exécution; en environnement fermé, prévoir de les embarquer dans l’image ou de désactiver ce code.
+- PDF côté API `bilan/pdf`: implémentation prototype; la génération finale est assurée par le worker React-PDF.

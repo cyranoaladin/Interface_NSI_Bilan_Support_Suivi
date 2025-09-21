@@ -47,11 +47,6 @@ RUN printf "OPENAI_API_KEY=dummy-openai-key-abcdefghijklmnopqrstuvwxyz\n" \
     "S3_SECRET_KEY=dummy-secret\n" \
     "S3_BUCKET=reports\n" \
     "S3_REGION=us-east-1\n" \
-    "SMTP_HOST=localhost\n" \
-    "SMTP_USER=test@example.com\n" \
-    "SMTP_PASS=dummy-smtp\n" \
-    "SMTP_FROM=nsipmf@example.com\n" \
-    "MAGIC_LINK_FROM=magic@example.com\n" \
     "JWT_SECRET=dummy-jwt-secret-should-be-long-enough-123456\n" > apps/web/.env.production
 
 # build du workspace web via le script racine (Next charge .env.production)
@@ -81,8 +76,12 @@ COPY --from=builder /app/tsconfig.scripts.json ./tsconfig.scripts.json
 COPY --from=builder /app/apps/web/tsconfig.json ./tsconfig.json
 
 # Installer clients nécessaires (openssl pour prisma; postgresql-client pour psql de test)
+# + Dépendances système Playwright pour exécuter Chromium en headless
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl libssl3 postgresql-client curl poppler-utils \
+    libglib2.0-0 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+    libxkbcommon0 libatspi2.0-0 libxcomposite1 libxdamage1 libxfixes3 \
+    libxrandr2 libgbm1 libpango-1.0-0 libasound2 \
   && rm -rf /var/lib/apt/lists/*
 
 # Exécuter en utilisateur non-root

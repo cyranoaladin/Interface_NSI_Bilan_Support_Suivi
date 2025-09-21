@@ -2,7 +2,7 @@ import { z } from 'zod';
 const EnvSchema = z.object({
   OPENAI_API_KEY: z.preprocess((v) => (typeof v === 'string' && v.trim().length === 0 ? undefined : v), z.string().min(10).optional()),
   // Embeddings provider config
-  EMBEDDING_PROVIDER: z.enum(['hf', 'gemini']).default('hf'),
+  EMBEDDING_PROVIDER: z.enum(['hf', 'gemini']).default('gemini'),
   HF_TOKEN: z.preprocess((v) => (typeof v === 'string' && v.trim().length === 0 ? undefined : v), z.string().min(10).optional()),
   GEMINI_API_KEY: z.preprocess((v) => (typeof v === 'string' && v.trim().length === 0 ? undefined : v), z.string().min(10).optional()),
   GEMINI_EMBEDDINGS_MODEL: z.string().default('text-embedding-004'),
@@ -17,13 +17,6 @@ const EnvSchema = z.object({
   S3_BUCKET: z.string().default('reports'),
   S3_REGION: z.string().default('us-east-1'),
   S3_FORCE_PATH_STYLE: z.string().optional(),
-  SMTP_HOST: z.string(),
-  SMTP_PORT: z.coerce.number().default(587),
-  SMTP_SECURE: z.coerce.boolean().default(false),
-  SMTP_USER: z.string().email(),
-  SMTP_PASS: z.string(),
-  SMTP_FROM: z.string(),
-  MAGIC_LINK_FROM: z.string().email(),
   JWT_SECRET: z.string().min(20),
 }).superRefine((obj, ctx) => {
   // Exiger au moins une clé LLM (OpenAI ou Gemini) pour la génération

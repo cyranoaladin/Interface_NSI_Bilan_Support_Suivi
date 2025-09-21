@@ -27,7 +27,7 @@
   "auth": {
     "method": "email_domain",
     "domain": "ert.tn",
-    "verification": "magic_link",
+    "verification": "none",
     "fields": [
       "email"
     ],
@@ -898,17 +898,7 @@
             "bilan_enseignant_pdf"
           ]
         },
-        "email": {
-          "to": [
-            "alaeddine.benrhouma@ert.tn",
-            "pierre.caillabet@ert.tn"
-          ],
-          "subject": "Bilan NSI Terminale — {{student.family_name}} {{student.given_name}}",
-          "attachments": [
-            "bilan_eleve_pdf",
-            "bilan_enseignant_pdf"
-          ]
-        }
+        
       }
     },
     "security": {

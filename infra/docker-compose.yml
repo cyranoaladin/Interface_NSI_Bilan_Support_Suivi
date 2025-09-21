@@ -17,6 +17,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - nsi_network
 
   pgbouncer:
     image: bitnami/pgbouncer:1
@@ -27,13 +29,20 @@ services:
       - PGBOUNCER_USERNAME=nsi
       - PGBOUNCER_PASSWORD=${POSTGRES_PASSWORD}
       - PGBOUNCER_AUTH_TYPE=trust
+      - PGBOUNCER_AUTH_USER=nsi
+      - PGBOUNCER_AUTH_PASSWORD=${POSTGRES_PASSWORD}
       - PGBOUNCER_PORT=5432
+      - PGBOUNCER_POOL_MODE=transaction
+      - PGBOUNCER_MAX_CLIENT_CONN=500
+      - PGBOUNCER_DEFAULT_POOL_SIZE=50
       - POSTGRESQL_HOST=postgres
       - POSTGRESQL_USERNAME=nsi
       - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD}
     depends_on:
       postgres:
         condition: service_started
+    networks:
+      - nsi_network
 
   redis:
     image: redis:7-alpine
@@ -43,18 +52,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - nsi_network
 
   minio:
     image: minio/minio:latest
+    env_file: ../.env
     environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+      # Use defaults if not provided via shell env to avoid blank values
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
       - minio:/data
+    networks:
+      - nsi_network
 
   web:
     build:
@@ -74,21 +89,28 @@ services:
     environment:
       NEXT_BASE_PATH: ""
       SKIP_ENV_VALIDATION: "1"
-      CI: "true"
-      # URL via PgBouncer (port interne 5432)
-      DATABASE_URL: postgresql://nsi@pgbouncer:5432/nsi
+      CI: "false"
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-reports}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      TEST_FASTPATH_DELAY_MS: ${TEST_FASTPATH_DELAY_MS:-6000}
     ports:
       - "3000:3000"
     volumes:
       - ragdata:/data/rag_uploads
-      - ./data/rag_sources:/mnt/data:ro
+      - ..:/app
+      - /home/alaeddine/Interface_NSI_2025_2026_local/data/rag_sources:/mnt/data:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - nsi_network
 
   worker:
     build:
@@ -97,11 +119,15 @@ services:
     env_file: ../.env
     environment:
       SKIP_ENV_VALIDATION: "1"
-      # URL via PgBouncer (port interne 5432)
-      DATABASE_URL: postgresql://nsi@pgbouncer:5432/nsi
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-reports}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
       NODE_OPTIONS: --max-old-space-size=4096
+      PRODUCTION_STRICT: "1"
     depends_on:
       postgres:
         condition: service_healthy
@@ -114,6 +140,8 @@ services:
     volumes:
       - ragdata:/data/rag_uploads
       - ..:/app
+    networks:
+      - nsi_network
 
   prometheus:
     image: prom/prometheus:latest
@@ -127,22 +155,8 @@ services:
       - "9090:9090"
     depends_on:
       - web
-      - alertmanager
-
-  alertmanager:
-    image: prom/alertmanager:latest
-    command:
-      - --config.file=/etc/alertmanager/config.yml
-    volumes:
-      - ./alertmanager/config.yml:/etc/alertmanager/config.yml:ro
-    environment:
-      - SMTP_SMARTHOST=${SMTP_HOST}:${SMTP_PORT}
-      - SMTP_AUTH_USERNAME=${SMTP_USER}
-      - SMTP_AUTH_PASSWORD=${SMTP_PASS}
-      - SMTP_FROM=${SMTP_FROM}
-      - SMTP_TO=${ALERTS_TO:-alerts@example.com}
-    ports:
-      - "9093:9093"
+    networks:
+      - nsi_network
 
   grafana:
     image: grafana/grafana:10.4.6
@@ -158,6 +172,8 @@ services:
       - "3001:3001"
     depends_on:
       - prometheus
+    networks:
+      - nsi_network
 
 volumes:
   pgdata:
@@ -165,3 +181,7 @@ volumes:
   ragdata:
   prometheus_data:
   grafana_data:
+
+networks:
+  nsi_network:
+    driver: bridge

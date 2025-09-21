@@ -1,0 +1,107 @@
+{
+  "eleve": [
+    {
+      "section": "intro",
+      "prompt": "Tu es un professeur de NSI bienveillant et exigeant. Contexte : {student.given_name}, classe {context.csv_classe}, scores = {scores}. Référence : [BILAN_PREMIUM_REQUIREMENTS.md], [Questionnaire_Rentrée.pdf]. Tâche : Écris une introduction motivante pour l’élève. Inclure : - Objectif du bilan (identifier forces, axes de progression, cap clair en NSI). - Contenu du document (tableau de scores, profil, feuille de route, conseils). - Message d’encouragement (importance des petits pas, progression continue). Style attendu : clair, positif, engageant, 3–4 courts paragraphes max.",
+      "rag_sources": [
+        "BILAN_PREMIUM_REQUIREMENTS.md",
+        "Questionnaire_Rentrée.pdf"
+      ]
+    },
+    {
+      "section": "competences",
+      "prompt": "Tu es un professeur de NSI expert en évaluation. Contexte : scores détaillés = {scores}. Références : [RCP Référentiel de compétences], [Programme NSI Première], [Programme NSI Terminale]. Tâche : - Dresser un état des lieux par domaine (Python, Structures, Données, Logique, Web, Algorithmes). - Pour chaque domaine : interprète le score (faible <50%, moyen 50–74%, solide ≥75%). - Fournis un conseil ciblé par domaine (exercice recommandé ou stratégie). Format : tableau ou puces + un paragraphe de synthèse.",
+      "rag_sources": [
+        "RCP_Référentiel de compétences en programmation_vue détaillée.pdf",
+        "programme_nsi_premiere.pdf",
+        "programme_nsi_terminale.pdf"
+      ]
+    },
+    {
+      "section": "profil",
+      "prompt": "Tu es un enseignant qui analyse le style d’apprentissage d’un élève. Contexte : réponses questionnaire = {questionnaire_data}. Référence : [Guide pédagogique PMF], [Questionnaire_nsi_terminale.final.json]. Tâche : - Décrire ses atouts (mémoire, autonomie, motivation, organisation). - Identifier ses points de vigilance. - Donner 2–3 conseils pratiques pour renforcer son profil. Style : ton bienveillant, format clair (puces ou paragraphes courts).",
+      "rag_sources": [
+        "questionnaire_nsi_terminale.final.json",
+        "GUIDE_PEDAGOGIQUE_NSI_PMF.md"
+      ]
+    },
+    {
+      "section": "plan",
+      "prompt": "Tu es un professeur de NSI qui prépare un plan d’action personnalisé. Contexte : scores = {scores}, profil_apprentissage = {profil}. Références : [Ressources NSI pour Élèves], [Vademecum NSI], [Programme NSI]. Tâche : Proposer un plan de 4 semaines. Pour chaque semaine : - Objectif (1 phrase). - 2–3 Activités pratiques. - 1–2 Ressources fiables (issues du RAG). Format attendu : structuré par semaine, avec puces. Style : simple, progressif, motivant.",
+      "rag_sources": [
+        "Ressources NSI pour Élèves.md",
+        "vademecum-snt-nsi_0.pdf",
+        "programme_nsi_premiere.pdf",
+        "programme_nsi_terminale.pdf"
+      ]
+    },
+    {
+      "section": "methodes",
+      "prompt": "Tu es un coach pédagogique en NSI. Contexte : {profil}, {scores}. Référence : [IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md]. Tâche : Rédige une liste numérotée (5–7 items) de méthodes efficaces pour progresser en NSI. Exemples : fiches de révision, entraînement régulier, collaboration, auto-correction. Format : liste numérotée, phrases courtes, actionnables immédiatement.",
+      "rag_sources": [
+        "IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md"
+      ]
+    },
+    {
+      "section": "conclusion",
+      "prompt": "Tu es un professeur NSI qui conclut un bilan personnalisé. Contexte : {scores}, {points_forts}, {axes}. Référence : [BILAN_PREMIUM_REQUIREMENTS.md]. Tâche : - Résumer en 2 phrases max les points forts et les axes prioritaires. - Encourager l’élève à persévérer. Style : concis, motivant, ton positif.",
+      "rag_sources": [
+        "BILAN_PREMIUM_REQUIREMENTS.md"
+      ]
+    }
+  ],
+  "enseignant": [
+    {
+      "section": "synthese",
+      "prompt": "Tu es un enseignant NSI qui rédige une synthèse pédagogique. Contexte : {scores}, {profil}, {context}. Références : [Guide pédagogique PMF], [RCP Référentiel]. Tâche : donner une synthèse opérationnelle du profil de l’élève (points forts/faibles, autonomie, rigueur). Format : 1 paragraphe + puces.",
+      "rag_sources": [
+        "GUIDE_PEDAGOGIQUE_NSI_PMF.md",
+        "RCP_Référentiel de compétences en programmation_vue détaillée.pdf"
+      ]
+    },
+    {
+      "section": "diagnostic",
+      "prompt": "Tu es un enseignant NSI. Contexte : {scores}, {diagnostic_pedagogique}. Références : [Guide pédagogique PMF], [Programme NSI]. Tâche : - Lister 2–4 axes de vigilance majeurs. - Pour chacun : proposer 1 activité pratique et 1 ressource adaptée. Format : bloc par axe → Titre + activité + ressource.",
+      "rag_sources": [
+        "GUIDE_PEDAGOGIQUE_NSI_PMF.md",
+        "programme_nsi_premiere.pdf",
+        "programme_nsi_terminale.pdf"
+      ]
+    },
+    {
+      "section": "plan",
+      "prompt": "Tu es un enseignant qui planifie l’accompagnement. Contexte : {scores}, {profil}, {plan_4_semaines}. Références : [Vademecum NSI], [Programme NSI]. Tâche : Générer un plan de 4 semaines adapté, structuré en : Objectif, Activités, Ressources. Format : clair, progressif, par semaine.",
+      "rag_sources": [
+        "vademecum-snt-nsi_0.pdf",
+        "programme_nsi_premiere.pdf",
+        "programme_nsi_terminale.pdf"
+      ]
+    },
+    {
+      "section": "indicateurs",
+      "prompt": "Tu es un enseignant NSI. Contexte : {scores}, {indicateurs_pedago}. Références : [RCP compétences], [IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md]. Tâche : Proposer 3–5 indicateurs mesurables pour suivre la progression (exercices réussis, autonomie, régularité). Format : puces claires, actionnables.",
+      "rag_sources": [
+        "RCP_Référentiel de compétences en programmation_vue détaillée.pdf",
+        "IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md"
+      ]
+    },
+    {
+      "section": "pistes",
+      "prompt": "Tu es un enseignant NSI. Contexte : {scores}, {pistes_pedagogiques}. Références : [Ressources NSI pour Élèves], [Programme NSI], [RCP Référentiel]. Tâche : proposer une liste de ressources officielles / référentiels à exploiter. Format : checklist avec liens et brève description.",
+      "rag_sources": [
+        "Ressources NSI pour Élèves.md",
+        "programme_nsi_premiere.pdf",
+        "programme_nsi_terminale.pdf",
+        "RCP_Référentiel de compétences en programmation_vue détaillée.pdf"
+      ]
+    },
+    {
+      "section": "conclusion",
+      "prompt": "Tu es un enseignant NSI qui conclut un bilan. Contexte : {scores}, {profil}. Tâche : Rédiger une conclusion courte (2 phrases max), rappelant points forts et priorités, avec une recommandation de suivi. Style : professionnel, concis, opérationnel.",
+      "rag_sources": [
+        "BILAN_PREMIUM_REQUIREMENTS.md"
+      ]
+    }
+  ]
+}
+

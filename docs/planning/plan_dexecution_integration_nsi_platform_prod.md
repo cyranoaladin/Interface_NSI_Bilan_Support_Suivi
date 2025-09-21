@@ -10,7 +10,7 @@
 ---
 
 ## B) Roadmap exécutable (jalons)
-**J1–J3** : Base système (Compose, Postgres/pgvector, Redis, MinIO), Prisma + migrations, Auth magic-link + sessions JWT.
+**J1–J3** : Base système (Compose, Postgres/pgvector, Redis, MinIO), Prisma + migrations, Auth e‑mail/mot de passe + sessions JWT.
 **J4–J7** : Questionnaire v2.0 (render, autosave, timer), scoring/tags, dashboards v1.
 **J8–J10** : RAG (ingestion, retrieval), prompts, génération JSON → LaTeX → PDF, worker BullMQ.
 **J11–J12** : Synthèse classe, exports, tests E2E + charge (24 postes), déploiement prod + sauvegardes + monitoring.
@@ -194,10 +194,9 @@ CREATE INDEX IF NOT EXISTS idx_chunks_embedding
 
 ---
 
-## F) Auth magic‑link (API routes)
+## F) Auth (magic‑link supprimé)
 **Endpoints**
-- `POST /api/auth/magic-link` → génère un token, envoie l’e‑mail.
-- `GET  /api/auth/callback?token=…` → vérifie, crée la session (cookie HTTP‑only), redirige.
+- Authentification par e‑mail/mot de passe uniquement; pas de magic link.
 
 **Squelette (extrait TypeScript)**
 ```ts
@@ -257,7 +256,7 @@ async function embedBatch(texts: string[]) {
 3) Construire **prompts** (élève/enseignant) → appel OpenAI (`gpt-4o`) → JSON structuré.
 4) Injecter dans templates LaTeX → compiler (`latexmk -pdf -halt-on-error`).
 5) Uploader PDF vers MinIO (`reports/{studentId}/{attemptId}/eleve.pdf`).
-6) Maj DB + envoi e‑mails.
+6) Maj DB (pas d’e‑mails envoyés).
 
 ---
 

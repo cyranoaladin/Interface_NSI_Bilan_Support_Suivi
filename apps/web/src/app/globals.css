@@ -20,6 +20,23 @@ body {
   @apply bg-[var(--bg)] text-[var(--fg)] font-inter antialiased;
 }
 
+/* Code blocks: preserve whitespace and ensure monospace rendering */
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+}
+code {
+  white-space: pre-wrap;
+}
+
 h1,
 h2,
 h3 {

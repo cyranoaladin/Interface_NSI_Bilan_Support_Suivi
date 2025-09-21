@@ -1,0 +1,111 @@
+// @ts-nocheck
+// scripts/run_batch_real_bilans.ts
+// Orchestrates REAL end-to-end workflow by invoking scripts/generate_fake_bilan.ts per student
+// Streams child logs live, limits concurrency, and exits explicitly.
+
+import { spawn } from 'child_process';
+import os from 'os';
+
+const CONCURRENCY = Number(process.env.CONCURRENCY || 2);
+// Build run list from JSON files if present, else from STUDENTS env
+
+function runOne(email: string, ansFile?: string): Promise<number> {
+  return new Promise((resolve) => {
+    console.log(`[REAL][START] ${email}`);
+    const args = ['-P', 'tsconfig.scripts.json', 'scripts/generate_fake_bilan.ts', `--student=${email}`];
+    const env = { ...process.env } as any;
+    if (ansFile) env.ANS_FILE = ansFile;
+    const child = spawn('npx', ['ts-node', ...args], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    child.stdout.on('data', (d) => process.stdout.write(`[${email}] ${d.toString()}`));
+    child.stderr.on('data', (d) => process.stderr.write(`[${email}] ${d.toString()}`));
+    child.on('close', (code) => {
+      console.log(`[REAL][END] ${email} code=${code}`);
+      resolve(code ?? 1);
+    });
+  });
+}
+
+import fs from 'fs';
+import path from 'path';
+
+function findAnswerFiles(): string[] {
+  const candidates = [
+    path.join(process.cwd(), 'test', 'data', 'student_answers'),
+    path.join(process.cwd(), 'apps', 'web', 'test', 'data', 'student_answers'),
+  ];
+  for (const dir of candidates) {
+    try {
+      if (fs.existsSync(dir)) {
+        const files = fs.readdirSync(dir).filter(f => f.endsWith('.json')).map(f => path.join(dir, f));
+        if (files.length) return files.sort();
+      }
+    } catch {}
+  }
+  return [];
+}
+
+function deriveEmail(idx: number, filePath: string): string {
+  const base = path.basename(filePath).toLowerCase();
+  // Try to extract an email in file content, else fallback
+  try {
+    const js = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    if (typeof js?.studentEmail === 'string') return js.studentEmail;
+    if (typeof js?.email === 'string') return js.email;
+  } catch {}
+  const n = idx + 1;
+  return `eleve${n}@pmf.tn`;
+}
+
+function buildRunList(): { email: string, ansFile: string }[] {
+  const files = findAnswerFiles();
+  if (files.length > 0) {
+    console.log(`[REAL][INFO] Found ${files.length} student answer file(s) in test/data/student_answers`);
+    return files.map((f, i) => ({ email: deriveEmail(i, f), ansFile: f }));
+  }
+  // Fallback to STUDENTS env
+  const students = (process.env.STUDENTS || 'eleve1@pmf.tn,eleve2@pmf.tn,eleve3@pmf.tn')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  return students.map((e, i) => ({ email: e, ansFile: undefined as any }));
+}
+
+async function runQueue(pairs: { email: string, ansFile?: string }[], concurrency: number) {
+  const queue = pairs.slice();
+  const results: number[] = [];
+  let running: Promise<number>[] = [];
+
+  async function next(startIdx: number = 0): Promise<void> {
+    const item = queue.shift();
+    const idx = startIdx;
+    if (!item) return;
+    console.log(`[REAL][FILE] Using ${item.ansFile || 'GENERATED ANSWERS'} for ${item.email}`);
+    const p = runOne(item.email, item.ansFile).then((code) => { results.push(code); }).finally(() => {
+      running = running.filter(x => x !== p);
+    });
+    running.push(p);
+    if (running.length >= concurrency) {
+      await Promise.race(running);
+    }
+    if (queue.length > 0) await next(startIdx + 1);
+  }
+
+  const starters = Array.from({ length: Math.min(concurrency, pairs.length) }, (_, i) => next(i));
+  await Promise.all(starters);
+  await Promise.all(running);
+  return results;
+}
+
+async function main() {
+  const pairs = buildRunList();
+  console.log(`[REAL][INFO] Starting ${pairs.length} real bilans with concurrency=${CONCURRENCY} on ${os.hostname()}`);
+  const codes = await runQueue(pairs, CONCURRENCY);
+  const ok = codes.every(c => c === 0);
+  if (ok) {
+    console.log('✅ Tous les bilans réels générés avec PDF.');
+    process.exit(0);
+  } else {
+    console.error('❌ Certains bilans ont échoué. Codes:', codes);
+    process.exit(1);
+  }
+}
+
+main().catch((e) => { console.error('❌ Batch real error:', e?.message || e); process.exit(1); });

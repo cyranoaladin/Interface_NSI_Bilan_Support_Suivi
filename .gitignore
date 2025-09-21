@@ -7,3 +7,34 @@ playwright/.cache/
 test-results/
 
 node_modules/
+.env.local
+
+# User-specified
+archives/
+backups/
+e2e/
+e2e-out/
+enseignant.pdf/
+.cursor/
+.git/
+
+# Build artifacts & reports
+logs/
+test-results-run/
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/playwright/.cache/
+docs/artifacts/
+docs/artifacts_premium_final/
+docs/test-logs/
+docs/validation_logs/
+docs/audit_pdfs/
+docs/perf_reports/
+docs/planning/
+
+# Local inputs/exports not needed in VCS
+incoming/
+
+# Tests (non nécessaires en prod)
+apps/web/tests/
+test/

@@ -1,0 +1,241 @@
+{
+  "version": "premiere-nsi-v1.0_2025-09-14",
+  "locale": "fr-FR",
+  "title": "NSI Première — Questionnaire de Démarrage (Lycée Pierre Mendès France)",
+  "description": "Questionnaire de début d'année pour les élèves de Première NSI. Évalue les prérequis de SNT et de la pensée algorithmique, ainsi que le profil d'apprentissage pour la spécialité.",
+  "workflow": {
+    "stages": [
+      {
+        "id": "intro",
+        "title": "Bienvenue en Spécialité NSI !",
+        "pages": [
+          {
+            "id": "consignes",
+            "markdown": "Bienvenue dans ce questionnaire de démarrage pour la spécialité NSI. Il n'est pas noté ! Son objectif est simple : nous aider à mieux te connaître pour t'accompagner de la meilleure façon possible cette année. Il est composé de deux parties : un test sur ta culture numérique et ta logique, et un questionnaire sur tes attentes et tes méthodes de travail. Réponds honnêtement, cela nous permettra de construire ensemble une année réussie."
+          }
+        ]
+      },
+      {
+        "id": "volet_socle_numerique",
+        "title": "Volet 1 — Ton Socle Numérique et Logique",
+        "description": "Cette partie évalue les concepts que tu as déjà pu rencontrer en Seconde (SNT), en Mathématiques ou en Technologie. L'objectif est d'identifier tes points forts et les notions à revoir pour bien démarrer.",
+        "delivery": {
+          "randomize": true,
+          "timeLimitMin": 45
+        },
+        "domain_weights": {
+          "culture_web_reseaux": 0.30,
+          "logique_algorithmique": 0.40,
+          "representation_donnees": 0.30
+        },
+        "items": [
+          {
+            "id": "CN-A-01",
+            "domain": "culture_web_reseaux",
+            "type": "mcq",
+            "statement": "Quand tu tapes 'www.google.fr' dans ton navigateur, quel service est principalement utilisé pour traduire ce nom en une adresse IP (comme 8.8.8.8) ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "HTTP"
+              },
+              {
+                "k": "B",
+                "text": "DNS (Domain Name System)",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "TCP/IP"
+              }
+            ]
+          },
+          {
+            "id": "LG-A-01",
+            "domain": "logique_algorithmique",
+            "type": "mcq",
+            "statement": "Observe la séquence d'instructions : 1. Prendre un nombre. 2. Le multiplier par 2. 3. Ajouter 10. 4. Diviser par 2. 5. Soustraire le nombre de départ. Quel est le résultat final, quel que soit le nombre de départ ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Le nombre de départ"
+              },
+              {
+                "k": "B",
+                "text": "10"
+              },
+              {
+                "k": "C",
+                "text": "5",
+                "correct": true
+              }
+            ]
+          },
+          {
+            "id": "RD-A-01",
+            "domain": "representation_donnees",
+            "type": "mcq",
+            "statement": "En informatique, l'information la plus élémentaire est le 'bit'. Combien de valeurs différentes un seul bit peut-il représenter ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "1 (seulement la valeur 1)"
+              },
+              {
+                "k": "B",
+                "text": "2 (les valeurs 0 et 1)",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "8"
+              }
+            ]
+          },
+          {
+            "id": "CN-B-02",
+            "domain": "culture_web_reseaux",
+            "type": "mcq",
+            "statement": "Qu'est-ce qu'un cookie dans le contexte d'un site web ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "Un virus qui ralentit l'ordinateur."
+              },
+              {
+                "k": "B",
+                "text": "Un petit fichier texte stocké par le navigateur pour se souvenir d'informations sur toi (comme ton panier ou ta connexion).",
+                "correct": true
+              },
+              {
+                "k": "C",
+                "text": "Une publicité qui s'affiche sur la page."
+              }
+            ]
+          },
+          {
+            "id": "LG-B-02",
+            "domain": "logique_algorithmique",
+            "type": "short",
+            "statement": "En langage courant (pas en code), décris les étapes logiques pour trouver le mot le plus long dans une phrase.",
+            "answer": "Parcourir chaque mot, comparer sa longueur à la longueur du mot le plus long trouvé jusqu'à présent, et le garder en mémoire si sa longueur est supérieure."
+          },
+          {
+            "id": "RD-B-02",
+            "domain": "representation_donnees",
+            "type": "mcq",
+            "statement": "Le code couleur d'une image est souvent donné en 'RGB' (Rouge, Vert, Bleu). Si chaque couleur est codée sur 8 bits, combien de bits sont nécessaires pour coder la couleur d'un seul pixel ?",
+            "choices": [
+              {
+                "k": "A",
+                "text": "8 bits"
+              },
+              {
+                "k": "B",
+                "text": "16 bits"
+              },
+              {
+                "k": "C",
+                "text": "24 bits (8 bits x 3 couleurs)",
+                "correct": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "volet_profil_premiere",
+        "title": "Volet 2 — Ton Profil et Tes Projets en NSI",
+        "description": "Cette partie nous aide à comprendre pourquoi tu as choisi la NSI, comment tu aimes travailler et quelles sont tes attentes. Il n'y a pas de bonnes ou de mauvaises réponses !",
+        "questions": [
+          {
+            "id": "P-A1",
+            "domain": "AmbitionOrientation",
+            "type": "single",
+            "statement": "Quelle est la raison principale qui t'a poussé(e) à choisir la spécialité NSI ?",
+            "options": [
+              "J'ai une vraie curiosité pour l'informatique et la technologie.",
+              "Je pense que c'est une compétence utile pour mes futures études ou mon futur métier.",
+              "J'aime la logique, la résolution de problèmes et les défis intellectuels.",
+              "Mes amis ou ma famille me l'ont conseillé."
+            ],
+            "required": true,
+            "mapsTo": "motivation_choix_nsi"
+          },
+          {
+            "id": "P-M1",
+            "domain": "MotivationEngagement",
+            "type": "likert",
+            "statement": "Je suis enthousiaste à l'idée de créer mes propres programmes ou projets cette année.",
+            "scaleRef": "scaleLikert5",
+            "mapsTo": "enthousiasme_creation"
+          },
+          {
+            "id": "P-C2",
+            "domain": "ConfianceRapportErreur",
+            "type": "single",
+            "statement": "Quand tu es face à un problème logique difficile (en maths, dans un jeu, etc.), quelle est ta première réaction ?",
+            "options": [
+              "J'essaie de le décomposer en étapes plus simples.",
+              "Je cherche des exemples ou de l'aide rapidement.",
+              "J'ai tendance à me sentir bloqué(e) ou à abandonner."
+            ],
+            "mapsTo": "reaction_probleme_logique"
+          },
+          {
+            "id": "P-S1",
+            "domain": "StyleApprentissage",
+            "type": "multi",
+            "statement": "Pour apprendre quelque chose de nouveau et de technique, tu préfères : (2 choix possibles)",
+            "options": [
+              "Regarder quelqu'un faire (vidéo, démonstration).",
+              "Lire une explication claire et détaillée.",
+              "Essayer par toi-même, quitte à faire des erreurs.",
+              "En discuter avec d'autres."
+            ],
+            "max": 2,
+            "required": true,
+            "mapsTo": "style_apprentissage_technique"
+          }
+        ]
+      }
+    ]
+  },
+  "scoring": {
+    "sections": {
+      "volet_socle_numerique": {
+        "mode": "sum_weighted_by_domain",
+        "domainMap": {
+          "culture_web_reseaux": "Culture Web & Réseaux",
+          "logique_algorithmique": "Logique & Algorithmique",
+          "representation_donnees": "Représentation des Données"
+        },
+        "weights": {
+          "culture_web_reseaux": 0.30,
+          "logique_algorithmique": 0.40,
+          "representation_donnees": 0.30
+        },
+        "criticalPolicy": "flag_below_40"
+      }
+    },
+    "tags": [
+      {
+        "id": "TAG_Logique_Solide",
+        "rule": "volet_socle_numerique.logique_algorithmique >= 0.75"
+      },
+      {
+        "id": "TAG_Culture_Numerique_A_Renforcer",
+        "rule": "volet_socle_numerique.culture_web_reseaux < 0.4"
+      }
+    ]
+  },
+  // ...existing code...
+  "reporting": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "prompts": {
+      "system_eleve": "Tu es un professeur de NSI qui accueille un nouvel élève en Première. Rédige un court bilan d'accueil bienveillant et encourageant. Sois bref, positif et donne 2-3 conseils très concrets pour bien démarrer l'année. Adresse-toi à l'élève avec 'tu'. La sortie doit être un JSON avec les clés `introduction` et `premiers_conseils`.",
+      "system_enseignant": "Tu es un enseignant de NSI qui analyse le profil d'un nouvel élève de Première. Rédige une synthèse de 3-4 phrases pour le dossier de l'enseignant. Identifie le profil dominant (curieux, pragmatique, logicien...) et suggère un premier point de vigilance pédagogique. La sortie doit être un JSON avec les clés `synthese_profil` et `point_vigilance`."
+    }
+  }
+}

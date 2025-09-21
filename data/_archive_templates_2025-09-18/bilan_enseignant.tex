@@ -1,0 +1,58 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{fancyhdr}
+\usepackage{sectsty}
+\usepackage{mdframed}
+\usepackage{lmodern}
+\geometry{margin=2cm}
+
+\definecolor{PMFBlue}{RGB}{11,94,215}
+\definecolor{SoftBlue}{RGB}{227,239,255}
+\allsectionsfont{\sffamily\bfseries\color{PMFBlue}}
+\renewcommand{\familydefault}{\rmdefault}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\sffamily\footnotesize {{student.family_name}} {{student.given_name}}}
+\fancyhead[C]{\sffamily\footnotesize Terminale NSI — {{context.csv_classe}}}
+\fancyhead[R]{\sffamily\footnotesize {{dateDuBilan}}}
+\fancyfoot[C]{\sffamily\footnotesize \thepage}
+
+\newmdenv[backgroundcolor=SoftBlue,roundcorner=2pt,linewidth=0pt,innerleftmargin=8pt,innerrightmargin=8pt,innertopmargin=6pt,innerbottommargin=6pt]{bluebox}
+
+\begin{document}
+\begin{center}
+\Large\textbf{Bilan Enseignant — NSI}\\[0.4em]
+\normalsize ({{student.family_name}} {{student.given_name}} — {{context.csv_classe}})\\[0.2em]
+\normalsize Année Scolaire : {{anneeScolaire}} \\ \normalsize Bilan du : {{dateDuBilan}}
+\end{center}
+
+\vspace{0.8em}
+\section*{Synthèse du profil}
+{{analysis_enseignant.synthese_profil}}
+
+\vspace{0.6em}
+\section*{Diagnostic pédagogique}
+{{analysis_enseignant.diagnostic_pedagogique}}
+
+\vspace{0.6em}
+\section*{Plan 4 semaines}
+{{analysis_enseignant.plan_4_semaines}}
+
+\vspace{0.6em}
+\section*{Indicateurs pédagogiques}
+{{analysis_enseignant.indicateurs_pedago}}
+
+\vspace{0.6em}
+\section*{Pistes Pédagogiques Issues des Référentiels}
+\begin{bluebox}
+{{analysis_enseignant.rag_references}}
+\end{bluebox}
+
+\end{document}

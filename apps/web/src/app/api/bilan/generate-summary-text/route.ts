@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   async function callGemini(system: string, payload: any) {
     const key = env.GEMINI_API_KEY;
     if (!key) throw new Error('No GEMINI_API_KEY');
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(key);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_GENERATION_MODEL || 'gemini-1.5-pro-latest'}:generateContent?key=${encodeURIComponent(key)}`;
     const body = { contents: [{ role: 'user', parts: [{ text: system }] }, { role: 'user', parts: [{ text: JSON.stringify(payload) }] }], generationConfig: { responseMimeType: 'application/json' } };
     const t0 = Date.now();
     const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -88,7 +88,8 @@ export async function POST(req: NextRequest) {
     try {
       try { parsed = await callGemini(system, payload); }
       catch { parsed = await callOpenAI(system, payload); }
-      break;
+      if (parsed && Object.keys(parsed).length > 0) break;
+      else throw new Error('empty result');
     } catch (e) {
       lastErr = e;
       if (attempt === 3) return NextResponse.json({ ok: false, error: 'LLM generation failed' }, { status: 502 });

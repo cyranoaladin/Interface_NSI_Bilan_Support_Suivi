@@ -33,7 +33,7 @@
   "auth": {
     "method": "email_domain",
     "domain": "ert.tn",
-    "verification": "magic_link",
+    "verification": "none",
     "fields": ["email"],
     "constraints": {"email_regex": "^[A-Za-z0-9._%+-]+@ert\.tn$"},
 
@@ -185,7 +185,7 @@
       "pages": [
         {"id": "rgpd", "title": "Traitement des données", "questions": [
           {"id": "consentement_data", "type": "checkbox", "statement": "Je consens à l’utilisation de mes réponses pour un bilan pédagogique individuel et leur conservation pendant l’année scolaire.", "required": true},
-          {"id": "consentement_mail", "type": "checkbox", "statement": "J’accepte de recevoir par e‑mail mon bilan PDF.", "required": true}
+          {"id": "consentement_mail", "type": "checkbox", "statement": "Je reconnais avoir accès au téléchargement de mon bilan PDF depuis le tableau de bord.", "required": false}
         ]}
       ]
     }

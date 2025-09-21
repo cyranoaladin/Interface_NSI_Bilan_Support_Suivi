@@ -1,34 +1,73 @@
 export const dynamic = 'force-dynamic';
 import { env } from '@/lib/env';
 import { getSessionEmail } from '@/lib/session';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { PrismaClient } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
-const s3 = new S3Client({ region: env.S3_REGION, endpoint: env.S3_ENDPOINT, forcePathStyle: true, credentials: { accessKeyId: env.S3_ACCESS_KEY, secretAccessKey: env.S3_SECRET_KEY } });
+const s3 = new S3Client({
+  region: env.S3_REGION,
+  endpoint: env.S3_ENDPOINT,
+  forcePathStyle: true,
+  credentials: { accessKeyId: env.S3_ACCESS_KEY, secretAccessKey: env.S3_SECRET_KEY },
+});
 
 export async function GET(req: NextRequest, { params }: { params: { bilanId: string; }; }) {
-  // Mode test: retourner un PDF factice directement, sans dépendre du worker/S3
-  if (req.headers.get('x-test-pdf') === '1') {
-    const pdfBytes = Buffer.from('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 44 >>\nstream\nBT /F1 12 Tf 50 100 Td (NSI Test PDF) Tj ET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000015 00000 n \n0000000062 00000 n \n0000000118 00000 n \n0000000211 00000 n \ntrailer\n<< /Root 1 0 R /Size 5 >>\nstartxref\n300\n%%EOF');
-    return new Response(pdfBytes, { status: 200, headers: { 'content-type': 'application/pdf', 'cache-control': 'no-store' } });
-  }
   const email = await getSessionEmail();
   if (!email) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+
   const bilan = await prisma.bilan.findUnique({ where: { id: params.bilanId } });
   if (!bilan) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
-  // Autorisation simple: auteur ou élève concerné
-  const isAuthor = (bilan as any).authorEmail ? (bilan as any).authorEmail === email : false;
-  const isStudent = (bilan as any).studentEmail ? (bilan as any).studentEmail === email : false;
+  const isAuthor = bilan.authorEmail === email;
+  const isStudent = bilan.studentEmail ? bilan.studentEmail === email : false;
   if (!isAuthor && !isStudent) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
 
   const variant = (req.nextUrl.searchParams.get('variant') || 'eleve').toLowerCase();
-  const key = `bilan/${bilan.id}/${variant}.pdf`;
-  // Pour prototype: écrire JSON texte->PDF minimal (placeholder). En prod, brancher LaTeX dans worker.
-  const body = Buffer.from((variant === 'eleve' ? (bilan.summaryText || '') : (bilan.reportText || '')));
-  await s3.send(new PutObjectCommand({ Bucket: env.S3_BUCKET, Key: key, Body: body, ContentType: 'application/pdf' }));
-  const url = `s3://${env.S3_BUCKET}/${key}`;
-  await prisma.bilan.update({ where: { id: bilan.id }, data: { /* on pourrait stocker par variant si besoin */ } });
-  return NextResponse.json({ ok: true, url });
+
+  // Trouver le dernier Report pour l'élève de ce bilan, du type demandé
+  const attempts = await prisma.attempt.findMany({
+    where: { studentEmail: bilan.studentEmail || email },
+    select: { id: true },
+    orderBy: { submittedAt: 'desc' },
+    take: 10,
+  });
+  if (attempts.length === 0) return NextResponse.json({ ok: false, error: 'No attempts yet' }, { status: 404 });
+  const attemptIds = attempts.map(a => a.id);
+  const report = await prisma.report.findFirst({
+    where: { attemptId: { in: attemptIds }, type: variant },
+    orderBy: { publishedAt: 'desc' },
+  });
+  if (!report?.pdfUrl) return NextResponse.json({ ok: false, error: 'PDF not available yet' }, { status: 404 });
+
+  // Stream depuis S3 si url s3://
+  if (report.pdfUrl.startsWith('s3://')) {
+    const without = report.pdfUrl.slice('s3://'.length);
+    const idx = without.indexOf('/');
+    if (idx <= 0) return NextResponse.json({ ok: false, error: 'Invalid S3 URL' }, { status: 400 });
+    const bucket = without.slice(0, idx);
+    const key = without.slice(idx + 1);
+    try {
+      const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+      const body = obj.Body as any;
+      const filename = key.split('/').pop() || `${variant}.pdf`;
+      return new Response(body as unknown as ReadableStream, {
+        status: 200,
+        headers: {
+          'content-type': 'application/pdf',
+          'content-disposition': `inline; filename="${filename}"`,
+          'cache-control': 'no-store',
+        },
+      });
+    } catch (e: any) {
+      return NextResponse.json({ ok: false, error: 'File not found in storage' }, { status: 404 });
+    }
+  }
+
+  // Sinon: rediriger vers l'URL
+  try {
+    return NextResponse.redirect(report.pdfUrl);
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Invalid pdfUrl' }, { status: 400 });
+  }
 }

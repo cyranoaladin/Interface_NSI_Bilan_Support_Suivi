@@ -1,0 +1,45 @@
+# Core
+.git
+.gitignore
+.cursor
+.DS_Store
+node_modules
+
+# Local env
+.env*
+
+# User-specified heavy/irrelevant
+archives
+backups
+e2e
+e2e-out
+enseignant.pdf
+incoming
+logs
+
+# Build outputs and caches
+apps/web/.next
+apps/worker/node_modules
+playwright-report
+playwright/.cache
+test-results
+test-results-run
+apps/web/test-results
+apps/web/playwright-report
+apps/web/playwright/.cache
+apps/web/tests
+test
+
+# Docs artifacts
+docs/artifacts
+docs/artifacts_premium_final
+docs/test-logs
+docs/validation_logs
+docs/audit_pdfs
+docs/perf_reports
+docs/planning
+
+# OS/editor junk
+*.swp
+*.swo
+*.log

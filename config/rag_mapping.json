@@ -1,0 +1,54 @@
+{
+  "eleve": {
+    "introduction": [
+      "resources/BILAN_PREMIUM_REQUIREMENTS.md",
+      "resources/Ressources_NSI_pour_Eleves.md"
+    ],
+    "analyse_competences": [
+      "resources/questionnaire_nsi_terminale.final.json",
+      "resources/RCP_Referentiel_Competences.pdf",
+      "resources/programme_nsi_terminale.pdf"
+    ],
+    "profil_apprentissage": [
+      "resources/IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md",
+      "resources/GUIDE_PEDAGOGIQUE_NSI_PMF.md"
+    ],
+    "plan_action": [
+      "resources/BILAN_PREMIUM_REQUIREMENTS.md",
+      "resources/vademecum-snt-nsi.pdf",
+      "resources/Ressources_NSI_pour_Eleves.md"
+    ],
+    "methodes_conseils": [
+      "resources/Ressources_NSI_pour_Eleves.md"
+    ],
+    "conclusion": [
+      "resources/BILAN_PREMIUM_REQUIREMENTS.md"
+    ]
+  },
+  "enseignant": {
+    "synthese_profil": [
+      "resources/questionnaire_nsi_terminale.final.json",
+      "resources/GUIDE_PEDAGOGIQUE_NSI_PMF.md"
+    ],
+    "diagnostic_pedagogique": [
+      "resources/RCP_Referentiel_Competences.pdf",
+      "resources/programme_nsi_terminale.pdf"
+    ],
+    "plan_4_semaines": [
+      "resources/BILAN_PREMIUM_REQUIREMENTS.md",
+      "resources/GUIDE_PEDAGOGIQUE_NSI_PMF.md"
+    ],
+    "indicateurs_pedago": [
+      "resources/IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md",
+      "resources/programme_nsi_premiere.pdf"
+    ],
+    "pistes_pedagogiques": [
+      "resources/vademecum-snt-nsi.pdf",
+      "resources/Ressources_NSI_pour_Eleves.md",
+      "resources/GUIDE_PEDAGOGIQUE_NSI_PMF.md"
+    ],
+    "conclusion_finale": [
+      "resources/BILAN_PREMIUM_REQUIREMENTS.md"
+    ]
+  }
+}

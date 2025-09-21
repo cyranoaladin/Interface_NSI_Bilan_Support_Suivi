@@ -1,0 +1,117 @@
+% !TEX TS-program = latexmk
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage[table]{xcolor}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{fancyhdr}
+\usepackage{sectsty}
+\usepackage{mdframed}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\geometry{margin=2cm}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue}
+
+\definecolor{PMFBlue}{RGB}{11,94,215}
+\definecolor{ForestGreen}{RGB}{34,139,34}
+\definecolor{Orange}{RGB}{255,140,0}
+\definecolor{Red}{RGB}{220,20,60}
+\definecolor{Gold}{RGB}{212,175,55}
+\definecolor{Silver}{RGB}{192,192,192}
+\definecolor{Bronze}{RGB}{205,127,50}
+\definecolor{SoftBlue}{RGB}{227,239,255}
+\definecolor{SoftGreen}{RGB}{228,245,232}
+\definecolor{SoftGray}{RGB}{245,245,245}
+
+% Typo titres en sans-serif, corps en sans-serif avec interligne
+\allsectionsfont{\sffamily\bfseries\large\color{PMFBlue}}
+\renewcommand{\familydefault}{\sfdefault}
+\linespread{1.1}
+
+% En-tetes/pieds
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\sffamily\footnotesize {{student.family_name}} {{student.given_name}}}
+\fancyhead[C]{\sffamily\footnotesize Terminale NSI — {{context.csv_classe}}}
+\fancyhead[R]{\sffamily\footnotesize {{dateDuBilan}}}
+\fancyfoot[C]{\sffamily\footnotesize \thepage}
+
+% Aération
+\setlength{\parskip}{0.8em}
+\setlength{\parindent}{0pt}
+
+\newcommand{\ScoreLine}[3]{#1 & #2\% & #3 \\\hline}
+% 4 paliers: >=75 Maîtrisé (vert), 50–74 Solide (bleu), 25–49 En cours (orange), <25 À renforcer (rouge)
+\newcommand{\Badge}[1]{\ifnum #1>74 \textcolor{ForestGreen}{\rule{0.5cm}{0.5cm}}\else\ifnum #1>49 \textcolor{PMFBlue}{\rule{0.5cm}{0.5cm}}\else\ifnum #1>24 \textcolor{Orange}{\rule{0.5cm}{0.5cm}}\else \textcolor{Red}{\rule{0.5cm}{0.5cm}}\fi\fi\fi}
+\newmdenv[backgroundcolor=SoftBlue,roundcorner=2pt,linewidth=0pt,innerleftmargin=8pt,innerrightmargin=8pt,innertopmargin=6pt,innerbottommargin=6pt]{bluebox}
+\newmdenv[backgroundcolor=SoftGreen,roundcorner=2pt,linewidth=0pt,innerleftmargin=8pt,innerrightmargin=8pt,innertopmargin=6pt,innerbottommargin=6pt]{greenbox}
+
+\begin{document}
+
+\begin{center}
+\Large\textbf{Ta Boussole NSI pour la Terminale}\hspace{0.8em}\IfFileExists{boussole.png}{\raisebox{-0.3\height}{\includegraphics[height=1cm]{boussole.png}}}{}\\[0.4em]
+\normalsize ({{student.family_name}} {{student.given_name}} — {{context.csv_classe}})\\[0.2em]
+\normalsize Année Scolaire : {{anneeScolaire}} \\ \normalsize Bilan du : {{dateDuBilan}}
+\end{center}
+
+\vspace{0.8em}
+\section*{Introduction}
+{{analysis_eleve.introduction}}
+
+\vspace{0.6em}
+\section*{Tableau des compétences}
+\begin{tabular}{@{} >{\raggedright\arraybackslash}p{5.4cm} c c c @{} }
+\rowcolors{2}{SoftGray}{white}
+\toprule
+\textbf{Domaine} & \textbf{Score} & \textbf{Niveau} & \textbf{Badge de compétence} \\
+\midrule
+Python & {{scores.python_pct}}\% & \textcolor{ {{levels.python.color}} }{\textbf{ {{levels.python.label}} }} & \Badge{ {{scores.python_pct}} }\\
+Structures & {{scores.structures_pct}}\% & \textcolor{ {{levels.structures.color}} }{\textbf{ {{levels.structures.label}} }} & \Badge{ {{scores.structures_pct}} }\\
+Données & {{scores.donnees_pct}}\% & \textcolor{ {{levels.donnees.color}} }{\textbf{ {{levels.donnees.label}} }} & \Badge{ {{scores.donnees_pct}} }\\
+Logique/Encodage & {{scores.logique_pct}}\% & \textcolor{ {{levels.logique.color}} }{\textbf{ {{levels.logique.label}} }} & \Badge{ {{scores.logique_pct}} }\\
+Web/HTTP & {{scores.web_pct}}\% & \textcolor{ {{levels.web.color}} }{\textbf{ {{levels.web.label}} }} & \Badge{ {{scores.web_pct}} }\\
+Lecture d’algorithmes & {{scores.lecture_algo_pct}}\% & \textcolor{ {{levels.lecture_algo.color}} }{\textbf{ {{levels.lecture_algo.label}} }} & \Badge{ {{scores.lecture_algo_pct}} }\\
+\bottomrule
+\end{tabular}
+
+\vspace{0.3em}
+\small\textit{Légende :}
+\textcolor{ForestGreen}{\rule{0.4cm}{0.4cm}} Maîtrisé (\(\ge 75\%\)) \quad
+\textcolor{PMFBlue}{\rule{0.4cm}{0.4cm}} Solide (50–74\%) \quad
+\textcolor{Orange}{\rule{0.4cm}{0.4cm}} En cours (25–49\%) \quad
+\textcolor{Red}{\rule{0.4cm}{0.4cm}} À renforcer (<25\%).
+
+\vspace{0.6em}
+\section*{Analyse des compétences}
+{{analysis_eleve.analyse_competences}}
+
+\vspace{0.6em}
+\section*{Profil d’apprentissage}
+{{analysis_eleve.profil_apprentissage}}
+
+\vspace{0.6em}
+\section*{Ta feuille de route pour les 4 prochaines semaines}
+\begin{bluebox}
+\textbf{Plan clair et progressif}\\
+{{analysis_eleve.plan_action}}
+\end{bluebox}
+
+\vspace{0.6em}
+\section*{Conseils de méthode personnalisés}
+\begin{bluebox}
+\textbf{À mettre en pratique dès cette semaine}\\
+{{analysis_eleve.methodes_conseils}}
+\end{bluebox}
+
+\vspace{0.6em}
+\section*{Conclusion}
+{{analysis_eleve.conclusion}}
+
+% Section ressources supprimée sur demande
+
+\end{document}

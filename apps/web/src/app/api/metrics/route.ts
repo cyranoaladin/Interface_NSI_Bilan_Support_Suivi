@@ -13,6 +13,7 @@ export async function GET(_req: NextRequest) {
     const connection = { url: process.env.REDIS_URL || env.REDIS_URL } as any;
     const queues = [
       new Queue('generate_reports', { connection }),
+      new Queue('generate_reports_fast', { connection }),
       new Queue('rag_ingest', { connection }),
     ];
     for (const q of queues) {

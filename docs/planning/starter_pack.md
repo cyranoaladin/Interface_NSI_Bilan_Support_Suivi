@@ -1,4 +1,4 @@
-# Starter Pack — SMTP labo.maths & infra files (copier/coller)
+# Starter Pack — Infra files (copier/coller)
 
 Collez chaque fichier à l’emplacement indiqué dans le monorepo.
 
@@ -23,14 +23,7 @@ S3_BUCKET=reports
 S3_REGION=us-east-1
 S3_FORCE_PATH_STYLE=true
 
-# SMTP (expéditeur: labo.maths@ert.tn)
-SMTP_HOST=REPLACE_SMTP_HOST
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=labo.maths@ert.tn
-SMTP_PASS=REPLACE_SMTP_PASS
-SMTP_FROM="Labo Maths <labo.maths@ert.tn>"
-MAGIC_LINK_FROM=labo.maths@ert.tn
+# SMTP/Magic link supprimés du projet
 
 # Auth
 JWT_SECRET=GENERATED_BASE64_48
@@ -239,22 +232,7 @@ const EnvSchema = z.object({
 export const env = EnvSchema.parse(process.env);
 ```
 
-### `apps/web/src/lib/mail.ts`
-```ts
-import nodemailer from 'nodemailer';
-import { env } from './env';
-
-export const mailer = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: env.SMTP_PORT,
-  secure: env.SMTP_SECURE, // false => STARTTLS
-  auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-});
-
-export async function sendMail({ to, subject, text, html }: { to: string; subject: string; text?: string; html?: string; }) {
-  return mailer.sendMail({ from: env.SMTP_FROM, to, subject, text, html });
-}
-```
+### (supprimé) mail.ts — l’envoi d’e‑mails n’est plus supporté
 
 ### `apps/web/src/lib/jwt.ts`
 ```ts
@@ -295,13 +273,8 @@ export function setSessionCookie(value: string) {
 
 ---
 
-## 6) Auth — magic link (API routes)
-### `apps/web/src/app/api/auth/magic-link/route.ts`
-```ts
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { sendMail } from '@/lib/mail';
-import { signMagicToken } from '@/lib/jwt';
+## 6) Auth — magic link (supprimé)
+Cette fonctionnalité a été retirée du projet. Utiliser uniquement le couple e‑mail/mot de passe.
 
 const schema = z.object({ email: z.string().email() });
 

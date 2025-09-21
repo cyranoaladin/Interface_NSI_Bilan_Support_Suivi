@@ -41,6 +41,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid role' }, { status: 400 });
   }
 
+  // Éviter les doublons côté élève: si un bilan PENDING existe, renvoyer celui-ci;
+  // si un bilan terminé existe, refuser la création (l'élève ne peut pas recommencer)
+  if (studentEmail && authorRole === 'student') {
+    const existingPending = await prisma.bilan.findFirst({ where: { studentEmail, status: 'PENDING' }, orderBy: { createdAt: 'desc' } });
+    if (existingPending) {
+      return NextResponse.json({ ok: true, bilanId: existingPending.id });
+    }
+    const existingDone = await prisma.bilan.findFirst({ where: { studentEmail, status: { not: 'PENDING' } }, orderBy: { createdAt: 'desc' } });
+    if (existingDone) {
+      return NextResponse.json({ ok: false, error: 'Déjà soumis — contactez votre enseignant pour réactiver.' }, { status: 409 });
+    }
+  }
+
   const bilan = await prisma.bilan.create({
     data: {
       authorEmail,

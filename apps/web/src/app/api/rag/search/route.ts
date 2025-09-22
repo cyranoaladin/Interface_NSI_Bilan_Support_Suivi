@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import pdfParse from "pdf-parse"; // nécessite `npm install pdf-parse`
 import { RAG_MAPPING_PATH, RESOURCES_DIR } from "@/lib/paths";
 
 // 🔧 Utilitaire : charge rag_mapping.json
@@ -48,9 +47,15 @@ async function readResource(file: string): Promise<string> {
   }
 
   if (file.endsWith(".pdf")) {
-    const buffer = fs.readFileSync(filePath);
-    const data = await pdfParse(buffer);
-    return data.text.slice(0, 2000); // limite pour éviter surcharge
+    try {
+      const buffer = fs.readFileSync(filePath);
+      // Import dynamique pour éviter les problèmes de bundling en build
+      const { default: pdfParse } = await import("pdf-parse");
+      const data = await pdfParse(buffer).catch(() => null);
+      return data?.text ? data.text.slice(0, 2000) : "";
+    } catch {
+      return "";
+    }
   }
 
   return "";

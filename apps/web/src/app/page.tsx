@@ -12,7 +12,7 @@ export default function HomePage() {
           </div>
           <h1 className="text-3xl font-poppins">NSI — Bilan Pédagogique PMF</h1>
           <p className="text-[var(--fg)]/80">
-            Plateforme de bilans personnalisés (élève & enseignant), RAG + LLM, PDF LaTeX.
+            NSI-PMF
           </p>
           <Link href="/login" className="inline-block rounded-xl bg-[#1F7AE0] px-6 py-3 text-white hover:bg-[#1864ba]">
             Se connecter

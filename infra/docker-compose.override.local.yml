@@ -1,5 +1,7 @@
 services:
   postgres:
-    ports:
-      - "55432:5432"
-
+    ports: []
+  pgbouncer:
+    ports: []
+  minio:
+    ports: []

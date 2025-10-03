@@ -4,13 +4,17 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Layout } from '@/components/ui/Layout';
 import { Modal } from '@/components/ui/Modal';
+import { SidebarNav } from '@/components/ui/SidebarNav';
 import { Table, TD, TH, THead, TR } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
+import { buildTeacherSidebar } from '@/lib/menu';
 import { ExternalLink, FileText, KeyRound, LogOut, RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 
-export default function TeacherDashboard() {
+function TeacherDashboardInner() {
   const { push } = useToast();
+  const searchParams = useSearchParams();
   const [ownerName, setOwnerName] = useState<string>('');
   const [groups, setGroups] = useState<Array<{ id: string; name: string; code: string; count?: number; }>>([]);
   const [selectedId, setSelectedId] = useState<string>('');
@@ -37,11 +41,17 @@ export default function TeacherDashboard() {
         if (r.ok && d.ok) {
           const gs = d.groups.map((g: any) => ({ id: g.id, name: g.name, code: g.code, count: g.count ?? undefined }));
           setGroups(gs);
-          if (gs.length > 0) setSelectedId(gs[0].id);
+          // Set selectedId from URL or default to first group
+          const groupIdFromUrl = searchParams.get('groupId');
+          if (groupIdFromUrl && gs.some((g: any) => g.id === groupIdFromUrl)) {
+            setSelectedId(groupIdFromUrl);
+          } else if (gs.length > 0) {
+            setSelectedId(gs[0].id);
+          }
         }
       } catch {}
     })();
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -103,21 +113,24 @@ export default function TeacherDashboard() {
       sidebar={<div className="space-y-2">
         <div className="px-1">
           <h2 className="text-lg font-poppins">{ownerName || 'Espace Enseignant'}</h2>
-          <p className="text-sm text-[var(--fg)]/70">Sélectionner un groupe</p>
         </div>
-        <div className="mt-4">
+        <div className="mt-2">
           <h3 className="text-sm text-[var(--fg)]/70 px-3 mb-1">Mes groupes</h3>
           <ul className="space-y-1">
             {groups.map(g => (
               <li key={g.id}>
-                <button className={`block w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 ${selectedId === g.id ? 'bg-white/10' : ''}`} onClick={() => setSelectedId(g.id)}>
+                <a className={`block w-full text-left px-3 py-2 rounded-xl hover:bg-white/5 ${selectedId === g.id ? 'bg-white/10' : ''}`} href={`/dashboard/teacher?groupId=${encodeURIComponent(g.id)}`}>
                   <span className="font-medium">{g.name}</span>
-                  <span className="ml-2 text-xs text-[var(--fg)]/60">({g.code})</span>
-                  {typeof g.count === 'number' && <span className="ml-2 text-xs text-[var(--fg)]/50">— {g.count} élèves</span>}
-                </button>
+                  <span className="text-xs text-[var(--fg)]/60"> {' '}({g.code})</span>
+                  {typeof g.count === 'number' && <span className="text-xs text-[var(--fg)]/50"> {' — '}{g.count} élèves</span>}
+                </a>
               </li>
             ))}
           </ul>
+        </div>
+        <div className="mt-6">
+          <h3 className="text-sm text-[var(--fg)]/70 px-3 mb-1">Ressources</h3>
+          <SidebarNav items={buildTeacherSidebar().resources} />
         </div>
       </div>}
     >
@@ -247,5 +260,13 @@ export default function TeacherDashboard() {
         </div>
       </Modal>
     </Layout>
+  );
+}
+
+export default function TeacherDashboard() {
+  return (
+    <Suspense fallback={<div />}>
+      <TeacherDashboardInner />
+    </Suspense>
   );
 }

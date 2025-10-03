@@ -6,8 +6,7 @@ services:
       # Le mot de passe est défini mais ne sera pas utilisé pour les connexions internes
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME}
       POSTGRES_DB: nsi
-    ports:
-      - "5432:5432"
+    # ports removed for local full-mode without host exposure
     volumes:
       - pgdata:/var/lib/postgresql/data
       # LIGNE CRUCIALE : Force le mode "trust" pour toutes les connexions
@@ -22,8 +21,7 @@ services:
 
   pgbouncer:
     image: bitnami/pgbouncer:1
-    ports:
-      - "6432:5432"
+    # ports removed for local full-mode without host exposure
     environment:
       - PGBOUNCER_DATABASE=nsi
       - PGBOUNCER_USERNAME=nsi
@@ -63,9 +61,7 @@ services:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
     command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+    # ports removed for local full-mode without host exposure
     volumes:
       - minio:/data
     networks:
@@ -102,8 +98,9 @@ services:
       - "3000:3000"
     volumes:
       - ragdata:/data/rag_uploads
-      - ..:/app
       - /home/alaeddine/Interface_NSI_2025_2026_local/data/rag_sources:/mnt/data:ro
+      - /home/alaeddine/Interface_NSI_2025_2026_local/site-nsi-tp-algo_python/site-nsi-tp/dist:/app/apps/web/public/tp-algo:ro
+      - /home/alaeddine/Interface_NSI_2025_2026_local/site-nsi-tp-algo_python/site-nsi-tp/dist/assets:/app/apps/web/public/assets:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 10s

@@ -1,6 +1,6 @@
 import { ToastProvider } from '@/components/ui/Toast';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import HomePage from '../page';
+import LoginPage from '../login/page';
 
 describe('Login page', () => {
   beforeEach(() => {
@@ -9,7 +9,7 @@ describe('Login page', () => {
   });
 
   it('shows errors on invalid submit', async () => {
-    render(<ToastProvider><HomePage /></ToastProvider>);
+    render(<ToastProvider><LoginPage /></ToastProvider>);
     fireEvent.click(screen.getByText('Se connecter'));
     await waitFor(() => {
       expect(screen.getAllByText('Identifiants invalides').length).toBeGreaterThanOrEqual(1);
@@ -17,12 +17,11 @@ describe('Login page', () => {
   });
 
   it('calls API with proper payload', async () => {
-    // Rester en erreur pour éviter les navigations non supportées par jsdom
     // @ts-ignore
     global.fetch = jest.fn(async () => ({ ok: false, json: async () => ({}) }));
-    render(<ToastProvider><HomePage /></ToastProvider>);
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@ert.tn' } });
-    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'password123' } });
+    render(<ToastProvider><LoginPage /></ToastProvider>);
+    fireEvent.change(screen.getByPlaceholderText('email @ert.tn'), { target: { value: 'test@ert.tn' } });
+    fireEvent.change(screen.getByPlaceholderText('mot de passe'), { target: { value: 'password123' } });
     fireEvent.click(screen.getByText('Se connecter'));
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalled();

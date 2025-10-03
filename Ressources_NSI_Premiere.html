@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catalogue de Ressources NSI - Première</title>
+  <script>
+    (function () {
+      const ow = console.warn;
+      console.warn = function () {
+        const msg = String(arguments[0] || '');
+        if (msg.includes('cdn.tailwindcss.com should not be used in production')) return;
+        return ow.apply(console, arguments);
+      };
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <base target="_blank">
+  <!-- Chosen Palette: Warm Neutrals -->
+  <!-- Application Structure Plan: The application is designed as a single-page resource hub. The primary navigation is based on the 8 core themes of the official NSI curriculum, presented as a grid of cards for immediate visual access. This structure is more intuitive for students than a linear report, as it allows them to directly jump to the topic they are studying. A persistent sidebar and filter buttons (by resource type: Cours, Exercices, etc.) enable users to refine the displayed content dynamically across all themes. This task-oriented approach (e.g., "find all exercises on algorithms") is more efficient. A search bar provides global keyword filtering. This interactive dashboard structure was chosen to empower students to easily explore, filter, and discover resources according to their specific learning needs, rather than passively consuming a static list. -->
+  <!-- Visualization & Content Choices: Report Info: NSI curriculum topics -> Goal: Organize and provide access to learning materials -> Presentation: Interactive cards for each resource, grouped by curriculum theme. Report Info: Distribution of resources -> Goal: Give a visual overview of content balance -> Viz Method: Donut chart showing resource count per theme -> Interaction: Hover to see details -> Justification: Provides a quick "dashboard" feel and meta-information about the available content -> Library: Chart.js. Report Info: Need to find specific resource types -> Goal: Filter content -> Presentation Method: Filter buttons and a search bar -> Interaction: Click/type to dynamically update the resource list -> Justification: Essential for usability in a large catalog -> Library/Method: Vanilla JS. -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #FDFBF8;
+      color: #1a1a1a;
+    }
+
+    .card {
+      background-color: #FFFFFF;
+      border: 1px solid #EAEAEA;
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-weight: 500;
+      font-size: 0.75rem;
+    }
+
+    .tag-cours {
+      background-color: #E0F2FE;
+      color: #0C4A6E;
+    }
+
+    .tag-exercices {
+      background-color: #E0E7FF;
+      color: #3730A3;
+    }
+
+    .tag-tp {
+      background-color: #D1FAE5;
+      color: #065F46;
+    }
+
+    .tag-projet {
+      background-color: #FEF3C7;
+      color: #92400E;
+    }
+
+    .tag-revision {
+      background-color: #FCE7F3;
+      color: #9D266B;
+    }
+
+    .tag-tutoriel {
+      background-color: #FEE2E2;
+      color: #991B1B;
+    }
+
+    .difficulty-facile {
+      background-color: #D1FAE5;
+      color: #065F46;
+    }
+
+    .difficulty-moyen {
+      background-color: #FEF3C7;
+      color: #92400E;
+    }
+
+    .difficulty-difficile {
+      background-color: #FEE2E2;
+      color: #991B1B;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 400px;
+      max-height: 400px;
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+    (function () {
+      try {
+        if (window.self !== window.top) {
+          var hdr = document.querySelector('header');
+          if (hdr) hdr.remove();
+          var asd = document.querySelector('aside');
+          if (asd) asd.remove();
+          var st = document.createElement('style');
+          st.textContent = [
+            'html,body{height:auto !important;background:transparent !important}',
+            'main{max-width:100% !important}',
+            '.flex.h-screen{display:block !important}',
+            '.sticky{position:static !important}',
+          ].join('\n');
+          document.head.appendChild(st);
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <div class="flex h-screen">
+    <main class="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12">
+      <div class="max-w-7xl mx-auto">
+        <section id="introduction" class="mb-12 text-center">
+          <h2 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Bienvenue sur le portail de ressources
+            NSI</h2>
+          <p class="mt-6 text-lg leading-8 text-gray-600">
+            Cette page centralise toutes les ressources nécessaires pour le cours de Numérique et Sciences Informatiques
+            en classe de Première. Naviguez par thème, filtrez par type de contenu, ou utilisez la recherche pour
+            trouver exactement ce dont vous avez besoin pour apprendre, pratiquer et réviser.
+          </p>
+        </section>
+
+        <div
+          class="sticky top-0 bg-opacity-80 backdrop-blur-md bg-stone-50/10 z-10 p-4 mb-8 rounded-lg border border-gray-200">
+          <div class="flex flex-col sm:flex-row gap-4">
+            <input type="search" id="search-input" placeholder="Rechercher une ressource..."
+              class="w-full sm:w-1/3 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div id="filters" class="flex flex-wrap gap-2 items-center">
+              <button class="filter-btn bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                data-filter="all">Toutes</button>
+              <button
+                class="filter-btn bg-white text-gray-700 px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-50"
+                data-filter="Cours">Cours</button>
+              <button
+                class="filter-btn bg-white text-gray-700 px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-50"
+                data-filter="Exercices">Exercices</button>
+              <button
+                class="filter-btn bg-white text-gray-700 px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-50"
+                data-filter="TP">TP</button>
+              <button
+                class="filter-btn bg-white text-gray-700 px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-50"
+                data-filter="Projet">Projet</button>
+              <button
+                class="filter-btn bg-white text-gray-700 px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-50"
+                data-filter="Révision">Révision</button>
+              <button
+                class="filter-btn bg-white text-gray-700 px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-50"
+                data-filter="Tutoriel">Tutoriel</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="ressources-container" class="space-y-12">
+        </div>
+        <p id="no-results" class="text-center text-gray-500 text-lg hidden py-16">Aucune ressource ne correspond à votre
+          recherche.</p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const ressourcesData = [
+      // Introduction / Institutionnel
+      { theme: "Introduction", id: "introduction", title: "Programme NSI — Classe de Première (BO)", type: "Cours", difficulty: "facile", description: "Texte officiel fixant le contenu de la spécialité NSI en Première.", url: "https://www.education.gouv.fr/bo/19/Special1/MENE1901632A.htm" },
+      { theme: "Introduction", id: "introduction", title: "Eduscol — Portail NSI (programmes et ressources)", type: "Cours", difficulty: "facile", description: "Portail de référence: programmes, ressources d'accompagnement, sujets, vademecum.", url: "https://eduscol.education.fr/2068/programmes-et-ressources-en-numerique-et-sciences-informatiques-voie-g" },
+      { theme: "Introduction", id: "introduction", title: "Modalités de l'épreuve terminale de NSI (synthèse)", type: "Révision", difficulty: "moyen", description: "Structure des épreuves écrite et pratique, coefficients et attendus.", url: "https://dlatreyte.github.io/terminales-nsi/modalites_examen_nsi/" },
+      { theme: "Introduction", id: "introduction", title: "NSI au bac — page d'information officielle", type: "Révision", difficulty: "moyen", description: "Parcours d'études après NSI, débouchés et prépas (MPI, BUT, etc.).", url: "https://www.education.gouv.fr/reussir-au-lycee/la-specialite-numerique-et-sciences-informatiques-au-bac-325448" },
+
+      // Sites enseignants (cours structurés)
+      { theme: "Langages et programmation", id: "langages", title: "Informatique au Lycée — Pixees (David Roche)", type: "Cours", difficulty: "moyen", description: "Cours, activités et simulateurs couvrant les thèmes NSI, Première.", url: "https://pixees.fr/informatiquelycee/" },
+      { theme: "Langages et programmation", id: "langages", title: "Cours de NSI — Gilles Lassus (site)", type: "Cours", difficulty: "moyen", description: "Cours complets structurés (souvent en notebooks Jupyter) pour NSI.", url: "https://glassus.github.io/" },
+      { theme: "Langages et programmation", id: "langages", title: "Dépôt Git — Cours de NSI (Gilles Lassus)", type: "Tutoriel", difficulty: "moyen", description: "Ressources et notebooks Jupyter en accès libre (CC-BY-SA).", url: "https://github.com/glassus/nsi" },
+      { theme: "Langages et programmation", id: "langages", title: "Spécialité NSI — Olivier Lécluse", type: "Cours", difficulty: "moyen", description: "Cours, TP (Jupyter), ressources par chapitres du programme.", url: "https://www.lecluse.fr/nsi/" },
+
+      // Python / Documentation / Vidéos
+      { theme: "Langages et programmation", id: "langages", title: "Documentation officielle Python (FR/EN)", type: "Tutoriel", difficulty: "moyen", description: "Tutoriel et références du langage Python (PSF).", url: "https://docs.python.org/" },
+      { theme: "Langages et programmation", id: "langages", title: "MOOC NSI — Playlist YouTube (Inria Learning Lab)", type: "Cours", difficulty: "moyen", description: "Vidéos thématiques (types de données, réseaux, architecture, etc.).", url: "https://www.youtube.com/@moocnsi/videos" },
+      { theme: "Langages et programmation", id: "langages", title: "Playlist Première — David Latouche", type: "Cours", difficulty: "moyen", description: "Python pour Première: variables, conditions, boucles, fonctions, listes, dicts.", url: "https://www.youtube.com/playlist?list=PL2V_2xzaQW7fUYnjbOZdj0_It7BeRXBQx" },
+      { theme: "Langages et programmation", id: "langages", title: "NOVELCLASS — Chaîne de révision NSI", type: "Révision", difficulty: "facile", description: "Vidéos courtes: binaire, Boole, tableaux, dictionnaires (idéal révisions).", url: "https://www.youtube.com/@NovelClass" },
+
+      // Algorithmique
+      { theme: "Algorithmique", id: "algorithmique", title: "Algorithmes fondamentaux — Première NSI", type: "Cours", difficulty: "moyen", description: "Parcours d'introduction algorithmique (site enseignant).", url: "https://nsi1.frama.io/algo/algo1/" },
+      { theme: "Algorithmique", id: "algorithmique", title: "Algorithme 1 — Spécialité NSI", type: "Cours", difficulty: "moyen", description: "Cours structuré d'algorithmique (site enseignant).", url: "https://flaustriat.frama.io/docs/algo1/" },
+      { theme: "Algorithmique", id: "algorithmique", title: "Visualisation des tris — Toptal", type: "Tutoriel", difficulty: "moyen", description: "Comparer visuellement insertion, sélection, bulles, fusion, rapide…", url: "https://www.toptal.com/developers/sorting-algorithms" },
+      { theme: "Algorithmique", id: "algorithmique", title: "e‑nsi — Exercices pratiques (GitLab)", type: "Exercices", difficulty: "moyen", description: "Parcours d'exercices Python/algorithmique avec tests.", url: "https://e-nsi.gitlab.io/pratique/" },
+
+      // Données / Représentation / Tables
+      { theme: "Données : Types construits", id: "representation-construits", title: "Listes et algorithmes de tri — laboDemaths", type: "Cours", difficulty: "moyen", description: "Listes en Python, tris de base et mise en pratique en Première.", url: "https://labodemaths.fr/WordPress3/nsi-listes-et-algorithmes-de-tris/" },
+
+      // IHM / Web
+      { theme: "IHM sur le Web", id: "ihm-web", title: "Portail NSI–SNT (Forge des communs éducatifs)", type: "Tutoriel", difficulty: "moyen", description: "Portail d'outils et ressources (NSI/SNT), accès libre.", url: "https://nsi-snt.forge.apps.education.fr/" },
+
+      // Architectures, OS, Réseaux, Simulation
+      { theme: "Architectures matérielles", id: "architectures", title: "Réseau — simulation (Pixees)", type: "TP", difficulty: "moyen", description: "TP guidés de simulation réseau pour Première/Terminale.", url: "https://pixees.fr/informatiquelycee/n_site/nsi_prem_simReseau1.html" },
+      { theme: "Architectures matérielles", id: "architectures", title: "Simulation réseau — fiche PDF (Pixees)", type: "Révision", difficulty: "moyen", description: "Support PDF pour simuler les réseaux en NSI.", url: "https://pixees.fr/informatiquelycee/sim_reseau.pdf" },
+      { theme: "Architectures matérielles", id: "architectures", title: "TP Réseaux — NSI Rennes", type: "TP", difficulty: "moyen", description: "Travaux pratiques réseaux (ressources académiques).", url: "https://nsirennes.fr/os-archi/reseaux/" },
+      { theme: "Architectures matérielles", id: "architectures", title: "Cours Réseau — Saint‑Aspais Première", type: "Cours", difficulty: "moyen", description: "Cours et ressources réseau Première en accès public.", url: "https://mcoilhac.forge.apps.education.fr/site-nsi/reseau/reseau/" },
+      { theme: "Architectures matérielles", id: "architectures", title: "Simulation réseau — Filius (téléchargement)", type: "Tutoriel", difficulty: "moyen", description: "Outil libre de simulation réseau pour les TP.", url: "https://www.lernsoftware-filius.de/Herunterladen" },
+
+      // Outils de travail et ENT
+      { theme: "Langages et programmation", id: "langages", title: "Capytale — Présentation (Acad. Nantes)", type: "Tutoriel", difficulty: "moyen", description: "Présentation officielle de l'outil institutionnel Capytale.", url: "https://www.pedagogie.ac-nantes.fr/enseignements-informatiques/enseignement/nsi/nsi-outils-1549397.kjsp" },
+      { theme: "Langages et programmation", id: "langages", title: "Capytale — mode d'emploi (PDF)", type: "Tutoriel", difficulty: "moyen", description: "Utiliser Capytale en NSI (guide PDF).", url: "https://nsi-snt.ac-normandie.fr/IMG/pdf/utiliser_capytale_en_nsi.pdf" },
+      { theme: "Langages et programmation", id: "langages", title: "Edupyter (distribution Python portable)", type: "Tutoriel", difficulty: "moyen", description: "Python + Thonny + Jupyter (sans droits admin).", url: "https://www.edupyter.net/" }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const container = document.getElementById('ressources-container');
+      const searchInput = document.getElementById('search-input');
+      const filterButtons = document.querySelectorAll('.filter-btn');
+      const noResults = document.getElementById('no-results');
+
+      let currentFilter = 'all';
+      let currentSearch = '';
+
+      const themes = [...new Set(ressourcesData.map(r => r.theme))];
+      const themeIds = [...new Set(ressourcesData.map(r => r.id))];
+      const themeMap = Object.fromEntries(themes.map((theme, i) => [theme, themeIds[i]]));
+
+
+      function renderRessources() {
+        const filteredData = ressourcesData.filter(ressource => {
+          const matchesFilter = currentFilter === 'all' || ressource.type === currentFilter;
+          const matchesSearch = currentSearch === '' || ressource.title.toLowerCase().includes(currentSearch) || ressource.description.toLowerCase().includes(currentSearch);
+          return matchesFilter && matchesSearch;
+        });
+
+        if (filteredData.length === 0) {
+          noResults.classList.remove('hidden');
+          container.innerHTML = '';
+        } else {
+          noResults.classList.add('hidden');
+          const groupedByTheme = filteredData.reduce((acc, ressource) => {
+            (acc[ressource.theme] = acc[ressource.theme] || []).push(ressource);
+            return acc;
+          }, {});
+
+          container.innerHTML = themes
+            .map(theme => {
+              const ressources = groupedByTheme[theme];
+              if (!ressources || ressources.length === 0) return '';
+
+              return `
+                  <section id="${themeMap[theme]}">
+                    <h2 class="text-3xl font-bold border-b border-gray-200 pb-2 mb-6">${theme}</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      ${ressources.map(r => `
+                                            <div class="card rounded-lg p-6 flex flex-col">
+                                                <div class="flex-grow">
+                                                    <div class="flex justify-between items-start mb-2">
+                                                        <span class="tag tag-${r.type.toLowerCase().replace('é', 'e')}">${r.type}</span>
+                                                        <span class="tag difficulty-${r.difficulty}">${r.difficulty}</span>
+                                                    </div>
+                                                    <h3 class="text-lg font-semibold mb-2">${r.title}</h3>
+                                                    <p class="text-gray-600 text-sm">${r.description}</p>
+                                                </div>
+                                                <a href="${r.url}" target="_blank" class="mt-4 inline-block text-blue-600 font-semibold hover:text-blue-800 self-start">Accéder →</a>
+                                            </div>
+                                        `).join('')}
+                    </div>
+                  </section>
+                  `;
+            })
+            .join('');
+        }
+      }
+
+      searchInput.addEventListener('input', e => {
+        currentSearch = e.target.value.toLowerCase();
+        renderRessources();
+      });
+
+      filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          filterButtons.forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white');
+            btn.classList.add('bg-white', 'text-gray-700');
+          });
+          button.classList.add('bg-blue-600', 'text-white');
+          button.classList.remove('bg-white', 'text-gray-700');
+
+          currentFilter = button.dataset.filter;
+          renderRessources();
+        });
+      });
+
+      // Chart retiré
+
+      renderRessources();
+    });
+  </script>
+</body>
+
+</html>

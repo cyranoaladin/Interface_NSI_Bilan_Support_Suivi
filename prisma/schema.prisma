@@ -28,6 +28,7 @@ model Student {
   groupId     String
   group       Group    @relation(fields: [groupId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   bilans      Bilan[]
+  evalBilans  EvaluationBilan[]
 
   @@index([groupId])
 }
@@ -173,6 +174,33 @@ model StudentProfileData {
   pedagoProfile    Json?
   preAnalyzedData  Json?
   lastUpdatedAt    DateTime @default(now())
+}
+
+// === EVALUATIONS (Bilans évaluations) ===
+model Evaluation {
+  id     Int                @id @default(autoincrement())
+  title  String
+  date   DateTime
+
+  bilans EvaluationBilan[]
+}
+
+model EvaluationBilan {
+  id                   Int       @id @default(autoincrement())
+  studentEmail         String
+  evaluationId         Int
+  noteFinale           String
+  appreciationGenerale String
+  pointsForts          Json
+  axesAmelioration     Json
+  conseils             Json
+
+  student    Student    @relation(fields: [studentEmail], references: [email])
+  evaluation Evaluation @relation(fields: [evaluationId], references: [id])
+
+  @@unique([studentEmail, evaluationId])
+  @@index([studentEmail])
+  @@index([evaluationId])
 }
 
 // === RAG MODELS (DB tables existantes) ===

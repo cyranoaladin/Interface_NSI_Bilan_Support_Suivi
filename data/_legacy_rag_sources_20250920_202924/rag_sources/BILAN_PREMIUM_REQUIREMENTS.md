@@ -68,12 +68,12 @@
 
 ### **3.3.Contenu et Richesse**
 
-* **Qualité :** Le contenu **DOIT** être riche, détaillé, analytique et directement exploitable pour un enseignant.Les réponses d'une seule phrase sont inacceptables.
+* **Qualité :** Le contenu **DOIT** être riche, détaillé, analytique et directement exploitable pour un enseignant. Les réponses d'une seule phrase sont inacceptables.
 * **Section "Diagnostic pédagogique" :** **DOIT** contenir au moins 3 phrases complètes analysant les causes possibles des difficultés de l'élève, en croisant les scores du QCM et les réponses du profil pédagogique.
-    ***Section "Plan 4 semaines" :**
-    *   **DOIT** être très détaillé et structuré.
-    * Chaque semaine **DOIT** être un objet JSON avec les clés`objectif`(string), `activites`(liste de 2 - 3 actions / TPs), et`ressources`(liste de 1 - 2 ressources spécifiques, ex: "e-NSI", "vidéo sur les arbres binaires").
+* **Section "Plan 4 semaines" :**
+  * **DOIT** être très détaillé et structuré.
+  * Chaque semaine **DOIT** être un objet JSON avec les clés `objectif` (string), `activites` (liste de 2-3 actions/TPs), et `ressources` (liste de 1-2 ressources spécifiques, ex: "e-NSI", "vidéo sur les arbres binaires").
 * **Section "Indicateurs pédagogiques" :** **DOIT** lister au moins 4 indicateurs concrets et mesurables pour suivre les progrès.
 * **Section "Pistes Pédagogiques Issues des Référentiels" :**
-  * Le titre **DOIT** être exactement celui - ci.
-  * Le contenu **DOIT** être rempli avec 2 - 3 phrases pertinentes issues de l'analyse RAG.;
+  * Le titre **DOIT** être exactement celui-ci.
+  * Le contenu **DOIT** être rempli avec 2-3 phrases pertinentes issues de l'analyse RAG.

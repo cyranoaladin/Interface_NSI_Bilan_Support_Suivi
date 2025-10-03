@@ -1,27 +1,45 @@
-import { getSessionEmail } from '@/lib/session';
+import { getSession } from '@/lib/session';
 import { PrismaClient } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
-  const teacherEmail = await getSessionEmail();
-  if (!teacherEmail) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  const session = await getSession();
+  if (!session?.email || session.role !== 'TEACHER') {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
 
   const { searchParams } = new URL(req.url);
-  const studentEmail = searchParams.get('studentEmail');
-  if (!studentEmail) return NextResponse.json({ ok: false, error: 'Missing studentEmail' }, { status: 400 });
+  const evaluationId = Number(searchParams.get('evaluationId') || '0') || undefined;
+  const studentEmail = searchParams.get('studentEmail') || undefined;
 
-  // Étape 1: récupérer les attempts de l'élève
-  const attempts = await prisma.attempt.findMany({ where: { studentEmail }, select: { id: true }, orderBy: { submittedAt: 'desc' } });
-  if (attempts.length === 0) return NextResponse.json({ ok: true, bilans: [] });
-  const attemptIds = attempts.map(a => a.id);
-
-  // Étape 2: récupérer les rapports publiés associés à ces attempts (PDF disponibles)
-  const bilans = await prisma.report.findMany({
-    where: { attemptId: { in: attemptIds }, pdfUrl: { not: null } },
-    select: { id: true, type: true, pdfUrl: true, publishedAt: true },
-    orderBy: { publishedAt: 'desc' }
-  });
-  return NextResponse.json({ ok: true, bilans });
+  try {
+    if (evaluationId && studentEmail) {
+      // Support variantes -e/normal pour la recherche ciblée
+      let bilan = await (prisma as any).evaluationBilan.findUnique({ where: { studentEmail_evaluationId: { studentEmail, evaluationId } } });
+      if (!bilan) {
+        const lower = String(studentEmail).toLowerCase();
+        const m = lower.match(/^(.+?)(-e)?(@ert\.tn)$/i);
+        if (m) {
+          const base = m[1];
+          const hasE = !!m[2];
+          const domain = m[3];
+          const alt = hasE ? `${base}${domain}` : `${base}-e${domain}`;
+          bilan = await (prisma as any).evaluationBilan.findUnique({ where: { studentEmail_evaluationId: { studentEmail: alt, evaluationId } } });
+        }
+      }
+      return NextResponse.json({ ok: true, bilan });
+    }
+    if (evaluationId) {
+      const bilans = await (prisma as any).evaluationBilan.findMany({ where: { evaluationId } });
+      return NextResponse.json({ ok: true, bilans });
+    }
+    const evaluations = await (prisma as any).evaluation.findMany({ orderBy: { date: 'desc' }, select: { id: true, title: true, date: true } });
+    return NextResponse.json({ ok: true, evaluations });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || 'error' }, { status: 500 });
+  }
 }
+
+// (supprimé: ancien handler doublon basé sur attempts/reports)

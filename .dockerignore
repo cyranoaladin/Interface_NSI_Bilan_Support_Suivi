@@ -27,8 +27,9 @@ test-results-run
 apps/web/test-results
 apps/web/playwright-report
 apps/web/playwright/.cache
-apps/web/tests
-test
+# keep tests for reference; ok to include
+# apps/web/tests
+# keep static site for copy
 
 # Docs artifacts
 docs/artifacts

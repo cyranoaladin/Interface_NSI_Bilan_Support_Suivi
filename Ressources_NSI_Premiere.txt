@@ -1,0 +1,491 @@
+﻿Catalogue Raisonné de Ressources pour l'Enseignement de la Spécialité Numérique et Sciences Informatiques en Classe de Première
+
+
+
+
+Introduction
+
+
+
+
+Objectif et Philosophie
+
+
+Ce catalogue a pour vocation de constituer un guide pédagogique exhaustif et structuré pour les enseignants de la spécialité Numérique et Sciences Informatiques (NSI) en classe de Première. Son objectif est de fournir un ensemble commenté et organisé de ressources — cours, tutoriels, exercices, fiches mémoire et projets — rigoureusement alignées sur le programme officiel 1 et les orientations pédagogiques préconisées par le Vademecum de la discipline.1 La philosophie qui sous-tend ce recueil est de promouvoir une pédagogie active et engageante. L'accent est mis sur la démarche de projet, qui doit occuper au moins un quart du temps d'enseignement 1, sur la méthode raisonnée de "l'essai-erreur" où l'analyse des erreurs devient un moteur d'apprentissage 1, et sur le développement d'une authentique "pensée informatique".1 Il s'agit de former les élèves non seulement à la programmation, mais aussi à la modélisation, à l'analyse critique et à la résolution rigoureuse de problèmes.
+
+
+Structure du Catalogue
+
+
+Afin de faciliter son appropriation et son usage en classe, ce document est organisé selon une progression logique qui accompagne l'élève dans sa montée en compétences. La première section établit les fondements conceptuels de l'algorithmique et les bonnes pratiques de programmation. La deuxième section se consacre à la manipulation des données à travers l'étude des structures fondamentales en Python. La troisième section détaille, un par un, les algorithmes spécifiques au programme de Première, en mettant l'accent sur leur principe, leur analyse et leur implémentation. Enfin, la quatrième et dernière section propose un éventail de projets et d'activités pratiques permettant de synthétiser et d'appliquer les connaissances acquises, transformant ainsi la théorie en compétences concrètes.
+
+
+Section 1 : Fondements de la Pensée Algorithmique et de la Programmation
+
+
+Cette section inaugurale vise à équiper l'enseignant des ressources nécessaires pour construire les bases conceptuelles et techniques indispensables à l'ensemble du programme. La maîtrise de ces fondements est un prérequis pour aborder sereinement les notions plus complexes qui suivront.
+
+
+1.1 De l'Algorithme au Programme : Concepts Clés
+
+
+Avant même d'écrire la première ligne de code, il est essentiel que les élèves comprennent la nature de l'objet qu'ils cherchent à construire. Le programme officiel de NSI 1 ne se contente pas d'une approche purement technique ; il exige le développement d'une capacité de raisonnement formel sur les programmes. Cette ambition impose une trajectoire pédagogique qui va au-delà de la simple vérification empirique du bon fonctionnement d'un code. Il s'agit de doter les élèves des outils intellectuels pour analyser, prouver et évaluer la qualité d'une solution algorithmique. Une approche progressive, partant d'activités débranchées pour construire l'intuition 1, puis s'appuyant sur des visualisations interactives avant d'aborder le raisonnement formel, est particulièrement pertinente pour rendre ces concepts abstraits accessibles.
+
+
+Définition et Propriétés d'un Algorithme
+
+
+Un algorithme est une séquence finie et non ambiguë d'instructions permettant de résoudre un problème donné pour un ensemble d'entrées.3 Il doit se terminer en un temps fini et produire un résultat correct. Il est crucial de distinguer l'algorithme (la méthode de résolution abstraite) du programme (son implémentation dans un langage spécifique comme Python).
+* Ressources de cours :
+   * Introduction à l'algorithmique (cours et exercices) : 4
+   * Fiche de synthèse sur les concepts de base : 3
+
+
+Complexité Algorithmique
+
+
+Tous les algorithmes corrects ne se valent pas. La notion de complexité permet de mesurer leur efficacité, c'est-à-dire les ressources (temps de calcul, espace mémoire) qu'ils consomment en fonction de la taille des données d'entrée.3 L'étude de la complexité est fondamentale pour apprendre à choisir la solution la plus adaptée à un problème.
+* Concepts à aborder :
+   * Complexité temporelle (nombre d'opérations élémentaires) et spatiale (mémoire utilisée).
+   * Analyse dans le pire des cas.
+   * Grandes classes de complexité et leur notation "Grand O" : constante O(1), logarithmique O(logn), linéaire O(n), quadratique O(n2), exponentielle O(2n).7
+* Ressources pédagogiques :
+   * Cours détaillé sur la notion de complexité : 5
+   * Exercices d'application pour calculer la complexité d'algorithmes simples : 9
+
+
+Preuves de Correction et de Terminaison
+
+
+Le programme de Première NSI introduit deux outils puissants pour prouver formellement qu'un algorithme est correct et qu'il se termine, en particulier pour les structures de contrôle itératives.1
+* Preuve de terminaison (Variant de boucle) : Pour prouver qu'une boucle while se termine, on utilise un variant de boucle. Il s'agit d'une quantité entière, qui est toujours positive ou nulle à l'entrée de la boucle, et qui décroît strictement à chaque itération. Puisqu'une suite d'entiers positifs strictement décroissante est nécessairement finie, l'existence d'un tel variant garantit la terminaison de la boucle.10 L'algorithme de recherche dichotomique est un excellent exemple pour appliquer ce concept, le variant étant la taille de l'intervalle de recherche.8
+* Preuve de correction (Invariant de boucle) : Pour prouver qu'un algorithme produit le résultat attendu, on utilise un invariant de boucle. C'est une propriété qui est vraie avant la première itération et qui reste vraie après chaque itération. Si cette propriété, combinée à la condition d'arrêt de la boucle, implique la correction de l'algorithme, alors la preuve est faite.13 Les algorithmes de tri par sélection et par insertion sont les supports privilégiés pour l'étude des invariants.14
+* Ressources dédiées :
+   * Cours sur les variants et invariants de boucle : 10
+   * Application au tri par sélection : 14
+   * Application à la recherche dichotomique : 8
+
+
+1.2 Maîtriser Python : Bonnes Pratiques et Outils Essentiels
+
+
+Le langage Python 3 est le support de programmation pour la spécialité NSI.1 Au-delà de la syntaxe, il est primordial d'inculquer aux élèves des pratiques de développement rigoureuses qui rendront leur code plus fiable, lisible et maintenable.
+
+
+Tutoriels d'Initiation et de Perfectionnement
+
+
+Une sélection de ressources adaptées au niveau des élèves est essentielle pour assurer une prise en main progressive du langage.
+* Pour débuter : L'application en ligne Pyrates est spécifiquement conçue pour accompagner la transition de la programmation par blocs (vue au collège) à la programmation textuelle en Python, ce qui en fait un excellent point de départ.15
+* Cours complets : De nombreux sites proposent des cours, des activités et des bacs à sable pour s'exercer en autonomie.16
+* Fiches synthétiques : Des dépliants ou fiches mémoires peuvent servir de référence rapide pour la syntaxe de base.18
+
+
+Spécification des Fonctions
+
+
+Une fonction est une brique de base de tout programme. Sa conception doit être rigoureuse. La spécification d'une fonction consiste à décrire précisément ce qu'elle fait, les données qu'elle attend en entrée (préconditions) et ce qu'elle garantit en sortie (postconditions), indépendamment de son implémentation.19
+* Documentation (Docstrings) : En Python, la convention est d'utiliser une chaîne de caractères multi-lignes (docstring) juste après la définition de la fonction pour décrire son rôle, ses paramètres et sa valeur de retour.
+* Préconditions et Postconditions :
+   * Une précondition est une condition qui doit être vraie avant l'appel de la fonction pour qu'elle puisse s'exécuter correctement (ex: une liste passée en paramètre ne doit pas être vide).19
+   * Une postcondition est une condition qui est garantie d'être vraie à la fin de l'exécution de la fonction (ex: la liste retournée est triée).19
+* L'instruction assert : L'instruction assert est un outil de débogage puissant. Elle permet de vérifier qu'une condition est vraie à un point donné du programme. Si la condition est fausse, une exception AssertionError est levée, arrêtant le programme. C'est un excellent moyen de vérifier les préconditions ou les invariants pendant la phase de développement.21
+* Ressources :
+   * Guides sur la spécification et l'utilisation de assert : 19
+   * Tutoriels vidéo explicatifs : 23
+
+
+Mise au Point et Validation des Programmes
+
+
+Écrire du code sans erreur est quasiment impossible. Apprendre à trouver et corriger ses erreurs (débogage) et à vérifier systématiquement la correction de son code (test) sont des compétences centrales du programme.1
+* Débogage : Plutôt que de multiplier les instructions print(), il faut apprendre aux élèves à utiliser un débogueur. Les environnements de développement (IDE) comme IDLE, Thonny, VS Code ou PyCharm intègrent des outils de débogage graphique qui permettent d'exécuter le code pas à pas, de poser des points d'arrêt et d'inspecter la valeur des variables à tout moment.24
+* Tests Unitaires : La validation d'un programme passe par la création de jeux de tests. Il s'agit d'écrire de petites fonctions qui appellent la fonction à tester avec des entrées spécifiques et vérifient que le résultat est bien celui attendu. Il est important de tester non seulement les cas "normaux" (ou "happy path"), mais aussi les cas limites (listes vides, valeurs extrêmes, etc.). Le module unittest de Python offre un cadre structuré pour cela, mais une simple utilisation de la commande assert peut déjà constituer une excellente introduction à la pratique du test.27
+* Ressources :
+   * Guides sur les débogueurs intégrés : 25
+   * Introduction aux tests unitaires en Python : 27
+
+
+Section 2 : Manipulation des Données : Structures et Traitement
+
+
+La manière dont les données sont organisées conditionne directement l'efficacité et la simplicité des algorithmes qui les traitent. Le programme de Première NSI se concentre sur les structures de données fondamentales de Python et leur application au traitement de données tabulaires.
+
+
+2.1 Les Types Construits en Python
+
+
+Python offre plusieurs types de données "construits" ou "conteneurs", chacun avec ses propriétés et ses cas d'usage spécifiques. Il est crucial que les élèves ne se contentent pas de les connaître, mais qu'ils comprennent pourquoi et quand utiliser l'un plutôt que l'autre. Un tableau comparatif peut s'avérer un outil pédagogique très efficace pour synthétiser ces informations et aider les élèves à faire des choix de conception éclairés.
+
+
+p-uplets (Tuples)
+
+
+Les tuples sont des séquences non mutables (immutables) d'éléments. Une fois créé, un tuple ne peut plus être modifié. Cette propriété les rend utiles pour représenter des données qui ne doivent pas changer, comme des coordonnées de points ou des constantes.33 Ils sont également utilisés pour permettre à une fonction de retourner plusieurs valeurs simultanément.1
+* Ressources :
+   * Cours sur les tuples : 33
+   * Fiche mémoire et tutoriel vidéo : 36
+
+
+Tableaux (Listes)
+
+
+Les listes sont des séquences mutables, ce qui en fait la structure de données la plus flexible et la plus couramment utilisée en Python. Elles peuvent être modifiées après leur création (ajout, suppression, modification d'éléments). Les listes de listes permettent de représenter des structures à deux dimensions comme des matrices ou des grilles de jeu.38
+* Ressources :
+   * Cours sur les listes et leurs méthodes : 38
+   * Banques d'exercices corrigés de difficulté progressive : 41
+
+
+Dictionnaires
+
+
+Les dictionnaires sont des structures de données associatives qui stockent des paires clé-valeur. Contrairement aux séquences, on n'accède pas aux éléments par un indice numérique, mais par leur clé unique. Ils sont extrêmement efficaces pour les opérations de recherche, d'ajout et de suppression. Ils sont idéaux pour représenter des objets décrits par un ensemble d'attributs (ex: un contact dans un répertoire).45
+* Ressources :
+   * Cours sur les dictionnaires : 45
+   * Travaux pratiques guidés (TP) : 46
+
+
+Tableau de Synthèse des Structures de Données
+
+
+Caractéristique
+	Liste (list)
+	p-uplet (tuple)
+	Dictionnaire (dict)
+	Ensemble (set)
+	Syntaxe
+	``
+	(1, 2, 3)
+	{'a': 1, 'b': 2}
+	{1, 2, 3}
+	Ordonnée
+	Oui
+	Oui
+	Non (Oui depuis Python 3.7)
+	Non
+	Mutable
+	Oui
+	Non
+	Oui
+	Oui
+	Accès
+	Indice numérique (ex: L)
+	Indice numérique (ex: T)
+	Clé (ex: D['a'])
+	Non (itération)
+	Doublons
+	Autorisés
+	Autorisés
+	Clés uniques
+	Non autorisés
+	Cas d'usage
+	Collection d'éléments homogènes à modifier
+	Données hétérogènes fixes (coordonnées, retours de fonction)
+	Données structurées (annuaire, enregistrement)
+	Appartenance, unicité, opérations ensemblistes
+	
+
+2.2 Traitement des Données en Tables
+
+
+Une compétence essentielle en NSI est la capacité à manipuler des données structurées, souvent stockées dans des fichiers texte. Le format CSV (Comma-Separated Values) est le standard étudié en Première.1
+
+
+Le Format CSV
+
+
+Un fichier CSV est un fichier texte où chaque ligne représente un enregistrement (par exemple, une personne, un produit) et où les valeurs de chaque champ (ou attribut) sont séparées par un délimiteur, typiquement une virgule ou un point-virgule.49 La première ligne contient souvent les en-têtes de colonnes (descripteurs).
+
+
+Manipulation avec le module csv de Python
+
+
+Le module csv de la bibliothèque standard de Python simplifie grandement la lecture et l'écriture de ces fichiers. La méthode la plus robuste et la plus conforme à l'esprit du programme est de représenter la table en mémoire comme une liste de dictionnaires. Chaque dictionnaire représente une ligne, où les clés sont les noms des colonnes et les valeurs sont les données de la ligne.51
+* Lecture : La fonction csv.DictReader lit un fichier CSV et le transforme en un itérable où chaque élément est un dictionnaire représentant une ligne.51
+* Écriture : La fonction csv.DictWriter permet d'écrire une liste de dictionnaires dans un fichier CSV, en gérant automatiquement l'écriture des en-têtes et des lignes.51
+
+
+Opérations sur les Tables
+
+
+Une fois la table chargée en mémoire sous forme de liste de dictionnaires, on peut effectuer les opérations fondamentales de traitement de données :
+* Sélection (Filtrage) : Consiste à extraire un sous-ensemble de lignes vérifiant une condition. La compréhension de liste est un outil Python particulièrement élégant pour cette tâche.
+* Projection : Consiste à ne conserver que certaines colonnes (certaines clés dans les dictionnaires) pour chaque ligne.
+* Tri : La fonction sorted() de Python, combinée à une fonction lambda sur le paramètre key, permet de trier facilement la liste de dictionnaires selon la valeur d'une ou plusieurs colonnes.
+* Fusion (Jointure) : Opération plus complexe qui consiste à combiner deux tables en une seule en se basant sur une colonne commune.
+* Ressources :
+   * Cours complets avec exemples de code : 49
+   * Exercices corrigés sur la manipulation de tables : 53
+
+
+Section 3 : Catalogue d'Algorithmes au Programme de Première
+
+
+Cette section constitue le cœur du programme d'algorithmique. Pour chaque algorithme, une approche en trois temps est proposée : la compréhension du principe, l'analyse de ses propriétés (complexité, correction, terminaison) et son implémentation en Python. Un tableau synthétique final permet de consolider ces connaissances et de comparer les différents algorithmes.
+
+
+3.1 Algorithmes de Parcours et de Recherche
+
+
+Ces algorithmes sont fondamentaux car ils constituent la base de nombreuses opérations plus complexes.
+
+
+Parcours Séquentiel
+
+
+* Principe : Il s'agit de la méthode la plus simple, qui consiste à examiner les éléments d'un tableau un par un, du début à la fin. Elle s'applique à de nombreux problèmes : recherche de la première occurrence d'un élément, calcul du minimum ou du maximum, calcul d'une moyenne, etc..56
+* Analyse : Sa complexité est linéaire, notée O(n), car dans le pire des cas (l'élément cherché est en dernière position ou absent), il faut parcourir l'intégralité du tableau de taille n.
+* Ressources :
+   * Cours et implémentations Python : 57
+   * Visualisations du parcours : 33
+
+
+Recherche Dichotomique
+
+
+* Principe : Cet algorithme, basé sur le principe "diviser pour régner", est beaucoup plus efficace mais ne s'applique que sur un tableau préalablement trié. Il consiste à comparer l'élément cherché avec l'élément central du tableau. Si c'est le bon, la recherche est terminée. Sinon, on élimine la moitié du tableau où l'élément ne peut pas se trouver et on recommence la recherche sur la moitié restante.1
+* Analyse : La précondition du tableau trié est fondamentale. Sa complexité est logarithmique, notée O(logn), car la taille de l'espace de recherche est divisée par deux à chaque étape. La preuve de sa terminaison se fait élégamment à l'aide d'un variant de boucle : la taille de l'intervalle de recherche [gauche, droite], qui est un entier positif qui décroît strictement à chaque itération.8
+* Ressources :
+   * Cours détaillés sur le principe et la complexité : 8
+   * Exercices corrigés et QCM : 60
+   * Tutoriels vidéo : 65
+
+
+3.2 Algorithmes de Tri
+
+
+Savoir ordonner une collection de données est un problème classique en informatique. Le programme de Première aborde deux algorithmes fondamentaux, dont la complexité est quadratique.
+
+
+Tri par Sélection
+
+
+* Principe : L'algorithme parcourt le tableau pour trouver l'élément le plus petit et l'échange avec l'élément situé à la première position. Il recommence ensuite l'opération sur le reste du tableau (de la deuxième à la dernière position), et ainsi de suite, jusqu'à ce que tout le tableau soit trié.66
+* Analyse : Sa complexité est quadratique, notée O(n2), quel que soit l'état initial du tableau (meilleur, pire ou cas moyen). La preuve de sa correction repose sur un invariant de boucle : "à la fin de la i-ème itération, le sous-tableau des i premiers éléments est trié et contient les i plus petits éléments du tableau initial".14
+* Ressources :
+   * Cours et exercices d'implémentation : 14
+   * Visualisations interactives pour comprendre le mécanisme : 71
+
+
+Tri par Insertion
+
+
+* Principe : Cet algorithme parcourt le tableau à partir du deuxième élément. Pour chaque élément, il le "remonte" vers le début du tableau en le comparant avec les éléments précédents, jusqu'à trouver sa place correcte. À chaque étape, la partie gauche du tableau est donc toujours triée.75
+* Analyse : Sa complexité est quadratique, O(n2), dans le pire des cas (tableau trié en ordre inverse). Cependant, il est très efficace sur des tableaux déjà presque triés, où sa complexité devient quasi-linéaire, O(n).
+* Ressources :
+   * Cours et exercices corrigés : 77
+   * Animations et vidéos explicatives : 83
+
+
+3.3 Méthodes Algorithmiques Avancées
+
+
+Le programme introduit également des familles d'algorithmes qui représentent des stratégies de résolution de problèmes plus générales.
+
+
+Algorithmes Gloutons
+
+
+* Principe : Une stratégie gloutonne consiste à construire une solution à un problème d'optimisation étape par étape, en faisant à chaque fois le choix qui semble localement le meilleur, sans jamais remettre en cause les choix précédents. Le problème classique du rendu de monnaie est l'exemple canonique : pour rendre une somme, on utilise toujours la plus grande pièce de monnaie possible. Il est essentiel de montrer aux élèves que cette stratégie, bien que simple et souvent efficace, ne garantit pas toujours de trouver la solution optimale globale.86
+* Ressources :
+   * Cours et TP sur le rendu de monnaie et le problème du sac à dos : 86
+
+
+Algorithme des k-plus proches voisins (k-NN)
+
+
+* Principe : Il s'agit d'un premier algorithme d'apprentissage automatique (machine learning) dit "supervisé". Pour déterminer la classe d'un nouvel élément, l'algorithme k-NN regarde les k éléments les plus proches de lui dans un jeu de données déjà étiquetées, et lui attribue la classe majoritaire parmi ces k voisins.92
+* Application : Son implémentation nécessite un jeu de données d'entraînement (souvent un fichier CSV) et le choix d'une fonction de distance (ex: distance euclidienne).
+* Ressources :
+   * Cours avec exemples de code utilisant des bibliothèques Python comme pandas pour lire les données et scikit-learn pour une implémentation efficace de l'algorithme : 92
+
+
+Tableau de Synthèse des Algorithmes de Première NSI
+
+
+Ce tableau a pour but de fournir une vision d'ensemble, une "carte mentale" du paysage algorithmique étudié en Première. Il permet de comparer rapidement les caractéristiques de chaque algorithme, facilitant ainsi la révision et la compréhension de leurs domaines d'application respectifs.
+Algorithme
+	Catégorie
+	Principe en une phrase
+	Complexité (pire cas)
+	Précondition(s) / Remarques
+	Recherche séquentielle
+	Recherche
+	Parcourir le tableau élément par élément jusqu'à trouver la cible.
+	O(n)
+	Aucune.
+	Recherche dichotomique
+	Recherche
+	Diviser l'espace de recherche en deux à chaque étape.
+	O(logn)
+	Le tableau doit être trié.
+	Tri par sélection
+	Tri
+	Trouver le minimum du reste du tableau et le placer à sa position finale.
+	O(n2)
+	Inefficace mais simple à comprendre.
+	Tri par insertion
+	Tri
+	Insérer chaque élément à sa place dans la partie déjà triée du tableau.
+	O(n2)
+	Efficace sur des tableaux presque triés (O(n)).
+	Algorithme glouton
+	Optimisation
+	Faire le choix localement optimal à chaque étape.
+	Variable
+	Ne garantit pas la solution globale optimale.
+	k-plus proches voisins
+	Apprentissage
+	Classifier un élément selon la majorité de ses k plus proches voisins.
+	Variable
+	Nécessite un jeu de données étiquetées et une métrique de distance.
+	
+
+Section 4 : Mettre en Pratique : Projets et Activités Pédagogiques
+
+
+La démarche de projet est au cœur de la pédagogie en NSI. Elle n'est pas une simple activité de fin de chapitre, mais une modalité d'apprentissage à part entière qui permet de synthétiser des compétences variées : algorithmique, structuration de données, programmation et, souvent, interaction homme-machine.1 La motivation des élèves étant un facteur clé, il est recommandé de leur laisser, autant que possible, le choix du thème de leur projet.1 Le rôle de l'enseignant évolue alors vers celui d'un accompagnateur qui guide les élèves dans la réalisation de leurs objectifs. Ce catalogue propose donc des pistes de projets de difficulté variable et les ressources techniques associées pour lever les obstacles liés à la maîtrise des outils.
+
+
+4.1 Catalogue de Mini-Projets Guidés
+
+
+Ces projets sont conçus pour être réalisés en classe, avec un encadrement plus ou moins direct de l'enseignant. Ils permettent d'appliquer concrètement les notions vues en cours.
+* Projets de Jeux :
+   * Puissance 4 : Un excellent premier projet pour travailler sur les listes de listes (la grille), la logique de victoire et la gestion des tours de jeu. Il peut être réalisé en mode console, avec une extension possible vers une interface graphique simple avec la bibliothèque pygame pour les élèves les plus avancés.97
+   * 2048 : Ce projet permet de manipuler une grille (liste de listes) et de gérer des événements clavier. La bibliothèque Tkinter, incluse avec Python, est bien adaptée pour l'interface graphique.97
+* Projets Graphiques et de Simulation :
+   * Dessine ma rue : Idéal pour aborder la programmation modulaire. Les élèves créent des fonctions pour dessiner des éléments (porte, fenêtre, toit) puis une fonction principale qui les assemble de manière aléatoire en utilisant le module turtle.97
+   * Initiation à pygame : La bibliothèque pygame est très populaire pour la création de jeux 2D. Des tutoriels simples permettent de créer une fenêtre, d'afficher une image (un "sprite"), de la déplacer avec les touches du clavier et de gérer les événements de base, constituant une excellente introduction à la programmation événementielle.98
+* Projets de Traitement de Données :
+   * Analyse de données ouvertes : Proposer aux élèves de choisir un jeu de données sur un site comme data.gouv.fr et de répondre à une question simple en utilisant les opérations de sélection, de tri et de calcul de statistiques sur les tables vues précédemment.
+   * Stéganographie : Un projet original qui consiste à cacher un message texte à l'intérieur des données d'une image (en modifiant les bits de poids faible des composantes de couleur des pixels). Ce projet fait le lien entre la représentation des données et la programmation.101
+* Projets Interdisciplinaires : Conformément aux suggestions du Vademecum 1, la NSI peut être le support de projets en lien avec d'autres spécialités :
+   * Physique-Chimie : Simuler la trajectoire d'un projectile en appliquant les principes de la mécanique.
+   * SVT : Modéliser la transcription d'un brin d'ADN en ARN, puis sa traduction en séquence d'acides aminés.
+   * Histoire-Géographie : Utiliser la bibliothèque Folium pour créer des cartes interactives à partir de données géographiques (par exemple, la localisation de sites historiques ou de données démographiques).
+
+
+4.2 Aides et Accompagnements Pédagogiques
+
+
+Pour soutenir les élèves dans leur apprentissage, un ensemble de ressources complémentaires est indispensable.
+* Fiches Mémoire et de Révision : Des fiches synthétiques, par notion ou par chapitre, permettent de consolider les connaissances et de réviser efficacement avant une évaluation.4
+* Plateformes d'Exercices et d'Auto-évaluation :
+   * Des sites web proposent des banques d'exercices interactifs avec correction automatique, permettant aux élèves de s'entraîner à leur rythme.16
+   * Des générateurs de QCM en ligne peuvent être utilisés pour des révisions rapides sur les points théoriques du programme.105
+* Préparation à l'Épreuve Pratique : Il est bénéfique d'entraîner les élèves dès la classe de Première aux exigences de l'épreuve pratique du baccalauréat. La Banque Nationale de Sujets (BNS) contient de nombreux exercices, dont une partie est tout à fait accessible au niveau de la Première, notamment ceux portant sur les listes et les dictionnaires.103
+
+
+Conclusion
+
+
+Ce catalogue a été conçu comme un partenaire pédagogique pour l'enseignant de NSI, offrant une sélection raisonnée et structurée de ressources pour aborder l'ensemble du programme de Première. En s'appuyant sur les directives officielles et en proposant des pistes concrètes pour une mise en œuvre dynamique en classe, il vise à faciliter la préparation des cours et à enrichir l'expérience d'apprentissage des élèves.
+Il convient de voir ce document non pas comme un ensemble figé, mais comme une base de départ à adapter et à enrichir en fonction des projets de classe, des profils d'élèves et de l'actualité technologique. L'objectif final, tel que souligné par les enjeux de la discipline, est de cultiver chez les élèves la curiosité, la rigueur et la créativité. En développant leur pensée algorithmique et leurs compétences en programmation, l'enseignement de la NSI leur donne les clés pour comprendre et agir dans un monde profondément façonné par le numérique, les préparant ainsi aux défis et aux opportunités de demain.1
+Sources des citations
+1. programme_nsi_premiere.pdf
+2. Programme NSI en Première - Cours & Ressources - Nomad Education, consulté le septembre 22, 2025, https://www.nomadeducation.fr/bac/specialites-du-bac/programme-nsi-en-premiere
+3. NSI 1ère - Algorithmique - Introduction - qkzk, consulté le septembre 22, 2025, https://qkzk.xyz/uploads/docsnsi/pdf/algorithmique-Article.pdf
+4. Introduction à l'algorithmique - NSI Voltaire (Première) - GitLab, consulté le septembre 22, 2025, https://pasallard.gitlab.io/premiere_nsi_voltaire/Algorithmique/Algo_Intro/Algo_Intro/
+5. 1NSI : Cours Complexité d'un Algorithme - GitLab, consulté le septembre 22, 2025, https://eskool.gitlab.io/1nsi/algorithmique/complexite/
+6. NSI - Première Lycée Édouard Branly Complexité: Complexité D'un Algorithme - Scribd, consulté le septembre 22, 2025, https://fr.scribd.com/document/634845418/Untitled
+7. Complexité algorithmique - Mathweb.fr - Exemples concrets en Python, consulté le septembre 22, 2025, https://www.mathweb.fr/euclide/complexite-algorithmique/
+8. Cours - 1ère Spécialité NSI - Numérique et Sciences Informatiques, consulté le septembre 22, 2025, https://eskool.gitlab.io/1nsi/algorithmique/dichotomie/
+9. Exercices de complexité - Cours de Première NSI - GitLab, consulté le septembre 22, 2025, https://ferney-nsi.gitlab.io/premiere/complexity/
+10. I. Les variants de boucle, consulté le septembre 22, 2025, http://mp2carnot.free.fr/python/C07_VarInvar.pdf
+11. Terminaison de l'algorithme de recherche dichotomique - YouTube, consulté le septembre 22, 2025, https://www.youtube.com/watch?v=2wA0qGvOgUI
+12. Recherche dichotomique dans une liste triée, consulté le septembre 22, 2025, https://professeurb.github.io/articles/dichoto/
+13. Cours - Algorithmes de tris - SNT et NSI au Lycée Saint-Martin de France, consulté le septembre 22, 2025, https://snt-nsi.net/nsi_premiere/algorithmie/algorithmes_tris/
+14. Tri par sélection - NSI Saint-Aspais Première, consulté le septembre 22, 2025, https://mcoilhac.forge.apps.education.fr/site-nsi/tris/2_selection/
+15. Débuter Python au lycée - Pédagogie de l'Académie de Nice, consulté le septembre 22, 2025, https://www.pedagogie.ac-nice.fr/nsi/debuter-python-au-lycee/
+16. Python - Activités pour débuter - Informatique | NSI - ITC | Lycée Turgot, consulté le septembre 22, 2025, https://cours-info-nsi-56cb21fb8d50d1af289d9150b1042c010be13879c6badb00.forge.apps.education.fr/python-deb/
+17. Profjahier-NSI, consulté le septembre 22, 2025, https://profjahier.github.io/html/NSI/index.html
+18. Débuter et découvrir python 3 - nsi.xyz, consulté le septembre 22, 2025, https://nsi.xyz/tutoriels/debuter-et-decouvrir-python-3/
+19. Preconditions and Postconditions, consulté le septembre 22, 2025, https://home.cs.colorado.edu/~main/supplements/pdf/notes01.pdf
+20. Invariants, Preconditions, Postconditions, consulté le septembre 22, 2025, https://www.kutztown.edu/Departments-Offices/A-F/ComputerScienceInformationTechnology/Documents/Student%20Resources/DocumentationInvariants.pdf
+21. Pré et post conditions - mathartung.xyz, consulté le septembre 22, 2025, http://mathartung.xyz/nsi/cours_def_2_assert.html
+22. Python's assert: Debug and Test Your Code Like a Pro, consulté le septembre 22, 2025, https://realpython.com/python-assert-statement/
+23. CS1101 Unit 4 Discussion - PreConditions and PostConditions in Python - YouTube, consulté le septembre 22, 2025, https://www.youtube.com/watch?v=fZDhhmV-QPQ
+24. Debug Python code, set breakpoints, inspect code - Visual Studio (Windows), consulté le septembre 22, 2025, https://learn.microsoft.com/en-us/visualstudio/python/debugging-python-in-visual-studio?view=vs-2022
+25. Le débogage - Informatique au lycée, consulté le septembre 22, 2025, http://nsinfo.yo.fr/cours_python/python_11_debogage.html
+26. Debug your first Python application | PyCharm Documentation - JetBrains, consulté le septembre 22, 2025, https://www.jetbrains.com/help/pycharm/debugging-your-first-python-application.html
+27. Unit Tests in Python: A Beginner's Guide - Dataquest, consulté le septembre 22, 2025, https://www.dataquest.io/blog/unit-tests-python/
+28. A Gentle Introduction to Unit Testing in Python - MachineLearningMastery.com, consulté le septembre 22, 2025, https://machinelearningmastery.com/a-gentle-introduction-to-unit-testing-in-python/
+29. Testing Your Code - The Hitchhiker's Guide to Python, consulté le septembre 22, 2025, https://docs.python-guide.org/writing/tests/
+30. Comment déboguer du code Python, consulté le septembre 22, 2025, https://python-scientific-lecture-notes.developpez.com/tutoriel/notes-cours/python-debugging-code/
+31. Tutoriel sur les tests unitaires en Python - DataCamp, consulté le septembre 22, 2025, https://www.datacamp.com/fr/tutorial/unit-testing-python
+32. Introduction to Programming with Python: Assert and Unit Testing with Pytest - YouTube, consulté le septembre 22, 2025, https://www.youtube.com/watch?v=J3tQDIikdEo
+33. Cours - Séquences - SNT et NSI au Lycée Saint-Martin de France, consulté le septembre 22, 2025, https://www.snt-nsi.net/nsi_premiere/types_construits/sequences/
+34. 1NSI - Les tuples - info-mounier.fr, consulté le septembre 22, 2025, https://info-mounier.fr/premiere_nsi/types_construits/tuples.php
+35. Cours sur les p-uplets - frederic-junier.org, consulté le septembre 22, 2025, https://frederic-junier.org/NSI/premiere/chapitre15/Cours/puplets-cours-.pdf
+36. Tuples - Bilan - NSI Saint-Aspais Première, consulté le septembre 22, 2025, https://mcoilhac.forge.apps.education.fr/site-nsi/memoriser/tuple/
+37. P-uplets or tuple (Python) - NSI - Première - Les Bons Profs - YouTube, consulté le septembre 22, 2025, https://www.youtube.com/watch?v=MlCzcD8jWnA
+38. Les structures de données en Python - Mon Coach Data, consulté le septembre 22, 2025, https://moncoachdata.com/blog/devenir-python-ninja-structures-de-donnees/
+39. Structures de données : les listes, les piles et les files - Pixees, consulté le septembre 22, 2025, https://pixees.fr/informatiquelycee/n_site/nsi_term_structDo_liste.html
+40. 5. Structures de données — Documentation Python 3.13.7, consulté le septembre 22, 2025, https://docs.python.org/fr/3/tutorial/datastructures.html
+41. Corrigé Contrôle 1ereNSI Fonctions Listes 2022, consulté le septembre 22, 2025, http://yalamaths.free.fr/documents/NSI/Evaluations/1ereNSI_controle22_2_corrige.pdf
+42. 1ère NSI - Notions de base - Listes - Cours & Exercices Python, consulté le septembre 22, 2025, https://python.dellasantina.corsica/premiere-nsi/notions-base/listes/exercices
+43. Exercices NSI corrigés en Python - YouTube, consulté le septembre 22, 2025, https://www.youtube.com/playlist?list=PLQsTrO2pHmL6WIhUvZd8S-fUbF69tuCVw
+44. Exercices sur les tableaux - NSI Saint-Aspais Première, consulté le septembre 22, 2025, https://mcoilhac.forge.apps.education.fr/site-nsi/listes_python/10_exercices/
+45. Les dictionnaires - Informatique au lycée, consulté le septembre 22, 2025, http://nsinfo.yo.fr/nsi_term_structure_donnees_dictionnaires.html
+46. Cours et TP dictionnaires en Python, consulté le septembre 22, 2025, https://hmalherbe.fr/thalesm/gestclasse/documents/Premiere_NSI/TP/TP_dictionnaires.html
+47. Types construits : les dictionnaires, consulté le septembre 22, 2025, http://www.monlyceenumerique.fr/nsi_premiere/donnees_construites_dc/dc2_dictionnaire.php
+48. Les dictionnaires, consulté le septembre 22, 2025, https://touchardinforeseau.servehttp.com/nsi/20192020/1ERE_NSI/ALGORITHMES_ET_PYTHON/LES_DICTIONNAIRES/1616665757les_dictionnaires_cor.pdf
+49. Les tables CSV - Cours de Première NSI - frama.io, consulté le septembre 22, 2025, https://pgdg.frama.io/1nsi/donnees_en_tables/csv/
+50. 1ère NSI - Fichiers CSV / Gestion des fichiers CSV avec Python - Traitement des données en tables - YouTube, consulté le septembre 22, 2025, https://www.youtube.com/watch?v=MoReNpix46Q
+51. Cours - Première NSI Lycée du Parc - GitLab, consulté le septembre 22, 2025, https://frederic-junier.gitlab.io/parc-nsi/chapitre19/Cours/cours-tables-indexation-git/
+52. Traitement des données en tables – l'Informatique, c'est fantastique !, consulté le septembre 22, 2025, https://info.blaisepascal.fr/nsi-traitement-des-donnees-en-tables/
+53. Première NSI - données en table - qkzk, consulté le septembre 22, 2025, https://qkzk.xyz/uploads/docsnsi/table_csv/5_td.pdf
+54. Questions de la BNS (et corrections) : Traitement données en table - Pixees.fr, consulté le septembre 22, 2025, https://pixees.fr/informatiquelycee/n_site/nsi_prem_bns_traitCSV.html
+55. Corrigé Contrôle 4 1ereNSI Gestion de fichiers Tables de données 2022, consulté le septembre 22, 2025, http://yalamaths.free.fr/documents/NSI/Evaluations/1ereNSI_controle22_4_corrige.pdf
+56. Algorithm e Stri Recherche | PDF | Théorie de la complexité (informatique théorique) | Mathématiques appliqués - Scribd, consulté le septembre 22, 2025, https://fr.scribd.com/document/657012006/Algorithm-e-Stri-Recherche
+57. Algorithmes de parcours séquentiel d'un tableau - info-mounier.fr, consulté le septembre 22, 2025, https://info-mounier.fr/premiere_nsi/algorithmique/parcours_sequentiel.php
+58. 22 - Algorithmes de recherche: Recherche Séquentielle - YouTube, consulté le septembre 22, 2025, https://www.youtube.com/watch?v=ccmPPoYz3mg
+59. Recherche dichotomique - l'Informatique, c'est fantastique, consulté le septembre 22, 2025, https://info.blaisepascal.fr/nsi-recherche-dichotomique/
+60. Exercices Dichotomie | PDF | Algorithmes - Scribd, consulté le septembre 22, 2025, https://fr.scribd.com/document/736241788/Exercices-dichotomie
+61. A5 : Dichotomie, consulté le septembre 22, 2025, http://www.monlyceenumerique.fr/nsi_premiere/algo_a/a5_dichotomie.php
+62. Exercices de dichotomie - NSI Saint-Aspais Première, consulté le septembre 22, 2025, https://mcoilhac.forge.apps.education.fr/site-nsi/dichotomie/3_exercices/
+63. Correction terminaison complexité de la dichotomie - NSI Saint-Aspais Première, consulté le septembre 22, 2025, https://mcoilhac.forge.apps.education.fr/site-nsi/dichotomie/2_naif_dicho_complexite/
+64. Algorithmique - Exercices mathématiques NSI - Kwyk, consulté le septembre 22, 2025, https://www.kwyk.fr/exercices/mathematiques/1n/algorithmique/
+65. La recherche dichotomique - NSI Terminale - YouTube, consulté le septembre 22, 2025, https://www.youtube.com/watch?v=EbPJjKYqXr8
+66. Tri par sélection - Wikipédia, consulté le septembre 22, 2025, https://fr.wikipedia.org/wiki/Tri_par_s%C3%A9lection
+67. Tri par sélection: Algorithme, Complexité - Informatique - StudySmarter, consulté le septembre 22, 2025, https://www.studysmarter.fr/resumes/informatique/algorithmes-en-informatique/tri-par-selection/
+68. Trier par sélection - myMaxicours, consulté le septembre 22, 2025, https://www.maxicours.com/se/cours/trier-par-selection/
+69. EXERCICES CORRIGÉS - ALGORITHMES DE TRI - fredpeuriere.com, consulté le septembre 22, 2025, http://www.fredpeuriere.com/NSI/algorithmique-2/exos-correc.pdf
+70. TP Recherche et tri - Première NSI Lycée du Parc - GitLab, consulté le septembre 22, 2025, https://frederic-junier.gitlab.io/parc-nsi/chapitre19/TP-Recherche-Tri/tp-recherche-tri-git/
+71. Algorithmes de tri - Pixees.fr, consulté le septembre 22, 2025, https://pixees.fr/informatiquelycee/n_site/nsi_prem_tri_algo.html
+72. [NSI] Les algorithmes de tri - Les Sherpas, consulté le septembre 22, 2025, https://sherpas.com/blog/algorithmes-de-tri/
+73. Les algorithmes de tri - Interstices - Interstices, consulté le septembre 22, 2025, https://interstices.info/les-algorithmes-de-tri/
+74. Algorithmes de tri, consulté le septembre 22, 2025, https://terminale-nsi-florian-picard-fd5316a020503ff46a58fe2a7a02f660e0.forge.apps.education.fr/Algorithmes/Exercices/tp.pdf
+75. Premiers algorithmes de tri de tableaux - ZoneNSI, consulté le septembre 22, 2025, https://www.zonensi.fr/NSI/Premiere/C04/Algorithmes_Tri/
+76. Animation - Algo Tri par insertion - Infoforall, consulté le septembre 22, 2025, https://www.infoforall.fr/art/algo/animation-du-tri-par-insertion/
+77. Tri par insertion - NSI Saint-Aspais Première, consulté le septembre 22, 2025, https://mcoilhac.forge.apps.education.fr/site-nsi/tris/3_insertion/
+78. Exercices – lyceum, consulté le septembre 22, 2025, https://www.lyceum.fr/1g/nsi/8-algorithmique/3-algorithmes-de-tri/exo/
+79. Exercices - NSI Saint-Aspais Première, consulté le septembre 22, 2025, https://mcoilhac.forge.apps.education.fr/site-nsi/tris/4_exercices/
+80. NSI 1ère - Algorithmique - Tris 3 - qkzk, consulté le septembre 22, 2025, https://qkzk.xyz/uploads/docsnsi/algo/tris/tris_3.pdf
+81. Exercices - lyceum, consulté le septembre 22, 2025, https://www.lyceum.fr/tg/nsi/5-algorithmique/0-rappels/exo/
+82. A3 : Tris et invariant, consulté le septembre 22, 2025, http://www.monlyceenumerique.fr/nsi_premiere/algo_a/a3_tri_invariant.php/dl/a2_complexite.php
+83. Tri par insertion - mathartung.xyz, consulté le septembre 22, 2025, http://mathartung.xyz/nsi/cours_algo_tri_insertion.html
+84. Le tri par insertion - YouTube, consulté le septembre 22, 2025, https://www.youtube.com/watch?v=bRPHvWgc6YM
+85. Tri par insertion - Principe - Animation- Algorithme - Programmation en Python - YouTube, consulté le septembre 22, 2025, https://www.youtube.com/watch?v=VHsxXqlzhd4
+86. Algorithme glouton - NSI Saint-Aspais Terminale, consulté le septembre 22, 2025, https://mcoilhac.forge.apps.education.fr/term/glouton/glouton/
+87. NSI (Numérique et Sciences Informatiques) : algorithmes gloutons - Math93, consulté le septembre 22, 2025, https://www.math93.com/mathenpoche/146-pedagogie/lycee/nsi/1009-nsi-numerique-et-sciences-informatiques-algorithmes-gloutons.html
+88. Algorithmes gloutons - Eduscol, consulté le septembre 22, 2025, https://eduscol.education.fr/document/30067/download
+89. Cours/TD - algorithmes gloutons - NSI Saint-Aspais Première, consulté le septembre 22, 2025, https://mcoilhac.forge.apps.education.fr/site-nsi/glouton/1_glouton/
+90. Algorithme gloutons - info-mounier.fr, consulté le septembre 22, 2025, https://info-mounier.fr/premiere_nsi/algorithmique/data/T7_C4_Algorithmes_gloutons.pdf
+91. Les algorithmes gloutons., consulté le septembre 22, 2025, http://lycee.stanislas.info.free.fr/Python/Glouton/Glouton.html
+92. Les k plus proches voisins – l'Informatique, c'est fantastique !, consulté le septembre 22, 2025, https://info.blaisepascal.fr/nsi-les-k-plus-proches-voisins/
+93. Chapitre 6 - Machine learning - KNN - SI, consulté le septembre 22, 2025, https://spe-lavoisier.fr/NSI/Cours/Chapitre6.php
+94. Algorithme des k plus proches voisins - Eduscol, consulté le septembre 22, 2025, https://eduscol.education.fr/document/30061/download
+95. algorithme des $k$ plus proches voisins. - Mon Lycée Numérique, consulté le septembre 22, 2025, http://www.monlyceenumerique.fr/nsi_premiere/algo_a/a4_algo_knn.php
+96. Python algo KNN | Allophysique, consulté le septembre 22, 2025, https://allophysique.com/posts/python/algknn/
+97. Exemples de projets NSI au lycée de Balagne, consulté le septembre 22, 2025, https://www.nsi-lpb.com/projets.php
+98. Projet PYGAME, consulté le septembre 22, 2025, http://mathartung.xyz/nsi/projet_pygame.html
+99. Bases de Pygame - ZoneNSI, consulté le septembre 22, 2025, https://www.zonensi.fr/Miscellanees/Pygame/Base_pygame/
+100. Initiation à Pygame - Première NSI Gr3 - Lycée François Mauriac - Bordeaux, consulté le septembre 22, 2025, https://glassus.github.io/premiere_nsi/T6_Mini-projets/05_Initiation_Pygame/
+101. Projets - Première NSI Lycée du Parc - GitLab, consulté le septembre 22, 2025, https://frederic-junier.gitlab.io/parc-nsi/projets/
+102. NSI première - Pixees.fr, consulté le septembre 22, 2025, https://pixees.fr/informatiquelycee/n_site/nsi_prem.html
+103. Révision des bases en algorithmie de la 1ere NSI vers Tale., consulté le septembre 22, 2025, https://www.lannonciation.com/wp-content/uploads/2024/07/REVISIONS-NSI_T%C2%B0_2024-2025.pdf
+104. NSI 1ère : programme, cours et exercices - digiSchool, consulté le septembre 22, 2025, https://www.digischool.fr/lycee/premiere-generale/numerique-et-sciences-informatiques
+105. QCM Python - Gecif.net, consulté le septembre 22, 2025, http://fractale.gecif.net/python/qcm/
+106. NSI - Algorithmique 1st Grade Quiz | Wayground (formerly Quizizz), consulté le septembre 22, 2025, https://wayground.com/admin/quiz/5e6e6e7ba2a760001b90bc16/nsi-algorithmique

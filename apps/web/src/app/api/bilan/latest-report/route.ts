@@ -1,9 +1,55 @@
 export const dynamic = 'force-dynamic';
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { env } from '@/lib/env';
 import { getSession } from '@/lib/session';
+import { HeadObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
+import { NextRequest, NextResponse } from 'next/server';
+import path from 'path';
 
 const prisma = new PrismaClient();
+
+const s3 = new S3Client({
+  region: env.S3_REGION,
+  endpoint: env.S3_ENDPOINT,
+  forcePathStyle: true,
+  credentials: { accessKeyId: env.S3_ACCESS_KEY, secretAccessKey: env.S3_SECRET_KEY },
+});
+
+function parseS3Url(url: string): { bucket: string; key: string; } | null {
+  try {
+    if (!url?.startsWith('s3://')) return null;
+    const without = url.slice('s3://'.length);
+    const idx = without.indexOf('/');
+    if (idx < 0) return null;
+    const bucket = without.slice(0, idx);
+    const key = without.slice(idx + 1);
+    return { bucket, key };
+  } catch {
+    return null;
+  }
+}
+
+async function isReportStreamReady(attemptId: string, type: string, pdfUrl?: string | null): Promise<boolean> {
+  // 1) If pdfUrl is s3://..., try HEAD
+  if (pdfUrl && pdfUrl.startsWith('s3://')) {
+    const loc = parseS3Url(pdfUrl);
+    if (loc) {
+      try {
+        await s3.send(new HeadObjectCommand({ Bucket: loc.bucket, Key: loc.key }));
+        return true;
+      } catch {
+        // not ready yet
+      }
+    }
+  }
+  // 2) Local artifacts fallback
+  const localDir = '/app/docs/artifacts_premium_final';
+  const localName = `${type === 'enseignant' ? 'enseignant' : 'eleve'}_${attemptId}.pdf`;
+  const localPath = path.join(localDir, localName);
+  if (fs.existsSync(localPath)) return true;
+  return false;
+}
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -11,6 +57,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const typeParam = (searchParams.get('type') || '').toLowerCase(); // optional: 'eleve' | 'enseignant'
+  const waitStream = (searchParams.get('wait') || '').toLowerCase() === 'stream';
 
   try {
     if (session.role === 'STUDENT') {
@@ -30,6 +77,15 @@ export async function GET(req: NextRequest) {
         select: { id: true, type: true, pdfUrl: true, publishedAt: true },
       });
       if (reports.length === 0) return NextResponse.json({ ok: false, error: 'No report yet' }, { status: 404 });
+
+      if (waitStream) {
+        const deadline = Date.now() + 120_000;
+        while (Date.now() < deadline) {
+          const ready = await Promise.all(reports.map(r => isReportStreamReady(attempt.id, r.type, r.pdfUrl)));
+          if (ready.some(Boolean)) break;
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
 
       return NextResponse.json({
         ok: true,
@@ -62,6 +118,15 @@ export async function GET(req: NextRequest) {
         select: { id: true, type: true, pdfUrl: true, publishedAt: true },
       });
       if (reports.length === 0) return NextResponse.json({ ok: false, error: 'No report yet' }, { status: 404 });
+
+      if (waitStream) {
+        const deadline = Date.now() + 120_000;
+        while (Date.now() < deadline) {
+          const ready = await Promise.all(reports.map(r => isReportStreamReady(attempt.id, r.type, r.pdfUrl)));
+          if (ready.some(Boolean)) break;
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
 
       return NextResponse.json({
         ok: true,

@@ -6,7 +6,7 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "eslint .",
-    "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest --passWithNoTests",
+    "test:unit": "jest --passWithNoTests",
     "test:e2e": "playwright test --reporter=list",
     "test": "npm run test:unit && npm run test:e2e",
     "test:int": "NODE_OPTIONS=--experimental-vm-modules jest -c jest.int.config.js",
@@ -20,7 +20,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.653.0",
     "@google/generative-ai": "^0.21.0",
-    "@prisma/client": "^5.18.0",
+    "@prisma/client": "^5.22.0",
     "@react-pdf/renderer": "^3.4.4",
     "@sentry/nextjs": "^8.20.0",
     "@types/bcrypt": "^6.0.0",

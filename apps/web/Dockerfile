@@ -1,5 +1,5 @@
 # ---------- deps ----------
-FROM node:20-bookworm-slim AS deps
+FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 
 # on installe les deps sans exécuter les scripts (pour éviter prisma generate ici)
@@ -11,7 +11,7 @@ COPY prisma ./prisma
 RUN npm ci --omit=dev --ignore-scripts
 
 # ---------- builder ----------
-FROM node:20-bookworm-slim AS builder
+FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 
 # copier tout le repo (contexte = racine via compose)
@@ -26,6 +26,22 @@ RUN npx prisma generate
 # argon2 a un module natif -> on installe les outils de build et on reconstruit
 RUN apt-get update && apt-get install -y --no-install-recommends python3 build-essential && rm -rf /var/lib/apt/lists/*
 RUN npm rebuild argon2
+
+# Intégrer le site TP Algo Python : si projet Vite présent, construire et copier dist/, sinon fallback copie brute
+RUN set -eux; \
+  mkdir -p apps/web/public/tp-algo; \
+  if [ -f site-nsi-tp-algo_python/site-nsi-tp/package.json ]; then \
+    cd site-nsi-tp-algo_python/site-nsi-tp; \
+    corepack enable; corepack prepare pnpm@9.8.0 --activate; \
+    pnpm install --no-frozen-lockfile; \
+    pnpm build; \
+    cd - >/dev/null; \
+    cp -a site-nsi-tp-algo_python/site-nsi-tp/dist/. apps/web/public/tp-algo/; \
+  elif [ -d site-nsi-tp-algo_python/site-nsi-tp ]; then \
+    cp -a site-nsi-tp-algo_python/site-nsi-tp/. apps/web/public/tp-algo/; \
+  elif [ -d site-nsi-tp-algo_python ]; then \
+    cp -a site-nsi-tp-algo_python/. apps/web/public/tp-algo/; \
+  fi || true
 
 # Variables de build non sensibles uniquement
 ARG NEXT_BASE_PATH \
@@ -56,7 +72,7 @@ RUN npm run build
 RUN npm prune --omit=dev
 
 # ---------- runner ----------
-FROM node:20-bookworm-slim AS runner
+FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -66,11 +82,15 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/web/.next ./apps/web/.next
 COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
 COPY --from=builder /app/apps/web/public ./apps/web/public
+COPY --from=builder /app/Ressources_NSI_Premiere.html ./Ressources_NSI_Premiere.html
+COPY --from=builder /app/Ressources_NSI_Terminale.html ./Ressources_NSI_Terminale.html
+COPY --from=builder /app/bilans_evaluation_TAD.json ./bilans_evaluation_TAD.json
+COPY --from=builder /app/TERMINALE_NSI.csv ./TERMINALE_NSI.csv
+COPY --from=builder /app/TERMINALE_NSI_24_eleves_corrige.csv ./TERMINALE_NSI_24_eleves_corrige.csv
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/data ./data
 COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md ./IA_NSI_Guide_Pedagogique_PMF_RAG_Feed.md
 # copier tsconfig pour ts-node des scripts si présents
 COPY --from=builder /app/tsconfig.scripts.json ./tsconfig.scripts.json
 COPY --from=builder /app/apps/web/tsconfig.json ./tsconfig.json

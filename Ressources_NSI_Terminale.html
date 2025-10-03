@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Le Hub des Ressources NSI</title>
+  <script>
+    (function () {
+      const ow = console.warn;
+      console.warn = function () {
+        const msg = String(arguments[0] || '');
+        if (msg.includes('cdn.tailwindcss.com should not be used in production')) return;
+        return ow.apply(console, arguments);
+      };
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <base target="_blank">
+  <!-- Chosen Palette: Warm Neutrals -->
+  <!-- Application Structure Plan: Conception d'un tableau de bord interactif. La structure est centrée sur un panneau de filtres (par niveau, type, thème) et une barre de recherche, permettant aux utilisateurs de trouver instantanément des ressources pertinentes. Les résultats s'affichent sous forme de cartes dans une grille réactive. Cette approche transforme une liste statique en un outil dynamique, optimisant l'expérience utilisateur pour les élèves et enseignants qui cherchent un contenu ciblé. Le flux est simple : filtrer -> explorer -> cliquer. -->
+  <!-- Visualization & Content Choices: Les données (liste de ressources) sont présentées via une grille de cartes HTML/CSS. L'objectif est d'organiser et d'informer. L'interaction principale est le filtrage et la recherche en direct via JavaScript, qui met à jour la grille de cartes. Des compteurs dynamiques affichent le nombre de ressources visibles pour donner un retour immédiat à l'utilisateur. Ce système est plus efficace qu'un graphique pour ce type de données, car l'objectif est la découverte de liens spécifiques plutôt que l'analyse de tendances quantitatives. La méthode est purement HTML/CSS et JavaScript. -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+    }
+
+    .card {
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+      border: 1px solid #e2e8f0;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .filter-container {
+      position: sticky;
+      top: 0;
+      background-color: #f8fafc;
+      z-index: 10;
+      padding-top: 1.5rem;
+      padding-bottom: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+    (function () {
+      try {
+        if (window.self !== window.top) {
+          var hdr = document.querySelector('header');
+          if (hdr) hdr.remove();
+          var asd = document.querySelector('aside');
+          if (asd) asd.remove();
+          var st = document.createElement('style');
+          st.textContent = [
+            'html,body{height:auto !important;background:transparent !important}',
+            'main{max-width:100% !important}',
+            '.filter-container{position:static !important}',
+            '.grid{max-width:100% !important}',
+          ].join('\n');
+          document.head.appendChild(st);
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <header class="text-center mb-10">
+      <h1 class="text-4xl md:text-5xl font-bold text-slate-800">Le Hub des Ressources NSI</h1>
+      <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">Votre guide centralisé pour réussir en Numérique et
+        Sciences de l'Informatique. Filtrez, trouvez et explorez les meilleures ressources.</p>
+    </header>
+
+    <div class="filter-container border-b border-slate-200">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        <div>
+          <label for="search" class="block text-sm font-medium text-slate-700">Rechercher</label>
+          <input type="text" id="search" placeholder="Par mot-clé..."
+            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+        </div>
+        <div>
+          <label for="level-filter" class="block text-sm font-medium text-slate-700">Niveau</label>
+          <select id="level-filter"
+            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+            <option value="all">Tous les niveaux</option>
+            <option value="Première">Première</option>
+            <option value="Terminale">Terminale</option>
+            <option value="Les deux">Les deux</option>
+          </select>
+        </div>
+        <div>
+          <label for="type-filter" class="block text-sm font-medium text-slate-700">Type de ressource</label>
+          <select id="type-filter"
+            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+            <option value="all">Tous les types</option>
+          </select>
+        </div>
+        <div>
+          <button id="reset-filters"
+            class="w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-md shadow-sm transition-colors">Réinitialiser</button>
+        </div>
+      </div>
+      <div class="mt-4 text-sm text-slate-500">
+        <span id="resource-count"></span> ressources affichées.
+      </div>
+    </div>
+
+    <main id="resource-grid" class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    </main>
+  </div>
+
+  <script>
+    const resources = [
+      {
+        nom: "Programme de NSI - Classe de Première (BO)",
+        lien: "https://www.education.gouv.fr/bo/19/Special1/MENE1901632A.htm",
+        type: "Texte officiel",
+        niveau: "Première",
+        themes: ["Programme officiel", "Histoire de l'informatique", "Web", "Algorithmique"],
+        description: "Le document fondateur qui fixe les contenus d'enseignement, les capacités attendues et les compétences à développer pour la classe de Première.",
+        motsCles: ["officiel", "programme", "bulletin officiel", "bo", "compétences"]
+      },
+      {
+        nom: "Programme de NSI - Classe de Terminale (BO)",
+        lien: "https://www.education.gouv.fr/bo/19/Special8/MENE1921245A.htm",
+        type: "Texte officiel",
+        niveau: "Terminale",
+        themes: ["Programme officiel", "Structures de données", "Bases de données", "POO", "Récursivité"],
+        description: "Le texte officiel qui structure la préparation à l'enseignement supérieur, approfondissant les notions de Première et introduisant des concepts avancés.",
+        motsCles: ["officiel", "programme", "bulletin officiel", "bo", "complexité", "sql"]
+      },
+      {
+        nom: "Éduscol NSI",
+        lien: "https://eduscol.education.fr/2068/programmes-et-ressources-en-numerique-et-sciences-informatiques-voie-g",
+        type: "Portail institutionnel",
+        niveau: "Les deux",
+        themes: ["Programme officiel", "Ressources pédagogiques", "Sujets zéro", "Annales"],
+        description: "Le portail national de référence pour les programmes, les documents d'accompagnement, les sujets d'examen et le vademecum de la spécialité NSI.",
+        motsCles: ["officiel", "vademecum", "bac", "examen", "didactique"]
+      },
+      {
+        nom: "Sites Académiques NSI",
+        lien: "https://www.pedagogie.ac-nice.fr/nsi/",
+        type: "Portail institutionnel",
+        niveau: "Les deux",
+        themes: ["Actualités", "Épreuves", "Ressources pédagogiques"],
+        description: "Les sites académiques (Nice, Bordeaux, etc.) agissent comme des relais locaux d'Eduscol, offrant des ressources contextualisées et des actualités.",
+        motsCles: ["académie", "rectorat", "local", "pédagogie"]
+      },
+      {
+        nom: "Banque Nationale de Sujets (BNS)",
+        lien: "https://eduscol.education.fr/2068/programmes-et-ressources-en-numerique-et-sciences-informatiques-voie-g",
+        type: "Annales",
+        niveau: "Terminale",
+        themes: ["Épreuve pratique", "Sujets d'examen"],
+        description: "Accès via Eduscol (publication annuelle), rubrique Épreuve pratique.",
+        motsCles: ["bns", "bac", "pratique", "sujets", "corrigés"]
+      },
+      {
+        nom: "FUN MOOC - NSI : les fondamentaux",
+        lien: "https://www.fun-mooc.fr/fr/cours/numerique-et-sciences-informatiques-les-fondamentaux/",
+        type: "MOOC",
+        niveau: "Les deux",
+        themes: ["POO", "Complexité", "Algorithmique", "Réseaux", "Web", "Bases de données"],
+        description: "Conçu par Inria et SIF, ce MOOC offre un approfondissement rigoureux des concepts, préparant idéalement à l'enseignement supérieur.",
+        motsCles: ["mooc", "inria", "sif", "fun-mooc", "université", "supérieur", "vidéo", "quiz"]
+      },
+      {
+        nom: "Chaîne YouTube du MOOC NSI",
+        lien: "https://www.youtube.com/channel/UCL7Pt2ljknkxrFHZC6k8ZTg",
+        type: "Chaîne vidéo",
+        niveau: "Les deux",
+        themes: ["Types abstraits", "Réseaux", "Architecture matérielle"],
+        description: "Met à disposition les vidéos des MOOCs NSI de manière indépendante, permettant de consulter une notion spécifique sans suivre tout le cours.",
+        motsCles: ["youtube", "inria", "vidéo", "granulaire", "webinaire"]
+      },
+
+      {
+        nom: "Pixees (Informatique au Lycée)",
+        lien: "https://pixees.fr/informatiquelycee/term/index.html",
+        type: "Site d'enseignant",
+        niveau: "Les deux",
+        themes: ["Python", "Web", "Réseaux", "Bases de données", "Architectures matérielles"],
+        description: "Une ressource de référence par David Roche, proposant des cours clairs, TPs, exercices et simulations (Filius) pour tout le programme.",
+        motsCles: ["cours", "TP", "exercices", "html", "css", "sql", "filius"]
+      },
+      {
+        nom: "Cours de NSI (Gilles Lassus)",
+        lien: "https://glassus.github.io/",
+        type: "Site d'enseignant",
+        niveau: "Les deux",
+        themes: ["Python", "Structures de données", "Bases de données", "POO", "Notebook Jupyter"],
+        description: "Cours très complets et structurés sous forme de notebooks Jupyter, partagés sur GitHub. Une ressource emblématique de la culture de partage en NSI.",
+        motsCles: ["github", "notebook", "jupyter", "poo", "arbres", "graphes"]
+      },
+
+      {
+        nom: "Chaîne YouTube David Latouche",
+        lien: "https://www.youtube.com/playlist?list=PL2V_2xzaQW7fUYnjbOZdj0_It7BeRXBQx",
+        type: "Chaîne vidéo",
+        niveau: "Première",
+        themes: ["Python", "HTML", "CSS"],
+        description: "Une playlist très bien structurée qui couvre les notions essentielles de programmation en Python et de développement web pour le programme de Première.",
+        motsCles: ["youtube", "playlist", "python", "bases", "web"]
+      },
+      {
+        nom: "Chaîne YouTube NOVELCLASS",
+        lien: "https://www.youtube.com/@NovelClass",
+        type: "Chaîne vidéo",
+        niveau: "Les deux",
+        themes: ["Révision", "Binaire", "Algèbre de Boole"],
+        description: "Propose des vidéos courtes, dynamiques et ciblées sur des points précis du programme, idéales pour des révisions rapides.",
+        motsCles: ["youtube", "révision", "vidéo courte", "concept"]
+      },
+      {
+        nom: "France-IOI",
+        lien: "http://www.france-ioi.org/",
+        type: "Plateforme d'exercices",
+        niveau: "Les deux",
+        themes: ["Algorithmique", "Python", "C++", "Structures de données"],
+        description: "Plateforme d'entraînement à la programmation avec des centaines de problèmes de difficulté progressive et une correction automatique.",
+        motsCles: ["algorithme", "python", "problèmes", "entraînement", "concours"]
+      },
+      {
+        nom: "e-nsi",
+        lien: "https://e-nsi.gitlab.io/pratique/",
+        type: "Plateforme d'exercices",
+        niveau: "Les deux",
+        themes: ["Python", "Algorithmique", "Épreuve pratique"],
+        description: "Créée par un collectif d'enseignants, cette plateforme légère et sans inscription propose des exercices pour se préparer à l'épreuve pratique.",
+        motsCles: ["exercices", "pratique", "gratuit", "sans inscription", "python"]
+      },
+      {
+        nom: "CodEx",
+        lien: "https://codex.forge.apps.education.fr/",
+        type: "Plateforme d'exercices",
+        niveau: "Les deux",
+        themes: ["Python", "SQL"],
+        description: "Plateforme spécialisée dans l'apprentissage par l'exercice en Python et SQL, avec correction automatique.",
+        motsCles: ["codex", "python", "sql", "exercices", "interactif"]
+      },
+
+      {
+        nom: "Python Tutor",
+        lien: "http://pythontutor.com/",
+        type: "Outil",
+        niveau: "Les deux",
+        themes: ["Python", "Algorithmique", "Débogage"],
+        description: "Un outil de visualisation exceptionnel qui permet de voir l'exécution d'un code Python pas à pas, et l'état des variables en mémoire.",
+        motsCles: ["visualisation", "débogage", "debug", "variables", "exécution"]
+      },
+      {
+        nom: "Edupyter",
+        lien: "https://www.edupyter.net/",
+        type: "Outil",
+        niveau: "Les deux",
+        themes: ["Python", "Jupyter", "Thonny"],
+        description: "Distribution Python portable pour Windows, conçue pour l'enseignement. Utilisable sans droits administrateur, elle embarque Thonny et Jupyter.",
+        motsCles: ["portable", "windows", "thonny", "jupyter", "sans installation"]
+      },
+      {
+        nom: "Toptal - Sorting Algorithms Visualization",
+        lien: "https://www.toptal.com/developers/sorting-algorithms",
+        type: "Outil",
+        niveau: "Première",
+        themes: ["Algorithmique", "Tris"],
+        description: "Application web interactive pour visualiser et comparer l'exécution de plusieurs algorithmes de tri. Un excellent support pour comprendre la complexité.",
+        motsCles: ["visualisation", "tri", "algorithme", "complexité", "insertion", "fusion"]
+      },
+      {
+        nom: "Filius",
+        lien: "https://www.lernsoftware-filius.de/Herunterladen",
+        type: "Outil",
+        niveau: "Les deux",
+        themes: ["Réseaux", "Architectures matérielles", "Systèmes d'exploitation"],
+        description: "Logiciel de simulation de réseau simple et puissant pour créer des topologies, configurer des machines et simuler des communications (DNS, web).",
+        motsCles: ["simulation", "réseau", "ip", "routeur", "dns", "dhcp"]
+      },
+      {
+        nom: "Oniseptv - Présentation de la spécialité NSI",
+        lien: "https://oniseptv.onisep.fr/video/la-specialite-numerique-et-sciences-informatiques-nsi",
+        type: "Orientation",
+        niveau: "Les deux",
+        themes: ["Orientation", "Métiers du numérique", "Débouchés"],
+        description: "Vidéo de présentation de la spécialité qui met en avant le travail par projet et donne la parole à des élèves et à un enseignant.",
+        motsCles: ["onisep", "métiers", "débouchés", "vidéo", "parcoursup"]
+      },
+      {
+        nom: "education.gouv.fr - La spécialité NSI au bac",
+        lien: "https://www.education.gouv.fr/reussir-au-lycee/la-specialite-numerique-et-sciences-informatiques-au-bac-325448",
+        type: "Orientation",
+        niveau: "Les deux",
+        themes: ["Orientation", "Débouchés", "Études supérieures"],
+        description: "Page officielle détaillant les parcours d'études supérieures qui s'ouvrent après la spécialité NSI (licences, prépa MPI, BUT, écoles d'ingénieurs).",
+        motsCles: ["débouchés", "mpi", "but", "licence", "ingénieur"]
+      },
+      {
+        nom: "La Semaine NSI",
+        lien: "https://www.semaine-nsi.fr/",
+        type: "Événement",
+        niveau: "Les deux",
+        themes: ["Orientation", "Métiers du numérique", "Conférences"],
+        description: "Événement annuel national (physique et en ligne) avec conférences et ateliers pour faire découvrir la spécialité NSI, ses formations et ses métiers.",
+        motsCles: ["conférence", "talents du numérique", "ateliers", "forum"]
+      },
+      {
+        nom: "Documentation Python Officielle",
+        lien: "https://docs.python.org/",
+        type: "Documentation",
+        niveau: "Les deux",
+        themes: ["Python", "Programmation"],
+        description: "La source de vérité pour le langage Python. Une ressource indispensable pour comprendre en profondeur le fonctionnement d'une fonction ou d'un module.",
+        motsCles: ["doc", "api", "bibliothèque", "référence", "python"]
+      },
+      {
+        nom: "MDN Web Docs - Mozilla",
+        lien: "https://developer.mozilla.org/fr/docs/Web",
+        type: "Documentation",
+        niveau: "Première",
+        themes: ["Web", "HTML", "CSS", "JavaScript"],
+        description: "La documentation de référence pour toutes les technologies du web (HTML, CSS, JavaScript). Indispensable pour le thème 'Le Web'.",
+        motsCles: ["html", "css", "javascript", "doc", "mozilla"]
+      },
+
+      {
+        nom: "Discord ECEBac.fr",
+        lien: "https://discord.com/invite/ecebac-fr-2024-1080239985933950996",
+        type: "Communauté",
+        niveau: "Terminale",
+        themes: ["Entraide", "Baccalauréat"],
+        description: "Une communauté Discord active dédiée à l'entraide pour les épreuves du baccalauréat, y compris la spécialité NSI.",
+        motsCles: ["discord", "aide", "forum", "discussion", "bac"]
+      },
+      {
+        nom: "Communautés Reddit (r/etudiants, r/AskFrance)",
+        lien: "https://www.reddit.com/r/etudiants/",
+        type: "Communauté",
+        niveau: "Les deux",
+        themes: ["Orientation", "Révisions", "Entraide"],
+        description: "Forums de discussion où l'on trouve des témoignages et des conseils sur le choix des spécialités, l'orientation post-bac et les stratégies de révision.",
+        motsCles: ["reddit", "forum", "orientation", "parcoursup", "témoignages"]
+      }
+      ,
+      {
+        nom: "Sites pour la spécialité NSI — Académie de Nice",
+        lien: "https://www.pedagogie.ac-nice.fr/nsi/489-2/",
+        type: "Portail institutionnel",
+        niveau: "Les deux",
+        themes: ["Ressources pédagogiques", "Projets", "Épreuves"],
+        description: "Sélection académique de liens et ressources utiles pour la spécialité NSI.",
+        motsCles: ["académie", "ressources", "projets", "liens"]
+      },
+      {
+        nom: "Ressources pédagogiques — Académie de Bordeaux",
+        lien: "https://ent2d.ac-bordeaux.fr/disciplines/nsi/category/ressources-pedagogiques/",
+        type: "Portail institutionnel",
+        niveau: "Les deux",
+        themes: ["Cours", "TP", "Examens"],
+        description: "Articles et ressources pédagogiques publiés par l'académie de Bordeaux.",
+        motsCles: ["académie", "bordeaux", "ressources", "nsi"]
+      },
+      {
+        nom: "NSI — Académie de La Réunion",
+        lien: "https://www.ac-reunion.fr/pedagogie/numerique-et-sciences-informatiques",
+        type: "Portail institutionnel",
+        niveau: "Les deux",
+        themes: ["Actualités", "Ressources"],
+        description: "Portail académique référençant actualités et ressources NSI.",
+        motsCles: ["académie", "réunion", "ressources"]
+      },
+      {
+        nom: "NSI – l'Informatique, c'est fantastique ! (Lycée Blaise Pascal)",
+        lien: "https://info.blaisepascal.fr/nsi/",
+        type: "Site d'enseignant",
+        niveau: "Les deux",
+        themes: ["Cours", "TP", "Projets"],
+        description: "Site d'équipe NSI avec contenus de cours et activités.",
+        motsCles: ["cours", "tp", "enseignant"]
+      },
+      {
+        nom: "Terminale NSI — Glassus",
+        lien: "https://glassus.github.io/terminale_nsi/",
+        type: "Site d'enseignant",
+        niveau: "Terminale",
+        themes: ["Structures de données", "Bases de données", "POO", "Récursivité"],
+        description: "Entrée dédiée Terminale: chapitres, notebooks et exercices.",
+        motsCles: ["terminales", "notebook", "jupyter"]
+      },
+      {
+        nom: "Bases de données — Olivier Lécluse (Terminale)",
+        lien: "https://lecluseo.frama.io/leclusemaths/nsi/NSI_T/bdd/",
+        type: "Cours",
+        niveau: "Terminale",
+        themes: ["SQL", "Modèle relationnel", "Schémas"],
+        description: "Cours Terminale sur bases de données, avec supports et activités.",
+        motsCles: ["sql", "relationnel", "bdd"]
+      },
+      {
+        nom: "Bases de données — Synthèse (HackMD Bruno Mermet)",
+        lien: "https://hackmd.io/@BrunoMermet/rkszhrRaI",
+        type: "Cours",
+        niveau: "Terminale",
+        themes: ["SQL", "Modèle relationnel"],
+        description: "Notes structurées et synthèses sur les notions de bases de données.",
+        motsCles: ["sql", "hackmd", "bdd"]
+      },
+      {
+        nom: "Réseaux — TP & cours (NSI Rennes)",
+        lien: "https://nsirennes.fr/os-archi/reseaux/",
+        type: "TP",
+        niveau: "Les deux",
+        themes: ["Réseaux", "Protocoles"],
+        description: "Travaux pratiques réseaux (ressources académiques).",
+        motsCles: ["réseaux", "tp", "académie"]
+      },
+      {
+        nom: "Cours Réseau — 1NSI (Félix Bertoni)",
+        lien: "https://1nsi.felix-bertoni.fr/reseau/simulation/cours/",
+        type: "Cours",
+        niveau: "Première",
+        themes: ["Réseaux", "Simulation"],
+        description: "Cours réseau avec activités de simulation pour 1NSI.",
+        motsCles: ["réseau", "simulation", "cours"]
+      },
+      {
+        nom: "Ressources en partage — Pixees",
+        lien: "https://pixees.fr/informatique-au-lycee-ressources-en-partage/",
+        type: "Site d'enseignant",
+        niveau: "Les deux",
+        themes: ["Cours", "TP", "Ressources"],
+        description: "Sélection commentée de ressources partagées pour NSI.",
+        motsCles: ["pixees", "ressources", "partage"]
+      }
+    ];
+
+    const grid = document.getElementById('resource-grid');
+    const searchInput = document.getElementById('search');
+    const levelFilter = document.getElementById('level-filter');
+    const typeFilter = document.getElementById('type-filter');
+    const countSpan = document.getElementById('resource-count');
+    const resetBtn = document.getElementById('reset-filters');
+
+    const typeColors = {
+      'Texte officiel': 'bg-red-100 text-red-800',
+      'Portail institutionnel': 'bg-blue-100 text-blue-800',
+      'Annales': 'bg-orange-100 text-orange-800',
+      'MOOC': 'bg-indigo-100 text-indigo-800',
+      'Site d\'enseignant': 'bg-teal-100 text-teal-800',
+      'Plateforme d\'exercices': 'bg-green-100 text-green-800',
+      'Outil': 'bg-purple-100 text-purple-800',
+      'Chaîne vidéo': 'bg-pink-100 text-pink-800',
+      'Documentation': 'bg-slate-100 text-slate-800',
+      'Soutien scolaire': 'bg-amber-100 text-amber-800',
+      'Communauté': 'bg-cyan-100 text-cyan-800',
+      'Orientation': 'bg-lime-100 text-lime-800',
+      'Événement': 'bg-fuchsia-100 text-fuchsia-800',
+      'Manuel scolaire': 'bg-yellow-100 text-yellow-800'
+    };
+
+    function populateTypeFilter() {
+      const types = [...new Set(resources.map(r => r.type))];
+      types.sort();
+      types.forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        typeFilter.appendChild(option);
+      });
+    }
+
+    function renderResources() {
+      grid.innerHTML = '';
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      const selectedLevel = levelFilter.value;
+      const selectedType = typeFilter.value;
+
+      const filteredResources = resources.filter(resource => {
+        const matchesSearch = searchTerm === '' ||
+          resource.nom.toLowerCase().includes(searchTerm) ||
+          resource.description.toLowerCase().includes(searchTerm) ||
+          resource.motsCles.some(kw => kw.toLowerCase().includes(searchTerm));
+
+        const matchesLevel = selectedLevel === 'all' || resource.niveau === selectedLevel || resource.niveau === 'Les deux';
+
+        const matchesType = selectedType === 'all' || resource.type === selectedType;
+
+        return matchesSearch && matchesLevel && matchesType;
+      });
+
+      countSpan.textContent = filteredResources.length;
+
+      if (filteredResources.length === 0) {
+        grid.innerHTML = `<p class="text-slate-500 col-span-full text-center">Aucune ressource ne correspond à vos critères.</p>`;
+        return;
+      }
+
+      filteredResources.forEach(resource => {
+        const card = document.createElement('div');
+        card.className = 'card bg-white p-6 rounded-lg shadow-sm flex flex-col';
+
+        const themesHtml = resource.themes.map(theme => `<span class="tag bg-slate-100 text-slate-700">${theme}</span>`).join(' ');
+
+        card.innerHTML = `
+              <div class="flex-grow">
+                <div class="flex justify-between items-start mb-2">
+                  <span class="tag ${typeColors[resource.type] || 'bg-gray-100 text-gray-800'}">${resource.type}</span>
+                  <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-full">${resource.niveau}</span>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">${resource.nom}</h3>
+                <p class="text-slate-600 text-sm mb-4">${resource.description}</p>
+              </div>
+              <div class="mt-auto">
+                <div class="flex flex-wrap gap-2 mb-4">
+                  ${themesHtml}
+                </div>
+                <a href="${resource.lien}" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors">
+                  Visiter →
+                </a>
+              </div>
+              `;
+        grid.appendChild(card);
+      });
+    }
+
+    function resetFilters() {
+      searchInput.value = '';
+      levelFilter.value = 'all';
+      typeFilter.value = 'all';
+      renderResources();
+    }
+
+    searchInput.addEventListener('input', renderResources);
+    levelFilter.addEventListener('change', renderResources);
+    typeFilter.addEventListener('change', renderResources);
+    resetBtn.addEventListener('click', resetFilters);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      populateTypeFilter();
+      renderResources();
+    });
+  </script>
+</body>
+
+</html>

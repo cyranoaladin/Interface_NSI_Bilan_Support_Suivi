@@ -1,0 +1,461 @@
+[
+  {
+    "student_name": "Rayen Mhirsi",
+    "student_email": "rayene.mhirsi-e@ert.tn",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "17,5 / 20",
+    "appreciation_generale": "Excellent travail, Rayen ! Ta copie est très solide et démontre une maîtrise claire des notions de Types Abstraits de Données (TAD).",
+    "points_forts": [
+      "Maîtrise du cours : Tes définitions en première partie sont précises et complètes. C'est parfait.",
+      "Conception du TAD : L'interface du TAD Carte est parfaitement spécifiée, montrant que tu as bien compris comment appliquer la théorie.",
+      "Réflexion : Ton argumentation sur l'intérêt de la séparation interface/implémentation est claire et pertinente."
+    ],
+    "axes_amelioration": [
+      "Rigueur dans le QCM : La seule perte de points vient du QCM. En cochant plusieurs réponses à la question 4 et en laissant la question 5 vide, tu as perdu 2,5 points qui étaient à ta portée."
+    ],
+    "conseils": [
+      "Pour viser le 20/20, relis attentivement les consignes, surtout pour les QCM où une seule réponse est attendue.",
+      "Essaie de répondre à toutes les questions, même si tu n'es pas certain. Une absence de réponse est parfois plus pénalisante qu'une tentative."
+    ]
+  },
+  {
+    "student_name": "Seddik Chahed",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "15,5 / 20",
+    "appreciation_generale": "Bon travail, Seddik. Ta copie est solide sur les aspects pratiques, mais révèle des lacunes sur les connaissances théoriques.",
+    "points_forts": [
+      "QCM parfait : Tu as obtenu le score maximal (5/5), ce qui montre une excellente compréhension des concepts clés.",
+      "Conception du TAD : L'interface du TAD Carte est très bien réalisée, démontrant ta capacité à appliquer les notions.",
+      "Réflexion : Ton raisonnement est juste, même si la formulation pourrait être plus claire."
+    ],
+    "axes_amelioration": [
+      "Questions de cours : La première partie est ton principal point faible. Le manque de réponse à la première question et la confusion sur les catégories d'opérations t'ont coûté des points importants."
+    ],
+    "conseils": [
+      "Concentration sur la théorie : Prends le temps de mémoriser les définitions précises (TAD, interface, implémentation) et les quatre catégories d'opérations. Ce sont des points faciles à obtenir.",
+      "Soigne la rédaction pour que tes arguments soient plus clairs et directs."
+    ],
+    "student_email": "seddik.chahed-e@ert.tn"
+  },
+  {
+    "student_name": "Aziz Achab",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "11 / 20",
+    "appreciation_generale": "Travail moyen, Aziz. Tu as des bases pratiques intéressantes, mais tes lacunes en théorie et des oublis importants pénalisent ta note finale.",
+    "points_forts": [
+      "Conception du TAD : Tu as correctement construit l'interface du TAD Carte, ce qui est un bon point.",
+      "QCM : Tu as majoritairement bien répondu au QCM, malgré une erreur."
+    ],
+    "axes_amelioration": [
+      "Questions de cours : Tes définitions sont trop vagues ou manquantes. La distinction fondamentale entre interface et implémentation n'a pas été traitée.",
+      "Question de réflexion : La partie 4 est absente, ce qui te fait perdre 3 points directement."
+    ],
+    "conseils": [
+      "Apprendre le cours : Il est impératif de revoir et d'apprendre les définitions de base. Elles sont le fondement du chapitre.",
+      "Gestion du temps : Assure-toi de traiter tous les exercices. Ne néglige pas la question de réflexion, qui est souvent un bon moyen de montrer ta compréhension globale."
+    ],
+    "student_email": "aziz.acheb-e@ert.tn"
+  },
+  {
+    "student_name": "Chedlia Sehili",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "16 / 20",
+    "appreciation_generale": "Très bon travail, Chedlia. Ta copie est sérieuse, bien rédigée et montre une solide compréhension du sujet.",
+    "points_forts": [
+      "Maîtrise du cours : Tes réponses aux questions de cours sont presque parfaites, claires et précises.",
+      "Réflexion : Ta question de réflexion est excellente et bien argumentée, l'ajout d'un dessin est une très bonne initiative.",
+      "Conception du TAD : L'interface du TAD Carte est bien conçue."
+    ],
+    "axes_amelioration": [
+      "Précision dans le QCM : Tu as perdu des points sur des erreurs d'inattention (confusion entre pile et file, réponses multiples).",
+      "Catégories d'opérations : Petite confusion dans la liste des catégories, veille à retenir les quatre termes exacts."
+    ],
+    "conseils": [
+      "Relis attentivement les questions du QCM pour éviter les erreurs faciles.",
+      "Assure-toi de bien distinguer les *attributs* d'une structure des *catégories d'opérations*."
+    ],
+    "student_email": "chedlia.sehili@ert.tn"
+  },
+  {
+    "student_name": "Walid Meziane",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "11,5 / 20",
+    "appreciation_generale": "Copie moyenne, Walid. Tu as de bonnes bases en application, mais le manque de rigueur sur la théorie et des oublis te coûtent des points.",
+    "points_forts": [
+      "QCM : Tu as très bien réussi le QCM (4/5), ce qui montre que tu as saisi les concepts principaux.",
+      "Conception du TAD : Tu as correctement identifié la plupart des opérations nécessaires pour le TAD Carte."
+    ],
+    "axes_amelioration": [
+      "Questions de cours : Tes définitions sont imprécises et manquent de rigueur.",
+      "Exhaustivité : Tu as oublié l'opération d'affichage dans la partie 3 et n'as pas traité la question de réflexion (Partie 4), ce qui représente une perte de points significative."
+    ],
+    "conseils": [
+      "Apprends les définitions : Revois les termes théoriques pour pouvoir les formuler avec précision.",
+      "Sois complet : Ne laisse jamais une question sans réponse. Relis bien le sujet pour t'assurer d'avoir traité toutes les demandes."
+    ],
+    "student_email": "walid.meziane-e@ert.tn"
+  },
+  {
+    "student_name": "Haroun Mejri",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "19 / 20",
+    "appreciation_generale": "Excellent travail, Haroun ! Ta copie est remarquable par sa clarté, sa précision et sa maîtrise quasi parfaite de toutes les notions.",
+    "points_forts": [
+      "Maîtrise théorique : Tes réponses aux questions de cours sont impeccables (5/5).",
+      "QCM parfait : Tu as réalisé un sans-faute (5/5).",
+      "Conception et réflexion : L'interface du TAD est très bien structurée et ta réflexion finale est parfaitement argumentée."
+    ],
+    "axes_amelioration": [
+      "Le seul point à noter est un très léger manque de formalisme dans la description des opérations du TAD Carte, mais c'est un détail à ce niveau d'excellence."
+    ],
+    "conseils": [
+      "Continue sur cette lancée ! Pour atteindre la perfection, tu peux t'attacher à utiliser une notation encore plus formelle (par exemple, en spécifiant les types de retour comme `-> string`, `-> boolean`)."
+    ],
+    "student_email": "haroun.mejri-e@ert.tn"
+  },
+  {
+    "student_name": "Mehdi Grati",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "15,6 / 20",
+    "appreciation_generale": "Bon travail, Mehdi. Ta copie montre une excellente maîtrise des aspects pratiques, notamment le QCM et la conception du TAD.",
+    "points_forts": [
+      "QCM parfait : Tu as réalisé un sans-faute, ce qui est excellent.",
+      "Conception du TAD : L'interface de la carte est très bien spécifiée, quasi parfaite. Tu sais appliquer les concepts."
+    ],
+    "axes_amelioration": [
+      "Questions de cours : Tes définitions manquent de rigueur et de précision dans la formulation.",
+      "Question de réflexion : Ta réponse est très faible et superficielle. C'est ici que tu perds le plus de points, ce qui t'empêche d'atteindre une note d'excellence."
+    ],
+    "conseils": [
+      "Concentration sur la rédaction : Entraîne-toi à formuler des définitions claires et complètes.",
+      "Développe ton argumentation : Pour la question de réflexion, pense à utiliser des exemples concrets (maintenance, travail d'équipe, etc.) pour appuyer tes idées."
+    ],
+    "student_email": "mehdi.grati@ert.tn"
+  },
+  {
+    "student_name": "Chaima Aouaoui",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "14,25 / 20",
+    "appreciation_generale": "Travail sérieux, Chaima. Ta copie est bonne, en particulier sur l'exercice de conception pratique, mais quelques imprécisions t'ont coûté des points.",
+    "points_forts": [
+      "Conception du TAD : L'interface du TAD Carte est complète et bien réalisée.",
+      "Maîtrise des bases : Le QCM est globalement bien réussi et montre que tu connais les concepts fondamentaux."
+    ],
+    "axes_amelioration": [
+      "Précision des définitions : Attention à ne pas être trop restrictive dans tes réponses (par exemple, un TAD n'est pas spécifique à Python).",
+      "Question de réflexion : Ta réponse est trop vague et manque d'exemples concrets pour illustrer les avantages de la séparation interface/implémentation.",
+      "Erreur d'inattention au QCM : L'erreur sur la Q5 était évitable et a eu un impact sur ta note."
+    ],
+    "conseils": [
+      "Cherche toujours à donner des définitions générales et universelles.",
+      "Pour les questions de réflexion, appuie-toi sur des arguments précis comme la modularité, la réutilisabilité du code ou la facilité de maintenance."
+    ],
+    "student_email": "chaima.aouaoui-e@ert.tn"
+  },
+  {
+    "student_name": "Bel Hadj Khalifa Mohamed",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "15,5 / 20",
+    "appreciation_generale": "Bonne copie, Mohamed. Ton travail est structuré et montre une bonne maîtrise, notamment sur le QCM qui est parfait.",
+    "points_forts": [
+      "QCM parfait : Un sans-faute (5/5) qui démontre une excellente connaissance des concepts.",
+      "Conception du TAD : L'exercice pratique est bien développé, avec un vocabulaire adapté.",
+      "Questions de cours : Tu as une bonne connaissance de la théorie."
+    ],
+    "axes_amelioration": [
+      "Question de réflexion : C'est ton principal point faible. Ta réponse est trop superficielle et manque d'arguments clairs et développés.",
+      "Précision des définitions : La définition du TAD pourrait être plus précise, en insistant sur l'indépendance vis-à-vis du langage de programmation."
+    ],
+    "conseils": [
+      "Travaille spécifiquement la rédaction des questions de réflexion. Apprends à structurer un argument en plusieurs points clairs (ex: 1. Simplification, 2. Maintenance).",
+      "Relis tes définitions pour t'assurer qu'elles sont aussi complètes et précises que possible."
+    ],
+    "student_email": "mohamed.belhadjkhalifa-e@ert.tn"
+  },
+  {
+    "student_name": "Leith Ben Turkia",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "11 / 20",
+    "appreciation_generale": "Copie très inégale, Leith. Tu montres d'excellentes capacités sur l'exercice pratique, mais de grosses lacunes en théorie et une mauvaise gestion du QCM.",
+    "points_forts": [
+      "Conception du TAD : La partie 3 est de loin ta meilleure partie. Elle est précise, bien structurée et montre que tu sais comment concevoir une interface de TAD. C'est un excellent point d'appui."
+    ],
+    "axes_amelioration": [
+      "Questions de cours : Tes définitions sont très confuses et manquent de précision. C'est une lacune majeure.",
+      "Gestion du QCM : Tu as coché plusieurs réponses à plusieurs questions, ce qui est contraire aux consignes et annule tes points.",
+      "Réflexion : Ta réponse est très insuffisante et ne développe aucun argument."
+    ],
+    "conseils": [
+      "Lis les consignes : C'est impératif. Pour le QCM, la règle est 'une seule bonne réponse'.",
+      "Revois la théorie : Tu dois reprendre les définitions de base (TAD, interface/implémentation) pour solidifier tes connaissances.",
+      "Capitalise sur tes forces : Sers-toi de ta bonne compréhension pratique (Partie 3) pour donner du sens à la théorie que tu vas réviser."
+    ],
+    "student_email": "leith.benturkia-e@ert.tn"
+  },
+  {
+    "student_name": "Skander Boussaada",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "7,5 / 20",
+    "appreciation_generale": "Copie faible, Skander. Tu as quelques bases, comme le montrent certaines réponses au QCM, mais il y a des lacunes importantes dans la plupart des domaines.",
+    "points_forts": [
+      "Tu as correctement répondu à 3 des 5 questions du QCM et tu connais les quatre catégories d'opérations."
+    ],
+    "axes_amelioration": [
+      "Questions de cours : Tes définitions sont très vagues et incomplètes. La distinction clé entre interface et implémentation n'est pas maîtrisée.",
+      "Conception du TAD : C'est la partie la plus faible de ta copie. Les attributs ne sont pas listés, et les descriptions des opérations sont trop floues pour être correctes.",
+      "Réflexion : Ton argumentation est trop générale et ne répond pas vraiment à la question."
+    ],
+    "conseils": [
+      "Il est essentiel de revoir le cours en profondeur. Concentre-toi sur la compréhension des concepts clés avant de passer aux exercices.",
+      "Entraîne-toi à rédiger des réponses structurées, en particulier pour la conception de TAD, en listant clairement les attributs, le constructeur, les sélecteurs, etc."
+    ],
+    "student_email": "skander.boussaada-e@ert.tn"
+  },
+  {
+    "student_name": "Yassine Ben Jerad",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "12,5 / 20",
+    "appreciation_generale": "Copie correcte mais inégale, Yassine. Tu as une bonne maîtrise des bases, mais un manque de précision dans la rédaction et le formalisme t'empêche d'obtenir une meilleure note.",
+    "points_forts": [
+      "Questions de cours : Tu as une bonne connaissance de la théorie, avec des réponses majoritairement justes.",
+      "QCM : Tu as bien réussi le QCM (4 bonnes réponses sur 5)."
+    ],
+    "axes_amelioration": [
+      "Rigueur et formalisme : Dans la partie 3, les idées sont là, mais la manière de décrire les opérations (les 'signatures') manque de rigueur.",
+      "Question de réflexion : Ta réponse est trop vague et manque de clarté. Tu n'as pas assez développé les avantages concrets."
+    ],
+    "conseils": [
+      "Travaille la précision de ton langage. En informatique, la rigueur est essentielle.",
+      "Entraîne-toi à écrire les signatures des opérations de manière formelle (nom, paramètres, type de retour). Cela t'aidera à structurer ta pensée."
+    ],
+    "student_email": "yassine.benjerad-e@ert.tn"
+  },
+  {
+    "student_name": "Safa Maatoug",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "8,5 / 20",
+    "appreciation_generale": "Travail fragile, Safa. Ta copie montre une compréhension partielle des notions, mais de nombreuses réponses manquent de structure, de précision et de clarté.",
+    "points_forts": [
+      "Tu as identifié les quatre catégories d'opérations et réussi une partie du QCM, ce qui montre que certaines notions sont acquises."
+    ],
+    "axes_amelioration": [
+      "Précision des définitions : Tes réponses aux questions de cours et à la question de réflexion sont trop vagues et confuses.",
+      "Conception du TAD : La partie 3 est mal structurée. Tu sembles mélanger les différents types d'opérations, et tes descriptions ne sont pas assez précises.",
+      "QCM : Des erreurs sur des questions fondamentales (constructeur, définition récursive) montrent que les bases sont encore fragiles."
+    ],
+    "conseils": [
+      "Il est nécessaire de revoir les fondamentaux : Qu'est-ce qu'un TAD ? Quelle est la différence exacte entre l'interface et l'implémentation ?",
+      "Adopte une méthode de travail structurée pour la conception de TAD : liste d'abord les attributs, puis décris chaque opération (constructeur, sélecteurs, etc.) séparément."
+    ],
+    "student_email": "safa.maatoug-e@ert.tn"
+  },
+  {
+    "student_name": "Mehdi Mechichi",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "14 / 20",
+    "appreciation_generale": "Très bonne copie, Mehdi. Ton travail est clair, structuré et bien rédigé. Tu montres une solide compréhension pratique du sujet.",
+    "points_forts": [
+      "Conception du TAD : La partie 3 est très bien réussie. Tes descriptions sont claires et ta notation est correcte.",
+      "Question de réflexion : Ta réponse est bien argumentée et met en avant les bons avantages.",
+      "Maîtrise générale : L'ensemble de ta copie est cohérent et montre que tu maîtrises le sujet."
+    ],
+    "axes_amelioration": [
+      "QCM : Une erreur sur la dernière question t'a fait perdre des points.",
+      "Précision théorique : Tes réponses en partie 1 sont bonnes, mais pourraient être encore plus précises, notamment sur la différence interface/implémentation."
+    ],
+    "conseils": [
+      "Continue de soigner la rédaction, c'est une grande force.",
+      "Relis-toi attentivement sur le QCM pour éviter les petites erreurs qui peuvent coûter cher."
+    ],
+    "student_email": "mehdi.mechichi-e@ert.tn"
+  },
+  {
+    "student_name": "Mohamed Anas Debbech",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "15 / 20",
+    "appreciation_generale": "Copie sérieuse et de bon niveau, Mohamed Anas. Tu maîtrises bien les notions de base, mais tu peux encore gagner en rigueur et en précision.",
+    "points_forts": [
+      "Conception du TAD : L'exercice est bien traité. Tu as identifié tous les éléments nécessaires.",
+      "Bonne compréhension globale : Tes résultats au QCM et aux questions de cours montrent que tu as bien compris le chapitre."
+    ],
+    "axes_amelioration": [
+      "Rigueur du formalisme : Dans la partie 3, ta description du constructeur est maladroite. Le formalisme de l'écriture des opérations peut être amélioré.",
+      "Développement de la réflexion : Ta réponse en partie 4 est correcte mais un peu trop générale. Il manque des exemples concrets pour la rendre plus percutante.",
+      "Précision du vocabulaire : Certaines de tes définitions en partie 1 pourraient être plus précises."
+    ],
+    "conseils": [
+      "Soigne le formalisme lorsque tu décris une interface de TAD.",
+      "Dans tes réponses rédigées, essaie d'être plus concret et d'utiliser des exemples pour illustrer tes propos."
+    ],
+    "student_email": "mohamed-anas.debbech-e@ert.tn"
+  },
+  {
+    "student_name": "Iyed Ahmed Medfai",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "14,7 / 20",
+    "appreciation_generale": "Travail correct et sérieux, Iyed. Tu te distingues par un QCM parfait et une bonne connaissance des définitions de base.",
+    "points_forts": [
+      "QCM parfait : Un sans-faute, c'est excellent et montre que tu maîtrises les concepts.",
+      "Questions de cours : Tes réponses sont solides et bien formulées."
+    ],
+    "axes_amelioration": [
+      "Conception du TAD : Ta description du constructeur est incomplète. Il est essentiel de bien spécifier comment créer un objet avec ses valeurs initiales.",
+      "Question de réflexion : Ta réponse est trop superficielle. Tu évoques de bonnes idées, mais sans les développer suffisamment (réutilisabilité, maintenance, etc.)."
+    ],
+    "conseils": [
+      "Lorsque tu conçois un TAD, porte une attention particulière au constructeur, car c'est le point de départ de tout objet.",
+      "Approfondis tes réponses de réflexion. Ne te contente pas de mentionner une idée, explique-la avec des arguments ou des exemples."
+    ],
+    "student_email": "iyedahmed.medfai-e@ert.tn"
+  },
+  {
+    "student_name": "Youssef Jaafar",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "9,3 / 20",
+    "appreciation_generale": "Copie insuffisante, Youssef. Tu as réussi la partie pratique de conception de TAD, mais tes bases théoriques et tes réponses au QCM sont très faibles.",
+    "points_forts": [
+      "Conception du TAD : La partie 3 est correcte. Tu as su lister et décrire correctement les différentes opérations pour le TAD Carte. C'est le point positif sur lequel t'appuyer."
+    ],
+    "axes_amelioration": [
+      "Questions de cours : Tes définitions sont incomplètes et confuses. Tu sembles mélanger TAD et structure de données concrète.",
+      "QCM : Ton score est très faible, ce qui confirme que les notions de base ne sont pas maîtrisées.",
+      "Question de réflexion : Ta réponse est très superficielle."
+    ],
+    "conseils": [
+      "Tu dois impérativement revoir les notions théoriques du cours. Concentre-toi sur la définition d'un TAD et la différence entre interface et implémentation.",
+      "Sers-toi de ta réussite en partie 3 pour comprendre la théorie : tu as *appliqué* la notion d'interface, maintenant tu dois être capable de l'*expliquer*."
+    ],
+    "student_email": "youssef.jaafar-e@ert.tn"
+  },
+  {
+    "student_name": "Sami Turki",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "10 / 20",
+    "appreciation_generale": "Copie moyenne, Sami. Tu sembles avoir une compréhension générale du chapitre, mais presque toutes tes réponses manquent de rigueur, de précision et de clarté.",
+    "points_forts": [
+      "Tu as identifié correctement les quatre catégories d'opérations.",
+      "Tu as traité toutes les parties de l'évaluation."
+    ],
+    "axes_amelioration": [
+      "Manque de précision : C'est le principal problème de ta copie. Tes définitions sont floues, tes descriptions dans la partie 3 sont incomplètes et ta réflexion est confuse.",
+      "QCM : Deux erreurs sur cinq questions montrent que certaines notions ne sont pas solidement acquises."
+    ],
+    "conseils": [
+      "Travaille sur la précision. En informatique, les détails comptent. Relis tes réponses en te demandant : 'Est-ce que c'est assez clair ? Est-ce que j'ai donné tous les détails nécessaires ?'.",
+      "Structure tes réponses, notamment pour la partie 3, en utilisant des listes et des titres pour chaque opération."
+    ],
+    "student_email": "sami.turki-e@ert.tn"
+  },
+  {
+    "student_name": "Ramy Jabeur",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "13 / 20",
+    "appreciation_generale": "Bonne copie, Ramy. Tes réponses sont solides dans l'ensemble, en particulier sur les parties pratiques. Quelques imprécisions t'empêchent d'avoir une meilleure note.",
+    "points_forts": [
+      "Conception du TAD : La partie 3 est bien réussie, montrant une bonne compréhension pratique.",
+      "Question de réflexion : Tu as bien identifié les idées principales, même si la formulation pourrait être améliorée."
+    ],
+    "axes_amelioration": [
+      "Gestion du QCM : Des erreurs et le fait d'avoir coché plusieurs réponses à une question t'ont pénalisé.",
+      "Clarté de la formulation : Certaines de tes réponses, notamment en partie 1, sont un peu maladroites et manquent de clarté."
+    ],
+    "conseils": [
+      "Lis attentivement les consignes du QCM et assure-toi de ne donner qu'une seule réponse par question.",
+      "Prends le temps de formuler tes phrases pour que tes idées soient exprimées de la manière la plus claire et précise possible."
+    ],
+    "student_email": "ramy.jabeur-e@ert.tn"
+  },
+  {
+    "student_name": "Youssef Ben Mrad",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "13,5 / 20",
+    "appreciation_generale": "Bonne copie, Youssef. Tu te distingues par un QCM parfait et une excellente maîtrise de l'exercice de conception de TAD.",
+    "points_forts": [
+      "QCM parfait : Un sans-faute, c'est excellent.",
+      "Conception du TAD : La partie 3 est très bien réussie, claire et complète.",
+      "Question de réflexion : Ton argumentation est claire et bien expliquée."
+    ],
+    "axes_amelioration": [
+      "Questions de cours : C'est le point le plus faible de ta copie. Tes définitions sont un peu vagues et superficielles. Tu n'insistes pas assez sur les concepts clés comme l'indépendance de l'implémentation."
+    ],
+    "conseils": [
+      "Travaille la précision de tes définitions théoriques. Même si tu as compris les concepts (comme le prouve le reste de ta copie), il est important de savoir les formuler rigoureusement."
+    ],
+    "student_email": "youssef.benmrad-e@ert.tn"
+  },
+  {
+    "student_name": "Lina Ouerghi",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "6,25 / 20",
+    "appreciation_generale": "Copie très insuffisante, Lina. Il y a une confusion majeure dans la partie la plus importante de l'évaluation, et les bases théoriques ne semblent pas acquises.",
+    "points_forts": [
+      "Tu as correctement répondu à une partie du QCM."
+    ],
+    "axes_amelioration": [
+      "Hors-sujet en Partie 3 : C'est l'erreur la plus grave. Tu as confondu le TAD Carte demandé avec un TAD Pile, ce qui montre une incompréhension profonde de l'exercice.",
+      "Questions de cours : Tes réponses sont beaucoup trop courtes, imprécises, voire absentes.",
+      "Complétude : Plusieurs questions du QCM n'ont pas été traitées."
+    ],
+    "conseils": [
+      "Il est impératif de reprendre tout le chapitre depuis le début. Assure-toi de bien comprendre ce qu'est un TAD.",
+      "Lis attentivement les sujets. L'erreur sur la partie 3 aurait pu être évitée avec une lecture attentive de la consigne.",
+      "Refais les exercices de base vus en cours pour t'approprier la méthodologie."
+    ],
+    "student_email": "lina.ouerghi-e@ert.tn"
+  },
+  {
+    "student_name": "Yanis Ben Lagha",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "16 / 20",
+    "appreciation_generale": "Très bonne copie, Yanis. Ton travail est maîtrisé et montre une excellente compréhension sur presque tous les aspects de l'évaluation.",
+    "points_forts": [
+      "Conception du TAD parfaite : Tu as obtenu 7/7, c'est excellent.",
+      "Questions de cours et réflexion : Tes réponses sont claires, bien structurées et pertinentes. Tu maîtrises la théorie."
+    ],
+    "axes_amelioration": [
+      "QCM : C'est la seule partie où tu perds des points à cause de deux erreurs. C'est ce qui te prive d'une note encore plus élevée."
+    ],
+    "conseils": [
+      "Sois un peu plus vigilant sur le QCM. Parfois, relire la question une deuxième fois permet de repérer un détail ou un piège.",
+      "Continue de produire un travail aussi structuré et clair, c'est une grande qualité."
+    ],
+    "student_email": "yanis.benlagha-e@ert.tn"
+  },
+  {
+    "student_name": "Neil Ben Youssef",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "13 / 20",
+    "appreciation_generale": "Bon travail, Neil. Ta copie est solide sur les exercices d'application directe comme le QCM et la conception du TAD.",
+    "points_forts": [
+      "QCM parfait : Un sans-faute, c'est une excellente performance.",
+      "Conception du TAD : La partie 3 est très bien réussie, même si la présentation de la notation pourrait être un peu plus rigoureuse."
+    ],
+    "axes_amelioration": [
+      "Précision des réponses écrites : C'est ton principal point faible. Que ce soit pour les questions de cours (Partie 1) ou la réflexion (Partie 4), tes réponses sont trop vagues et manquent d'arguments développés."
+    ],
+    "conseils": [
+      "Entraîne-toi à développer tes idées par écrit. Ne te contente pas de donner l'idée générale, mais explique-la, donne des exemples, structure-la en plusieurs points.",
+      "Travaille la précision de tes définitions pour qu'elles soient complètes."
+    ],
+    "student_email": "neil.ben.youssef@ert.tn"
+  },
+  {
+    "student_name": "Mohamed Zardi",
+    "evaluation_title": "Évaluation sur les Types Abstraits de Données",
+    "note_finale": "15 / 20",
+    "appreciation_generale": "Très bonne copie, Mohamed. Tu montres une excellente maîtrise des notions théoriques et de la réflexion, ce qui est un signe de compréhension profonde.",
+    "points_forts": [
+      "Questions de cours parfaites : Tes définitions sont claires, complètes et précises (5/5).",
+      "Question de réflexion : Ta réponse est bien développée, structurée et très pertinente.",
+      "Conception du TAD : L'exercice pratique est bien mené."
+    ],
+    "axes_amelioration": [
+      "QCM : C'est ici que tu perds des points. Deux erreurs t'empêchent d'atteindre une note d'excellence."
+    ],
+    "conseils": [
+      "Sois plus attentif lors du QCM. La qualité de tes autres réponses montre que tu as le niveau pour faire un sans-faute. Prends le temps de bien analyser chaque option.",
+      "Continue à développer ta capacité d'analyse et de rédaction, c'est une compétence très précieuse."
+    ],
+    "student_email": "mohamed.zardi-e@ert.tn"
+  }
+]

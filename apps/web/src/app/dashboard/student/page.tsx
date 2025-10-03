@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Layout } from '@/components/ui/Layout';
 import { SidebarNav } from '@/components/ui/SidebarNav';
+import { buildStudentSidebar } from '@/lib/menu';
 import { Download, KeyRound, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -24,7 +25,10 @@ export default function StudentDashboard() {
         const r = await fetch('/api/me');
         const d = await r.json();
         if (r.ok && d.ok && d.role === 'STUDENT') {
-          setStudentName(`${d.givenName} ${d.familyName}`);
+          const gn = (d.givenName || '').trim();
+          const fn = (d.familyName || '').trim();
+          const fallback = (d.email || '').split('@')[0];
+          setStudentName((gn || fn) ? `${gn} ${fn}`.trim() : fallback);
           setClasse(d.classe || '');
         }
       } catch {}
@@ -80,9 +84,7 @@ export default function StudentDashboard() {
           <h2 className="text-lg font-poppins">{studentName || 'Mon tableau de bord'}</h2>
           <p className="text-sm text-[var(--fg)]/70">{classe || 'NSI'}</p>
         </div>
-        <SidebarNav items={[
-          { href: '/dashboard/student', label: 'Accueil' },
-        ]} />
+        <SidebarNav items={buildStudentSidebar({ role: 'STUDENT', classe })} />
       </div>}
     >
       <div className="space-y-6">

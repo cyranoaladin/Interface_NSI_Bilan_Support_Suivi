@@ -16,7 +16,11 @@ function parseName(full) {
 }
 
 async function main() {
-  const jsonPath = path.resolve('/app/bilans_evaluation_TAD.json');
+  // Résoudre le chemin du JSON de manière robuste (local vs Docker)
+  let jsonPath = path.resolve(process.cwd(), 'bilans_evaluation_TAD.json');
+  if (!fs.existsSync(jsonPath)) {
+    jsonPath = path.resolve(__dirname, '..', 'bilans_evaluation_TAD.json');
+  }
   const raw = fs.readFileSync(jsonPath, 'utf-8');
   const rows = JSON.parse(raw);
 

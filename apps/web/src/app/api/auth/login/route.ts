@@ -26,7 +26,12 @@ export async function POST(req: NextRequest) {
     } catch {}
   }
 
-  const { email, password } = schema.parse(await req.json());
+  const body = await req.json().catch(() => null);
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ ok: false, error: 'Invalid payload' }, { status: 400 });
+  }
+  const { email, password } = parsed.data;
   const lower = email.toLowerCase();
   if (isTestMode) {
     const teachers = new Set([

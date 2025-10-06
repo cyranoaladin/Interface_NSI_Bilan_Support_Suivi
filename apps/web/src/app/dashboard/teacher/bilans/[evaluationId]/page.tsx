@@ -34,6 +34,9 @@ export default function TeacherEvaluationDetailPage() {
         if (r.ok && d.ok) {
           setEvaluation(d.evaluation || null);
           setBilans(Array.isArray(d.bilans) ? d.bilans : []);
+          if (!selectedEmail && Array.isArray(d.bilans) && d.bilans.length > 0) {
+            setSelectedEmail(d.bilans[0].studentEmail);
+          }
         }
       } catch {}
     })();

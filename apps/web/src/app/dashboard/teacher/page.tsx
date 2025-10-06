@@ -80,7 +80,8 @@ function TeacherDashboardInner() {
     let timer: any;
     async function checkRows() {
       const next = { ...pdfReadyMap };
-      for (const b of modalRows) {
+      const rowsLocal = Array.isArray(modalRows) ? modalRows : [];
+      for (const b of rowsLocal) {
         if (!b?.id || !b?.pdfUrl) continue;
         if (next[b.id]) continue;
         try {
@@ -162,7 +163,13 @@ function TeacherDashboardInner() {
                         <Button variant="secondary" onClick={async () => {
                           const r = await fetch(`/api/teacher/bilans?studentEmail=${encodeURIComponent(s.email)}`);
                           const d = await r.json();
-                          if (r.ok && d.ok) { setModalRows(d.bilans); setModalStudentEmail(s.email); setModalOpen(true); } else { push({ message: d.error || 'Erreur chargement bilans', variant: 'error' }); }
+                          if (r.ok && d.ok) {
+                            setModalRows(Array.isArray(d.bilans) ? d.bilans : []);
+                            setModalStudentEmail(s.email);
+                            setModalOpen(true);
+                          } else {
+                            push({ message: d.error || 'Erreur chargement bilans', variant: 'error' });
+                          }
                         }}><FileText className="h-4 w-4" /> Voir bilans</Button>
                         <Button variant="outline" onClick={async () => {
                           const r = await fetch('/api/teacher/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: s.email }) });
@@ -210,7 +217,7 @@ function TeacherDashboardInner() {
                 const r = await fetch(`/api/teacher/bilans?studentEmail=${encodeURIComponent(modalStudentEmail)}`);
                 const d = await r.json();
                 if (r.ok && d.ok) {
-                  setModalRows(d.bilans);
+                  setModalRows(Array.isArray(d.bilans) ? d.bilans : []);
                   // reset readiness map and recheck
                   const next: Record<string, boolean> = {};
                   setPdfReadyMap(next);
@@ -219,11 +226,11 @@ function TeacherDashboardInner() {
               }}>Rafraîchir</Button>
             </div>
           </div>
-          {modalRows.length === 0 ? (
+          {(!Array.isArray(modalRows) || modalRows.length === 0) ? (
             <p className="text-sm text-[var(--fg)]/70">Aucun bilan pour cet élève.</p>
           ) : (
             <ul className="space-y-2">
-              {modalRows
+              {(Array.isArray(modalRows) ? modalRows : [])
                 .filter(b => (modalFilter === 'all' ? true : (modalFilter === 'eleve' ? b.type === 'eleve' : b.type === 'enseignant')) && !!b.pdfUrl)
                 .map(b => (
                   <li key={b.id} className="flex items-center justify-between gap-3">

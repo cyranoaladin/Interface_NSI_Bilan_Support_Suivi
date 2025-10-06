@@ -8,7 +8,7 @@ export default function HomePage() {
       <div className="container px-4">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <div className="relative w-full h-64 rounded-xl overflow-hidden border border-white/10">
-            <Image src="/banner.png" alt="NSI PMF" fill style={{ objectFit: 'cover' }} />
+            <Image src="/banner.png" alt="NSI PMF" fill style={{ objectFit: 'cover' }} priority />
           </div>
           <h1 className="text-3xl font-poppins">NSI — Bilan Pédagogique PMF</h1>
           <p className="text-[var(--fg)]/80">

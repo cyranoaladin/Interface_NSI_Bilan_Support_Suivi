@@ -294,15 +294,19 @@ model ResourceNotion {
 }
 
 model Exercise {
-  id          String       @id @default(cuid())
-  title       String
-  type        ExerciseType
-  statementMd String
-  rubricJson  Json?
-  difficulty  Difficulty
-  createdAt   DateTime     @default(now())
-  notions     ExerciseNotion[]
-  items       QuizItem[]
+  id           String       @id @default(cuid())
+  code         String       @unique
+  title        String
+  type         ExerciseType
+  statementMd  String
+  rubricJson   Json?
+  solutionJson Json?
+  testsJson    Json?
+  starterCode  String?
+  difficulty   Difficulty
+  createdAt    DateTime     @default(now())
+  notions      ExerciseNotion[]
+  items        QuizItem[]
 
   @@index([type])
   @@index([difficulty])

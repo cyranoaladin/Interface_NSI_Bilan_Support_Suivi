@@ -214,3 +214,190 @@ model Document {
 
   @@map("documents")
 }
+
+// === EXTENSION « Programme & Quiz » ===
+
+enum ExerciseType { QCM OUVERT CODING }
+
+enum Difficulty { EASY MEDIUM HARD }
+
+model CurrTheme {
+  id       String      @id @default(cuid())
+  code     String      @unique
+  title    String
+  order    Int
+  parentId String?
+  parent   CurrTheme?  @relation("ThemeParent", fields: [parentId], references: [id])
+  children CurrTheme[] @relation("ThemeParent")
+
+  notions  Notion[]
+
+  @@index([parentId])
+  @@index([order])
+}
+
+model Notion {
+  id       String    @id @default(cuid())
+  code     String    @unique
+  title    String
+  themeId  String
+  theme    CurrTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  // liens
+  resources ResourceNotion[]
+  exercises ExerciseNotion[]
+  mastery   StudentMastery[]
+  coverage  TeacherCoverage[]
+  documents DocumentNotion[]
+
+  @@index([themeId])
+}
+
+model TeacherCoverage {
+  id          String   @id @default(cuid())
+  teacherId   String
+  groupId     String?
+  notionId    String
+  coveredAt   DateTime @default(now())
+  durationMin Int?
+  notes       String?
+
+  notion      Notion   @relation(fields: [notionId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId])
+  @@index([groupId])
+  @@index([notionId, coveredAt])
+}
+
+model Resource {
+  id           String   @id @default(cuid())
+  title        String
+  s3Key        String
+  mime         String
+  size         Int
+  uploadedById String
+  uploadedAt   DateTime @default(now())
+  notions      ResourceNotion[]
+
+  @@index([uploadedById])
+  @@index([s3Key])
+}
+
+model ResourceNotion {
+  resourceId String
+  notionId   String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  notion     Notion   @relation(fields: [notionId], references: [id], onDelete: Cascade)
+  @@id([resourceId, notionId])
+  @@index([notionId])
+}
+
+model Exercise {
+  id          String       @id @default(cuid())
+  title       String
+  type        ExerciseType
+  statementMd String
+  rubricJson  Json?
+  difficulty  Difficulty
+  createdAt   DateTime     @default(now())
+  notions     ExerciseNotion[]
+  items       QuizItem[]
+
+  @@index([type])
+  @@index([difficulty])
+}
+
+model ExerciseNotion {
+  exerciseId String
+  notionId   String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  notion     Notion   @relation(fields: [notionId], references: [id], onDelete: Cascade)
+  @@id([exerciseId, notionId])
+}
+
+model Quiz {
+  id          String     @id @default(cuid())
+  title       String?
+  studentId   String?
+  createdById String
+  createdAt   DateTime   @default(now())
+  items       QuizItem[]
+  submissions QuizSubmission[]
+
+  @@index([studentId])
+  @@index([createdById])
+}
+
+model QuizItem {
+  id         String   @id @default(cuid())
+  quizId     String
+  exerciseId String
+  /// ordre d’affichage
+  order      Int
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  submissions SubmissionItem[]
+
+  @@index([quizId])
+  @@index([exerciseId])
+}
+
+model QuizSubmission {
+  id          String   @id @default(cuid())
+  quizId      String
+  studentId   String
+  startedAt   DateTime @default(now())
+  submittedAt DateTime?
+  quiz        Quiz     @relation(fields: [quizId], references: [id])
+  items       SubmissionItem[]
+
+  @@index([quizId])
+  @@index([studentId, submittedAt])
+}
+
+model SubmissionItem {
+  id            String   @id @default(cuid())
+  submissionId  String
+  quizItemId    String
+  answerJson    Json?
+  codePy        String?
+  createdAt     DateTime @default(now())
+  submission    QuizSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  quizItem      QuizItem      @relation(fields: [quizItemId], references: [id])
+  grading       SubmissionItemGrading?
+
+  @@index([submissionId])
+  @@index([quizItemId])
+}
+
+model SubmissionItemGrading {
+  id               String   @id @default(cuid())
+  submissionItemId String   @unique
+  score            Float
+  openFeedbackJson Json?
+  codeReviewJson   Json?
+  gradedAt         DateTime @default(now())
+  item             SubmissionItem @relation(fields: [submissionItemId], references: [id], onDelete: Cascade)
+}
+
+model StudentMastery {
+  id        String   @id @default(cuid())
+  studentId String
+  notionId  String
+  mastery   Float
+  updatedAt DateTime @default(now())
+  notion    Notion   @relation(fields: [notionId], references: [id])
+
+  @@unique([studentId, notionId])
+  @@index([notionId])
+}
+
+/// Relie les documents existants aux notions
+model DocumentNotion {
+  documentId String @db.Uuid
+  notionId   String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  notion     Notion   @relation(fields: [notionId], references: [id], onDelete: Cascade)
+  @@id([documentId, notionId])
+  @@index([notionId])
+}

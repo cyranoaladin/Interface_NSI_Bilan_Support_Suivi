@@ -240,6 +240,7 @@ model Notion {
   id       String    @id @default(cuid())
   code     String    @unique
   title    String
+  order    Int       @default(0)
   themeId  String
   theme    CurrTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
 

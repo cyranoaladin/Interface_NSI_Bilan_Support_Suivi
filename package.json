@@ -16,6 +16,7 @@
     "job:test": "ts-node -P tsconfig.scripts.json scripts/push_job_generate_reports.ts --email=$EMAIL --scores=$SCORES",
     "ingest:rag": "ts-node -P tsconfig.scripts.json scripts/ingest_rag.ts",
     "seed:production": "ts-node -P tsconfig.scripts.json scripts/seed_production_data.ts",
+    "seed:curriculum": "ts-node -P tsconfig.scripts.json scripts/seed-curriculum.ts",
     "docker:job:test": "docker compose -f infra/docker-compose.yml exec web env REDIS_URL=$REDIS_URL npx ts-node -P tsconfig.scripts.json /app/scripts/push_job_generate_reports.ts --email=$EMAIL --scores=$SCORES",
     "docker:ingest:rag": "docker compose -f infra/docker-compose.yml exec web env HF_TOKEN=$HF_TOKEN DATABASE_URL=$DATABASE_URL npx ts-node -P tsconfig.scripts.json /app/scripts/ingest_rag.ts",
     "docker:seed:production": "docker compose -f infra/docker-compose.yml exec web env DATABASE_URL=$DATABASE_URL npx ts-node -P tsconfig.scripts.json /app/scripts/seed_production_data.ts",

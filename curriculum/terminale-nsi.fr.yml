@@ -1,0 +1,66 @@
+program: "NSI Terminale"
+code: "T-NSI-2025"
+version: "1.0"
+themes:
+  - code: T1
+    title: "Structures de données avancées"
+    order: 1
+    notions:
+      - code: T1.N1
+        title: "Piles, files, listes chaînées"
+      - code: T1.N2
+        title: "Dictionnaires, ensembles"
+      - code: T1.N3
+        title: "Complexité (O-notation) & invariants"
+  - code: T2
+    title: "Algorithmes sur les graphes"
+    order: 2
+    notions:
+      - code: T2.N1
+        title: "Représentations (adjacence, incidence)"
+      - code: T2.N2
+        title: "Parcours (BFS/DFS) et applications"
+      - code: T2.N3
+        title: "Chemins / cycles / arbres couvrants"
+  - code: T3
+    title: "Bases de données"
+    order: 3
+    notions:
+      - code: T3.N1
+        title: "Modèle relationnel, normalisation"
+      - code: T3.N2
+        title: "SQL (SELECT, JOIN, agrégats)"
+      - code: T3.N3
+        title: "Index, coût de requêtes"
+  - code: T4
+    title: "Langages & compilation"
+    order: 4
+    notions:
+      - code: T4.N1
+        title: "Automates & expressions régulières"
+      - code: T4.N2
+        title: "Analyse lexicale/syntaxique"
+  - code: T5
+    title: "Systèmes & réseaux"
+    order: 5
+    notions:
+      - code: T5.N1
+        title: "Protocoles, couches"
+      - code: T5.N2
+        title: "Sécurité (auth, chiffrement)"
+  - code: T6
+    title: "Développement & bonnes pratiques"
+    order: 6
+    notions:
+      - code: T6.N1
+        title: "Tests, CI, qualité"
+      - code: T6.N2
+        title: "Gestion de projet"
+  - code: T7
+    title: "Données & IA"
+    order: 7
+    notions:
+      - code: T7.N1
+        title: "Prétraitement, embeddings (GEMINI-768)"
+      - code: T7.N2
+        title: "Éthique & biais"

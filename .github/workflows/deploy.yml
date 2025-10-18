@@ -1,23 +1,19 @@
-name: Deploy to VPS (hotfix)
+name: Deploy to VPS
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - "apps/web/src/app/api/teacher/students/route.ts"
-      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH → patch le container en prod puis restart
+      - name: SSH and patch on VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
           script: |
             set -Eeuo pipefail
             CID=$(docker ps --filter 'publish=13001' --format '{{.ID}}')

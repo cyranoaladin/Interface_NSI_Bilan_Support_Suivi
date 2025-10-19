@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   try {
     if (evaluationId && studentEmail) {
-      // Support variantes -e/normal pour la recherche ciblée
+      // Recherche ciblée, avec variante -e/normal
       let bilan = await (prisma as any).evaluationBilan.findUnique({ where: { studentEmail_evaluationId: { studentEmail, evaluationId } } });
       if (!bilan) {
         const lower = String(studentEmail).toLowerCase();
@@ -32,8 +32,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, bilan });
     }
     if (evaluationId) {
-      const bilans = await (prisma as any).evaluationBilan.findMany({ where: { evaluationId } });
-      return NextResponse.json({ ok: true, bilans });
+      const [evaluation, bilans] = await Promise.all([
+        (prisma as any).evaluation.findUnique({ where: { id: evaluationId }, select: { id: true, title: true, date: true } }),
+        (prisma as any).evaluationBilan.findMany({ where: { evaluationId } }),
+      ]);
+      return NextResponse.json({ ok: true, evaluation, bilans });
     }
     const evaluations = await (prisma as any).evaluation.findMany({ orderBy: { date: 'desc' }, select: { id: true, title: true, date: true } });
     return NextResponse.json({ ok: true, evaluations });

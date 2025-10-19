@@ -1,0 +1,8 @@
+id_user_src;id_user_dst;type
+U001;U002;ami
+U002;U001;ami
+U001;U003;suit
+U003;U004;suit
+U004;U001;suit
+U005;U006;ami
+U006;U005;ami

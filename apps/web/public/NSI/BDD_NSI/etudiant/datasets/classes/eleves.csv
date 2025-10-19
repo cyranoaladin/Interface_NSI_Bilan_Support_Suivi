@@ -1,0 +1,11 @@
+id_eleve;nom;prenom;classe;id_prof_pp;email
+E001;Martin;Léa;Tle NSI A;P01;lea.martin@example.fr
+E002;Dupont;Noah;Tle NSI A;P01;noah.dupont@example.fr
+E003;Bernard;Inès;Tle NSI A;P01;ines.bernard@example.fr
+E004;Durand;Adam;Tle NSI B;P02;adam.durand@example.fr
+E005;Petit;Camille;Tle NSI B;P02;camille.petit@example.fr
+E006;Robert;Maya;Tle NSI B;P02;maya.robert@example.fr
+E007;Richard;Ethan;Tle NSI C;P03;ethan.richard@example.fr
+E008;Moreau;Zoé;Tle NSI C;P03;zoe.moreau@example.fr
+E009;Simon;Lina;Tle NSI C;P03;lina.simon@example.fr
+E010;Michel;Yanis;Tle NSI C;P03;yanis.michel@example.fr

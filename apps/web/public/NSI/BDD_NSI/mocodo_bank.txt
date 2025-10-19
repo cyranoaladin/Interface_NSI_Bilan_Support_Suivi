@@ -1,0 +1,32 @@
+# Mini-banque MCD (Mocodo) — prêts à copier-coller
+
+# 1) Commerce (e-commerce simplifié)
+Client: id_client, nom, email
+Produit: id_produit, libelle, prix
+Commande: id_commande, date_commande, total
+Ligne: quantite, prix_unitaire
+# Associations
+Client,1 N-1 Commande
+Commande,1 1-N Ligne
+Produit,1 N-1 Ligne
+
+# 2) Bibliothèque
+Lecteur: id_lecteur, nom, email
+Livre: id_livre, titre, annee
+Emprunt: id_emprunt, date_debut, date_retour
+Auteur: id_auteur, nom
+Ecrire: role
+# Associations
+Lecteur,1 1-N Emprunt
+Emprunt,1 N-1 Livre
+Auteur,1 N-N Livre via Ecrire
+
+# 3) Réseau social
+Utilisateur: id_user, pseudo, email, date_inscription
+Publication: id_pub, contenu, date_pub
+Relation: type (ami, suit)
+# Associations
+Utilisateur,1 1-N Publication
+Utilisateur,1 N-N Utilisateur via Relation
+Publication,1 N-N Utilisateur via Aime
+Aime: date_like

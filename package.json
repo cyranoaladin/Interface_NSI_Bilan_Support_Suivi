@@ -30,7 +30,10 @@
     "install:resources": "node scripts/install_resources.js",
     "update:rag": "node scripts/update_rag_mapping.js",
     "docker:db:push": "docker compose -f infra/docker-compose.yml exec -T web npx prisma db push",
-    "docker:seed:evaluations": "docker compose -f infra/docker-compose.yml exec -T web node /app/scripts/seed_evaluations_from_json.js"
+    "docker:seed:evaluations": "docker compose -f infra/docker-compose.yml exec -T web node /app/scripts/seed_evaluations_from_json.js",
+    "prod:up": "docker compose -f infra/docker-compose.prod.yml up -d --build",
+    "prod:seed:evaluations": "docker compose -f infra/docker-compose.prod.yml exec -T web node /app/scripts/seed_evaluations_from_json.js",
+    "prod:health": "curl -sf http://127.0.0.1:13002/api/health"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

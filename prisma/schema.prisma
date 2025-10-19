@@ -212,14 +212,25 @@ model Document {
   label  String? @db.Text
   meta   Json?   @db.JsonB
 
+  // Relation inverse vers les liens de notions
+  notions DocumentNotion[]
+
   @@map("documents")
 }
 
 // === EXTENSION « Programme & Quiz » ===
 
-enum ExerciseType { QCM OUVERT CODING }
+enum ExerciseType {
+  QCM
+  OUVERT
+  CODING
+}
 
-enum Difficulty { EASY MEDIUM HARD }
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
 
 model CurrTheme {
   id       String      @id @default(cuid())

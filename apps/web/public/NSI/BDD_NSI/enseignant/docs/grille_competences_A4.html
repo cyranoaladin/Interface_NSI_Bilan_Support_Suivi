@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Grille d'évaluation par compétence — Terminale NSI (BDD)</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 14mm;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: 12pt;
+      color: #222;
+    }
+
+    h1 {
+      font-size: 20pt;
+      margin: 0 0 8px 0;
+    }
+
+    h2 {
+      font-size: 14pt;
+      margin: 18px 0 6px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    th,
+    td {
+      border: 1px solid #bbb;
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    .levels {
+      white-space: nowrap;
+    }
+
+    .small {
+      font-size: 10pt;
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Grille d'évaluation par compétence — Bases de données (Terminale NSI)</h1>
+  <div class="small">Élève : _____________________ | Binôme : _________________ | Projet :
+    _______________________________</div>
+
+  <h2>Compétences & critères observables</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Compétence</th>
+        <th>Indicateurs observables</th>
+        <th class="levels">Ins.</th>
+        <th class="levels">Frag.</th>
+        <th class="levels">Sat.</th>
+        <th class="levels">Très bien</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Concevoir (MCD)</td>
+        <td>Entités pertinentes, attributs stables, cardinalités justifiées, associations nommées correctement</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+      </tr>
+      <tr>
+        <td>Transformer (MLD)</td>
+        <td>PK/FK correctes, tables d’association pour N–N, types/contraintes adaptés</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+      </tr>
+      <tr>
+        <td>Mettre en œuvre (DDL/DML)</td>
+        <td>Scripts CREATE propres, INSERT cohérents (cas typiques & bords couverts)</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+      </tr>
+      <tr>
+        <td>Interroger (SELECT)</td>
+        <td>Filtres, tris, jointures (1–N, N–N), agrégats (GROUP BY/HAVING)</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+      </tr>
+      <tr>
+        <td>Analyser (sous‑requêtes, fenêtres)</td>
+        <td>Choix pertinent entre anti‑join / NOT EXISTS / sous‑requêtes corrélées ; fenêtre si SGBD compatible</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+      </tr>
+      <tr>
+        <td>Qualité & intégrité</td>
+        <td>Intégrité référentielle respectée, normalisation (jusqu’à 3FN), commentaires clairs</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+      </tr>
+      <tr>
+        <td>Communication</td>
+        <td>README synthétique (contexte, schéma, mode d’exécution), captures de résultats, justification des choix</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+        <td>□</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Barème indicatif (/20)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Critère</th>
+        <th>Pts</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>MCD — complétude & justifications</td>
+        <td>4</td>
+      </tr>
+      <tr>
+        <td>Passage au relationnel — PK/FK, N–N, contraintes</td>
+        <td>4</td>
+      </tr>
+      <tr>
+        <td>Données d’essai — cohérence & couverture</td>
+        <td>3</td>
+      </tr>
+      <tr>
+        <td>Requêtes — diversité & justesse</td>
+        <td>6</td>
+      </tr>
+      <tr>
+        <td>Documentation — clarté & rigueur</td>
+        <td>3</td>
+      </tr>
+      <tr>
+        <td><strong>Total</strong></td>
+        <td><strong>20</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="small" style="margin-top:10px">Remarques :
+    ____________________________________________________________________________________________</div>
+  <div class="small">
+    ________________________________________________________________________________________________________</div>
+</body>
+
+</html>

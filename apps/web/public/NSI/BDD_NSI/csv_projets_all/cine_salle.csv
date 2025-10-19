@@ -1,0 +1,6 @@
+id_salle;id_cinema;numero;capacite
+S0101;C01;1;220
+S0102;C01;2;180
+S0201;C02;1;150
+S0301;C03;1;200
+S0302;C03;2;120

@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  web:
+    # Option A: build local image
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    # Option B: use a prebuilt image
+    # image: ghcr.io/cyranoaladin/nsi-web:latest
+    env_file:
+      - ../.env.production
+    environment:
+      # override base URL in prod
+      APP_BASE_URL: ${APP_BASE_URL:-https://nsi.labomaths.tn}
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "127.0.0.1:13002:3000"
+networks:
+  default:
+    name: infra_nsi_network
+    external: true

@@ -1,0 +1,3279 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Terminale NSI · Bases de données interactives</title>
+
+  <!-- Tailwind CDN -->
+  <script>
+    tailwind = {
+      theme: {
+        extend: {
+          colors: {
+            nexus: {
+              50: '#eef5ff',
+              100: '#d9e7ff',
+              200: '#b6d0ff',
+              300: '#86b1ff',
+              400: '#5c94ff',
+              500: '#3b78f7',
+              600: '#255de4',
+              700: '#1d46b8',
+              800: '#193d91',
+              900: '#193777',
+              950: '#0b1d47'
+            }
+          },
+          boxShadow: {
+            glow: '0 30px 60px -30px rgba(59, 120, 247, .45)'
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      font-size: 16px;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    code,
+    pre {
+      font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
+    }
+
+    pre {
+      white-space: pre;
+    }
+
+    ::selection {
+      background: rgba(59, 120, 247, 0.25);
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 antialiased">
+  <div id="app" class="min-h-screen pb-24">
+    <div class="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-nexus-900 opacity-95"></div>
+  </div>
+
+  <!-- React 18 -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel (JSX runtime in-page) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- AlaSQL -->
+  <script src="https://cdn.jsdelivr.net/npm/alasql@1.7/dist/alasql.min.js"></script>
+  <!-- JSZip (génération pack élève) -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    /* ---------- utils ---------- */
+    const clsx = (...xs) => xs.filter(Boolean).join(' ');
+    const focusRing = 'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-nexus-300';
+    const downloadText = (filename, text) => {
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const anchor = document.createElement('a');
+      anchor.href = URL.createObjectURL(blob);
+      anchor.download = filename;
+      anchor.click();
+    };
+    const parseCSV = (text) => {
+      const lines = text.replace(/\r\n?/g, '\n').split('\n').filter(Boolean);
+      if (!lines.length) return { rows: [], sep: ',' };
+      const headerLine = lines[0];
+      const comma = (headerLine.match(/,/g) || []).length;
+      const semi = (headerLine.match(/;/g) || []).length;
+      const sep = semi > comma ? ';' : ',';
+      const rows = lines.map(line =>
+        line.split(sep).map(cell => cell.replace(/^"(.*)"$/, '$1').trim())
+      );
+      return { rows, sep };
+    };
+    const sanitizeName = (name) =>
+      String(name || '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/__+/g, '_').replace(/^_+|_+$/g, '');
+    const normalizeHeaders = (headers) => {
+      const seen = new Set();
+      return headers.map((header, index) => {
+        const fallback = `col_${index + 1}`;
+        const base = sanitizeName(header) || fallback;
+        let candidate = base;
+        let suffix = 2;
+        while (seen.has(candidate)) {
+          candidate = `${base}_${suffix}`;
+          suffix += 1;
+        }
+        seen.add(candidate);
+        return candidate;
+      });
+    };
+    const copyToClipboard = async (payload) => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(payload);
+          return true;
+        }
+        const textarea = document.createElement('textarea');
+        textarea.value = payload;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const success = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return success;
+      } catch (error) {
+        console.warn('Clipboard non disponible', error);
+        return false;
+      }
+    };
+
+    /* ---------- structured content data ---------- */
+    const studentModules = [
+      {
+        id: 'module-besoins',
+        title: 'Bloc 1 · Comprendre le besoin',
+        duration: '45 min',
+        focus: 'Cours & vocabulaire',
+        keyPoints: [
+          "Identifier acteurs, objets et actions décrits dans l’énoncé.",
+          "Construire un dictionnaire de données partagé avec les termes métiers.",
+          "Tracer un premier MCD lisible avec les cardinalités."
+        ],
+        resources: [
+          { label: 'Fiche méthode MCD', href: '#outils-mcd' },
+          { label: 'Dataset Bibliothèque', href: 'etudiant/datasets/bibliotheque/biblio_lecteur.csv' },
+          { label: 'Dataset Réseau social', href: 'etudiant/datasets/reseau/reseau_utilisateur.csv' }
+        ]
+      },
+      {
+        id: 'module-mcd-mld',
+        title: 'Bloc 2 · Du MCD au MLD',
+        duration: '50 min',
+        focus: 'Explications & entraînement',
+        keyPoints: [
+          'Appliquer la méthode MERISE en 4 étapes (entités → associations → cardinalités → dictionnaire).',
+          'Vérifier les dépendances fonctionnelles avant de traduire en tables.',
+          'Choisir les clés primaires et étrangères en justifiant chaque décision.'
+        ],
+        resources: [
+          { label: 'Checklist MLD', href: '#methodes' },
+          { label: 'Jeu de données Ciné', href: 'etudiant/datasets/cinema/cine_film.csv' },
+          { label: 'Jeu de données Vélo', href: 'etudiant/datasets/velo/velo_station.csv' }
+        ]
+      },
+      {
+        id: 'module-sql',
+        title: 'Bloc 3 · Écrire le SQL pas à pas',
+        duration: '55 min',
+        focus: 'Méthodes & exercices',
+        keyPoints: [
+          'Structurer une requête SELECT avec WHERE, ORDER BY, LIMIT.',
+          'Composer des jointures 1-N et N-N pour répondre aux questions métiers.',
+          'Utiliser GROUP BY, HAVING et les fonctions d’agrégation pour produire des indicateurs.'
+        ],
+        resources: [
+          { label: 'Playground SQL', href: '#atelier' },
+          { label: 'Mémo SQL', href: '#outils-sql' },
+          { label: 'Scénarios contextualisés', href: '#scenarios' }
+        ]
+      },
+      {
+        id: 'module-analyse',
+        title: 'Bloc 4 · Analyser et optimiser',
+        duration: '45 min',
+        focus: 'Approfondissements',
+        keyPoints: [
+          'Comparer sous-requête, vue et fonction de fenêtre pour un même problème.',
+          'Lire un plan d’exécution et repérer les colonnes filtrantes.',
+          'Imaginer des métriques métiers pour donner du sens aux résultats.'
+        ],
+        resources: [
+          { label: 'Requêtes avancées', href: '#avance' },
+          { label: 'Projet data', href: '#projets' },
+          { label: 'Jeu de données mixte', href: 'etudiant/datasets/classes/eleves.csv' }
+        ]
+      }
+    ];
+
+    const methodCards = [
+      {
+        title: 'Routine MCD express',
+        tips: [
+          'Lire l’énoncé en surlignant les verbes d’action (→ associations).',
+          'Lister les noms communs importants (→ entités) et leurs attributs.',
+          'Déterminer les cardinalités avec des phrases « un ... peut ... ».',
+          'Vérifier qu’aucune information ne dépend de deux entités à la fois.'
+        ],
+        cta: { label: 'Revoir le bloc 1', href: '#cours' }
+      },
+      {
+        title: 'Check-list MLD / DDL',
+        tips: [
+          'Chaque table possède une clé primaire simple ou composée.',
+          'Les clés étrangères portent le même type que la clé référencée.',
+          'Aucune colonne multi-valeur : utiliser une table d’association.',
+          'Prévoir les contraintes NOT NULL / UNIQUE utiles dès le départ.'
+        ],
+        cta: { label: 'Aller au bloc 2', href: '#cours' }
+      },
+      {
+        title: 'Déboguer une requête SQL',
+        tips: [
+          'Tester d’abord SELECT * FROM ... LIMIT 5 pour vérifier les colonnes.',
+          'Construire la requête étape par étape en exécutant à chaque ajout.',
+          'Isoler les jointures : SELECT ... FROM A JOIN B ON ... avant les filtres.',
+          'Comparer le résultat attendu avec une requête de vérification (COUNT, EXISTS).'
+        ],
+        cta: { label: 'Tester dans le playground', href: '#atelier' }
+      }
+    ];
+
+    const quizSets = [
+      {
+        id: 'quiz_mcd_vocabulaire',
+        title: 'Quiz 1 · MCD & vocabulaire',
+        description: '10 questions flash pour vérifier la maîtrise du triptyque entité / association / cardinalité.',
+        questions: [
+          'Différence entre attribut identifiant et clé étrangère ?',
+          'Comment représenter une relation optionnelle dans un MCD ?',
+          'Repérer une dépendance fonctionnelle cachée dans un énoncé.'
+        ],
+        resources: [{ label: 'Mini-cours', href: '#cours' }]
+      },
+      {
+        id: 'quiz_sql_fondamental',
+        title: 'Quiz 2 · SQL fondamental',
+        description: 'S’entraîner sur SELECT, WHERE, ORDER BY et les fonctions d’agrégation.',
+        questions: [
+          'Écrire une requête qui renvoie les trois derniers emprunts.',
+          'Trouver les clients sans commande en utilisant LEFT JOIN.',
+          'Calculer un panier moyen avec GROUP BY et HAVING.'
+        ],
+        resources: [
+          { label: 'Playground', href: '#atelier' },
+          { label: 'Scénario Commerce', href: '#scenarios' }
+        ]
+      },
+      {
+        id: 'quiz_analyse_avancee',
+        title: 'Quiz 3 · Analyse avancée',
+        description: 'Préparer l’oral en justifiant chaque choix de requête et en comparant plusieurs approches.',
+        questions: [
+          'Choisir entre sous-requête corrélée et fenêtre pour détecter les doublons.',
+          'Expliquer le rôle de HAVING dans une requête sur les auteurs prolifiques.',
+          'Optimiser une requête lente en réécrivant la jointure.'
+        ],
+        resources: [
+          { label: 'Requêtes avancées', href: '#avance' },
+          { label: 'Projet data', href: '#projets' }
+        ]
+      }
+    ];
+
+    const PackBuilder = (() => {
+      const solutionFiles = {
+        bibliotheque: 'enseignant/sql/solutions/solutions_biblio.sql',
+        cinema: 'enseignant/sql/solutions/solutions_cine.sql',
+        reseau: 'enseignant/sql/solutions/solutions_reseau.sql',
+        velo: 'enseignant/sql/solutions/solutions_velo.sql',
+        classe: null
+      };
+
+      const baseTeacherDocs = [
+        { href: 'enseignant/docs/grille_competences_A4.html', target: 'assets/docs/grille_competences_A4.html', type: 'text' },
+        { href: 'enseignant/docs/corrections_types.md', target: 'assets/docs/corrections_types.md', type: 'text' },
+        { href: 'enseignant/sql/corrections/corrections_types.sql', target: 'assets/sql/corrections/corrections_types.sql', type: 'text' }
+      ];
+
+      const commonDocs = [
+        { href: 'README.md', target: 'assets/docs/README.md', type: 'text' },
+        { href: 'PLAN_DE_TESTS.md', target: 'assets/docs/PLAN_DE_TESTS.md', type: 'text' },
+        { href: 'mocodo_bank.txt', target: 'assets/docs/mocodo_bank.txt', type: 'text' }
+      ];
+
+      const manifestFor = (dataset, datasetSource) => {
+        const sourceLabel = datasetSource === 'personnalise'
+          ? 'CSV personnalisés (fournis par l’enseignant)'
+          : 'CSV officiels inclus dans ce pack';
+
+        return [
+          '# Pack élève — Terminale NSI',
+          `Thème sélectionné : ${dataset?.label || '—'}`,
+          `Source des CSV : ${sourceLabel}`,
+          '',
+          '## Contenu',
+          '- index.html (interface standalone)',
+          '- assets/ (datasets, scripts SQL, documents, quiz)',
+          '',
+          '## Démarrage rapide',
+          '1. Ouvrir index.html dans un navigateur moderne (Chrome/Edge/Firefox).',
+          '2. Importer les CSV via la section « Playground SQL ».',
+          '3. Tester les requêtes proposées (indices puis solutions).',
+          '4. Explorer les projets et la grille de compétences pour préparer l’évaluation.',
+          '',
+          '## Partage',
+          'Utilisez la page enseignant pour générer un lien élève pré-configuré (solutions masquées).'
+        ].join('\n');
+      };
+
+      const resourcesForDataset = (dataset) => {
+        if (!dataset) return [];
+        const output = [];
+        dataset.csv?.forEach((href) => {
+          output.push({ href, target: `assets/${href}` });
+        });
+        if (dataset.ddl) {
+          output.push({ href: dataset.ddl, target: `assets/${dataset.ddl}` });
+        }
+        dataset.imports?.forEach((href) => {
+          output.push({ href, target: `assets/${href}` });
+        });
+        if (dataset.e2e) {
+          output.push({ href: dataset.e2e, target: `assets/${dataset.e2e}` });
+        }
+        const solutionFile = solutionFiles[dataset.key];
+        if (solutionFile) {
+          output.push({ href: solutionFile, target: `assets/${solutionFile}` });
+        }
+        return output;
+      };
+
+      const addQuizAssets = (zip) => {
+        quizSets.forEach((quiz) => {
+          const items = (quiz.questions || []).map((question, index) => ({
+            id: `${quiz.id}_q${index + 1}`,
+            q: question,
+            choices: [],
+            answer: [],
+            explain: '',
+            tags: [],
+            level: 'libre'
+          }));
+          const payload = {
+            id: quiz.id,
+            title: quiz.title,
+            description: quiz.description,
+            items,
+            resources: quiz.resources || []
+          };
+          zip.file(`assets/docs/quiz/${quiz.id}.json`, JSON.stringify(payload, null, 2));
+        });
+      };
+
+      const fetchAndAttach = async (zip, resource) => {
+        if (!resource || !resource.href || !resource.target) return;
+        const response = await fetch(resource.href);
+        if (!response.ok) {
+          throw new Error(`Échec récupération ${resource.href} (${response.status})`);
+        }
+        if (resource.type === 'text') {
+          const text = await response.text();
+          zip.file(resource.target, text);
+          return;
+        }
+        const blob = await response.blob();
+        zip.file(resource.target, blob);
+      };
+
+      const generate = async ({ datasetKey, datasetSource }) => {
+        if (typeof JSZip === 'undefined') {
+          throw new Error('JSZip est indisponible. Rechargez la page et réessayez.');
+        }
+        const dataset = datasetCatalog.find((entry) => entry.key === datasetKey) || datasetCatalog[0];
+        const zip = new JSZip();
+        zip.file('manifest.md', manifestFor(dataset, datasetSource));
+
+        const rawResources = [
+          { href: 'index_standalone.html', target: 'index.html', type: 'text' },
+          ...baseTeacherDocs,
+          ...commonDocs,
+          ...resourcesForDataset(dataset)
+        ].filter(Boolean);
+
+        const uniqueResources = Array.from(new Map(rawResources.map((res) => [res.target, res])).values());
+
+        for (const resource of uniqueResources) {
+          await fetchAndAttach(zip, resource);
+        }
+
+        addQuizAssets(zip);
+
+        return zip.generateAsync({ type: 'blob' });
+      };
+
+      return { generate };
+    })();
+
+    const projectTracks = [
+      {
+        title: 'Projet · Bibliothèque intelligente',
+        goal: 'Créer un tableau de bord pour suivre l’activité de la médiathèque.',
+        milestones: [
+          'Valider le MCD fourni puis proposer deux améliorations.',
+          'Écrire les scripts DDL/INSERT et charger les données dans le playground.',
+          'Proposer 5 indicateurs clés (lecteurs actifs, retards, auteurs stars...).'
+        ],
+        deliverables: [
+          'MCD annoté + justification des modifications.',
+          'Script SQL commenté (DDL + 10 requêtes).',
+          'Présentation synthèse (3 diapositives ou 1 page).'
+        ],
+        datasets: [
+          { label: 'Lecteurs', href: 'etudiant/datasets/bibliotheque/biblio_lecteur.csv' },
+          { label: 'Livres', href: 'etudiant/datasets/bibliotheque/biblio_livre.csv' },
+          { label: 'Emprunts', href: 'etudiant/datasets/bibliotheque/biblio_emprunt.csv' }
+        ]
+      },
+      {
+        title: 'Projet · Ciné & fréquentation',
+        goal: 'Analyser le remplissage des salles et la fidélité des spectateurs.',
+        milestones: [
+          'Construire le MLD et vérifier les cardinalités salle ↔ séance.',
+          'Rédiger les requêtes pour le taux de remplissage et les films populaires.',
+          'Communiquer les résultats sous forme de rapport ou dataviz.'
+        ],
+        deliverables: [
+          'Jeu de requêtes SQL commentées.',
+          'Export CSV ou capture du résultat pour chaque indicateur.',
+          'Analyse écrite (½ page) des tendances observées.'
+        ],
+        datasets: [
+          { label: 'Salles', href: 'etudiant/datasets/cinema/cine_salle.csv' },
+          { label: 'Séances', href: 'etudiant/datasets/cinema/cine_seance.csv' },
+          { label: 'Réservations', href: 'etudiant/datasets/cinema/cine_reservation.csv' }
+        ]
+      },
+      {
+        title: 'Projet · Mobilité douce',
+        goal: 'Explorer les trajets vélo pour proposer des recommandations de service.',
+        milestones: [
+          'Modéliser les données usagers/velos/trajets et identifier les indicateurs utiles.',
+          'Mettre en place des requêtes d’analyse temporelle (heures de pointe, durée moyenne).',
+          'Imaginer une fonctionnalité bonus (classement des stations, alertes de saturation).'
+        ],
+        deliverables: [
+          'Schéma relationnel + documentation des hypothèses.',
+          'Script SQL reproductible (création + jeux de requêtes).',
+          'Restitution orale ou vidéo courte (2 min).'
+        ],
+        datasets: [
+          { label: 'Stations', href: 'etudiant/datasets/velo/velo_station.csv' },
+          { label: 'Trajets', href: 'etudiant/datasets/velo/velo_trajet.csv' },
+          { label: 'Usagers', href: 'etudiant/datasets/velo/velo_usager.csv' }
+        ]
+      }
+    ];
+
+    const mocodoTemplates = [
+      {
+        theme: 'Commerce connecté',
+        filename: 'commerce.mcd.txt',
+        instructions: 'Copie ce patron dans Mocodo, génère le diagramme puis personnalise les attributs et cardinalités si besoin.',
+        template: `CLIENT: id_client, nom, email
+COMMANDE: id_commande, date_commande, total
+PRODUIT: id_produit, libelle, prix, categorie
+LIGNE: quantite, prix_unitaire
+
+CLIENT, passé, COMMANDE: 1,N
+COMMANDE, contient, LIGNE: 1,N
+PRODUIT, est_compris_dans, LIGNE: 1,N`
+      },
+      {
+        theme: 'Bibliothèque municipale',
+        filename: 'bibliotheque.mcd.txt',
+        instructions: 'Utilise ce modèle pour vérifier les cardinalités lecteur ↔ emprunt ↔ livre et la table d’association ÉCRIRE.',
+        template: `LECTEUR: id_lecteur, nom, email
+EMPRUNT: id_emprunt, date_debut, date_retour
+LIVRE: id_livre, titre, annee
+AUTEUR: id_auteur, nom
+
+LECTEUR, effectue, EMPRUNT: 1,N
+EMPRUNT, concerne, LIVRE: N,1
+AUTEUR, ecrit, LIVRE: N,N`
+      },
+      {
+        theme: 'Réseau social scolaire',
+        filename: 'reseau.mcd.txt',
+        instructions: 'Vérifie que chaque relation est identifiée par son couple utilisateur_source/utilisateur_cible et pense aux dates.',
+        template: `UTILISATEUR: id_user, pseudo, email, date_inscription
+PUBLICATION: id_pub, contenu, date_pub
+RELATION: type, date_relation
+AIME: date_like
+
+UTILISATEUR, publie, PUBLICATION: 1,N
+UTILISATEUR, suit, RELATION: 1,N
+UTILISATEUR, est_cible_de, RELATION: 1,N
+UTILISATEUR, aime, AIME: 1,N
+PUBLICATION, est_aimee_par, AIME: 1,N`
+      }
+    ];
+
+    const studentTools = [
+      {
+        title: 'Mémo SQL express',
+        id: 'outils-sql',
+        items: [
+          'SELECT colonnes FROM table WHERE condition ORDER BY colonne LIMIT n;',
+          'Jointure interne : SELECT ... FROM A JOIN B ON A.fk = B.pk;',
+          'Jointure externe : LEFT JOIN pour conserver les lignes de A même sans correspondance.',
+          'Agrégat : GROUP BY colonne HAVING condition sur la fonction (SUM, AVG...).'
+        ],
+        action: { label: 'Télécharger mémo PDF (à venir)', href: '#' }
+      },
+      {
+        title: 'Checklist MCD → MLD',
+        id: 'outils-mcd',
+        items: [
+          'Chaque entité possède une clé primaire stable (id ou couple minimal).',
+          'Les relations N-N sont transformées en tables d’association.',
+          'Les attributs multivalués deviennent des tables dépendantes.',
+          'Toutes les colonnes sont nommées en snake_case sans espace.'
+        ],
+        action: { label: 'Télécharger checklist (modèle à compléter)', href: '#' }
+      },
+      {
+        title: 'Aide Mocodo',
+        id: 'outils-mocodo',
+        items: [
+          'Entrer le patron dans l’éditeur en ligne https://mocodo.net/.',
+          'Utiliser le bouton Export pour récupérer le schéma en SVG/PNG.',
+          'Colorer les entités principales pour les présentations.',
+          'Annoter chaque relation avec une phrase “Un ... peut ...”.'
+        ],
+        action: { label: 'Accéder à Mocodo', href: 'https://mocodo.net' }
+      }
+    ];
+
+    const autoEvalChecklist = [
+      {
+        title: 'Avant de lancer le SQL',
+        items: [
+          'Mon MCD couvre bien tous les cas de l’énoncé.',
+          'Chaque clé primaire / étrangère est identifiée et justifiée.',
+          'Les types de données sont cohérents (dates, montants, textes).'
+        ]
+      },
+      {
+        title: 'Pendant les requêtes',
+        items: [
+          'Je teste ma requête étape par étape (SELECT → WHERE → JOIN → GROUP BY).',
+          'Je vérifie toujours le résultat avec un cas réel ou limite.',
+          'Je commente les requêtes importantes pour me souvenir de l’objectif.'
+        ]
+      },
+      {
+        title: 'Avant le rendu',
+        items: [
+          'J’ai produit au moins 10 requêtes variées (jointures, agrégats, sous-requêtes).',
+          'Les résultats sont capturés (copie d’écran ou export CSV).',
+          'Mon dossier contient un README clair (datasets utilisés, étapes suivies).'
+        ]
+      }
+    ];
+
+    const resourceDirectory = [
+      {
+        category: 'Jeux de données (CSV)',
+        items: [
+          { label: 'Bibliothèque — Lecteurs', href: 'etudiant/datasets/bibliotheque/biblio_lecteur.csv' },
+          { label: 'Bibliothèque — Emprunts', href: 'etudiant/datasets/bibliotheque/biblio_emprunt.csv' },
+          { label: 'Ciné — Réservations', href: 'etudiant/datasets/cinema/cine_reservation.csv' },
+          { label: 'Réseau — Publications', href: 'etudiant/datasets/reseau/reseau_publication.csv' },
+          { label: 'Vélo — Trajets', href: 'etudiant/datasets/velo/velo_trajet.csv' },
+          { label: 'Classe — Élèves', href: 'etudiant/datasets/classes/eleves.csv' }
+        ]
+      },
+      {
+        category: 'Scripts SQL (DDL / import)',
+        items: [
+          { label: 'DDL Bibliothèque', href: 'enseignant/sql/ddl/ddl_biblio.sql' },
+          { label: 'DDL Ciné', href: 'enseignant/sql/ddl/ddl_cine.sql' },
+          { label: 'Import Bibliothèque (SQLite)', href: 'enseignant/sql/import/import_biblio_sqlite.sql' },
+          { label: 'Import Réseau (PostgreSQL)', href: 'enseignant/sql/import/import_reseau_psql.sql' },
+          { label: 'E2E Vélo (SQLite)', href: 'enseignant/sql/e2e/e2e_velo_sqlite.sql' }
+        ]
+      },
+      {
+        category: 'Documents & supports',
+        items: [
+          { label: 'Grille compétences A4', href: 'enseignant/docs/grille_competences_A4.html' },
+          { label: 'Corrections types (MD)', href: 'enseignant/docs/corrections_types.md' },
+          { label: 'Solutions Bibliothèque', href: 'enseignant/sql/solutions/solutions_biblio.sql' },
+          { label: 'Pack CSV complet', href: 'csv_projets_all/' },
+          { label: 'Scripts import (zip)', href: 'import_scripts/' }
+        ]
+      }
+    ];
+
+    const teacherSessions = [
+      {
+        phase: 'Séance 1 — Découverte guidée',
+        duration: '55 min',
+        objectives: [
+          'Activer les pré-requis sur dictionnaire de données et cardinalités.',
+          'Co-construire un MCD à partir du scénario Bibliothèque.',
+          'Installer une routine de validation (verbalisation, justification).'
+        ],
+        teacherMoves: [
+          'Projeter l’énoncé et faire annoter individuellement (5 min).',
+          'Mettre en commun puis compléter le MCD sur tableau ou Mocodo (20 min).',
+          'Construire le MLD ensemble en soulignant les clés (20 min).',
+          'Lancer un quiz rapide (Quiz 1) pour vérifier les acquis (10 min).'
+        ]
+      },
+      {
+        phase: 'Séance 2 — Atelier SQL',
+        duration: '55 min',
+        objectives: [
+          'Écrire des requêtes répondant aux questions métiers.',
+          'Différencier jointure interne / externe et HAVING.',
+          'Encourager la coopération (binômes) et l’auto-correction.'
+        ],
+        teacherMoves: [
+          'Installer les binômes sur le playground (5 min).',
+          'Distribuer les cartes d’exercices par scénario (25 min).',
+          'Passer voir les élèves en difficulté avec la check-list SQL (15 min).',
+          'Clôture collective : mutualisation de 2 requêtes (10 min).'
+        ]
+      },
+      {
+        phase: 'Séance 3 — Projet & évaluation',
+        duration: '55 min',
+        objectives: [
+          'Structurer un mini-projet data à rendre en fin de séquence.',
+          'Évaluer les compétences BD1, BD2, BD3 avec la grille A4.',
+          'Préparer la trace écrite ou l’oral (Grand oral, NSI).'
+        ],
+        teacherMoves: [
+          'Choisir un projet dans la section dédiée (#projets).',
+          'Présenter les attentes et le barème simplifié (grille de compétences).',
+          'Planifier les temps de suivi (point mi-parcours, rendu final).',
+          'Prévoir un prolongement (Python/sqlite3, dataviz) pour les rapides.'
+        ]
+      }
+    ];
+
+    const datasetCatalog = [
+      {
+        key: 'bibliotheque',
+        label: 'Bibliothèque',
+        csv: [
+          'etudiant/datasets/bibliotheque/biblio_lecteur.csv',
+          'etudiant/datasets/bibliotheque/biblio_livre.csv',
+          'etudiant/datasets/bibliotheque/biblio_emprunt.csv',
+          'etudiant/datasets/bibliotheque/biblio_auteur.csv',
+          'etudiant/datasets/bibliotheque/biblio_ecrire.csv'
+        ],
+        ddl: 'enseignant/sql/ddl/ddl_biblio.sql',
+        imports: [
+          'enseignant/sql/import/import_biblio_sqlite.sql',
+          'enseignant/sql/import/import_biblio_psql.sql'
+        ],
+        e2e: 'enseignant/sql/e2e/e2e_biblio_sqlite.sql'
+      },
+      {
+        key: 'cinema',
+        label: 'Ciné-Tunisie',
+        csv: [
+          'etudiant/datasets/cinema/cine_cinema.csv',
+          'etudiant/datasets/cinema/cine_salle.csv',
+          'etudiant/datasets/cinema/cine_film.csv',
+          'etudiant/datasets/cinema/cine_seance.csv',
+          'etudiant/datasets/cinema/cine_client.csv',
+          'etudiant/datasets/cinema/cine_reservation.csv'
+        ],
+        ddl: 'enseignant/sql/ddl/ddl_cine.sql',
+        imports: [
+          'enseignant/sql/import/import_cine_sqlite.sql',
+          'enseignant/sql/import/import_cine_psql.sql'
+        ],
+        e2e: 'enseignant/sql/e2e/e2e_cine_psql.sql'
+      },
+      {
+        key: 'reseau',
+        label: 'Réseau social',
+        csv: [
+          'etudiant/datasets/reseau/reseau_utilisateur.csv',
+          'etudiant/datasets/reseau/reseau_publication.csv',
+          'etudiant/datasets/reseau/reseau_relation.csv',
+          'etudiant/datasets/reseau/reseau_aime.csv',
+          'etudiant/datasets/reseau/reseau_commentaire.csv'
+        ],
+        ddl: 'enseignant/sql/ddl/ddl_reseau.sql',
+        imports: [
+          'enseignant/sql/import/import_reseau_sqlite.sql',
+          'enseignant/sql/import/import_reseau_psql.sql'
+        ],
+        e2e: 'enseignant/sql/e2e/e2e_reseau_sqlite.sql'
+      },
+      {
+        key: 'velo',
+        label: 'Parc vélo',
+        csv: [
+          'etudiant/datasets/velo/velo_station.csv',
+          'etudiant/datasets/velo/velo_velo.csv',
+          'etudiant/datasets/velo/velo_usager.csv',
+          'etudiant/datasets/velo/velo_trajet.csv'
+        ],
+        ddl: 'enseignant/sql/ddl/ddl_velo.sql',
+        imports: [
+          'enseignant/sql/import/import_velo_sqlite.sql',
+          'enseignant/sql/import/import_velo_psql.sql'
+        ],
+        e2e: 'enseignant/sql/e2e/e2e_velo_psql.sql'
+      },
+      {
+        key: 'classe',
+        label: 'Jeu de classe',
+        csv: [
+          'etudiant/datasets/classes/eleves.csv',
+          'etudiant/datasets/classes/profs.csv',
+          'etudiant/datasets/classes/options.csv',
+          'etudiant/datasets/classes/inscriptions_options.csv'
+        ],
+        ddl: 'enseignant/sql/ddl/ddl_classe.sql',
+        imports: [
+          'enseignant/sql/import/import_classe_sqlite.sql',
+          'enseignant/sql/import/import_classe_psql.sql'
+        ],
+        e2e: null
+      }
+    ];
+
+    const SharedState = (() => {
+      const storageKeys = {
+        role: 'nsi_bdd_role',
+        dataset: 'nsi_bdd_dataset',
+        solutions: 'nsi_bdd_show_solutions'
+      };
+
+      const defaultDataset = () => datasetCatalog[0]?.key || 'bibliotheque';
+
+      const isValidRole = (value) => value === 'eleve' || value === 'enseignant';
+
+      const normalizeDataset = (value) => {
+        if (!value) return defaultDataset();
+        return datasetCatalog.some((entry) => entry.key === value) ? value : defaultDataset();
+      };
+
+      const toSolutionToken = (flag) => (flag ? 'on' : 'off');
+
+      const fromSolutionToken = (token, fallback) => {
+        if (token === 'on') return true;
+        if (token === 'off') return false;
+        return fallback;
+      };
+
+      const persist = (state) => {
+        if (typeof window === 'undefined') return;
+        try {
+          localStorage.setItem(storageKeys.role, state.role);
+          localStorage.setItem(storageKeys.dataset, state.dataset);
+          localStorage.setItem(storageKeys.solutions, toSolutionToken(state.showSolutions));
+        } catch (error) {
+          console.warn('Impossible d’enregistrer l’état partagé', error);
+        }
+      };
+
+      const syncUrl = (state) => {
+        if (typeof window === 'undefined' || typeof window.history === 'undefined') return;
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('role', state.role);
+          url.searchParams.set('dataset', state.dataset);
+          url.searchParams.set('solutions', toSolutionToken(state.showSolutions));
+          window.history.replaceState({}, '', url.toString());
+        } catch (error) {
+          console.warn('Impossible de synchroniser l’URL', error);
+        }
+      };
+
+      const initialize = () => {
+        const fallbacks = { role: 'eleve', dataset: defaultDataset(), showSolutions: false };
+        if (typeof window === 'undefined') {
+          return fallbacks;
+        }
+        try {
+          const url = new URL(window.location.href);
+          const getFromSources = (paramName, storageKey, fallback) => {
+            const urlValue = url.searchParams.get(paramName);
+            if (urlValue !== null && urlValue !== undefined && urlValue !== '') {
+              return urlValue;
+            }
+            const stored = localStorage.getItem(storageKey);
+            if (stored !== null && stored !== undefined && stored !== '') {
+              return stored;
+            }
+            return fallback;
+          };
+
+          const rawRole = getFromSources('role', storageKeys.role, fallbacks.role);
+          const role = isValidRole(rawRole) ? rawRole : fallbacks.role;
+          const rawDataset = getFromSources('dataset', storageKeys.dataset, fallbacks.dataset);
+          const dataset = normalizeDataset(rawDataset);
+          const rawSolutions = getFromSources('solutions', storageKeys.solutions, role === 'enseignant' ? 'on' : 'off');
+          const showSolutions = fromSolutionToken(rawSolutions, role === 'enseignant');
+
+          const resolved = { role, dataset, showSolutions };
+          persist(resolved);
+          syncUrl(resolved);
+          return resolved;
+        } catch (error) {
+          console.warn('Initialisation de l’état partagé impossible', error);
+          return fallbacks;
+        }
+      };
+
+      const toStudentUrl = (state) => {
+        if (typeof window === 'undefined') return '';
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('role', 'eleve');
+          url.searchParams.set('dataset', state.dataset);
+          url.searchParams.set('solutions', 'off');
+          return url.toString();
+        } catch (error) {
+          console.warn('Impossible de composer l’URL élève', error);
+          return '';
+        }
+      };
+
+      return {
+        storageKeys,
+        initialize,
+        persist,
+        syncUrl,
+        toStudentUrl,
+        normalizeDataset,
+        toSolutionToken,
+        fromSolutionToken
+      };
+    })();
+
+    const healthCheckLibrary = {
+      bibliotheque: [
+        'SELECT COUNT(*) AS nb_lecteurs FROM Lecteur;',
+        'SELECT COUNT(*) AS emprunts_sans_retour FROM Emprunt WHERE date_retour IS NULL;',
+        'SELECT COUNT(*) AS livres_sans_auteur FROM Livre l LEFT JOIN Ecrire e ON e.id_livre = l.id_livre WHERE e.id_auteur IS NULL;'
+      ],
+      cinema: [
+        'SELECT COUNT(*) AS nb_reservations FROM Reservation;',
+        'SELECT salle_id, COUNT(*) AS nb_seances FROM Seance GROUP BY salle_id;',
+        'SELECT COUNT(*) AS films_sans_seance FROM Film f LEFT JOIN Seance s ON s.id_film = f.id_film WHERE s.id_film IS NULL;'
+      ],
+      reseau: [
+        'SELECT COUNT(*) AS nb_utilisateurs FROM Utilisateur;',
+        'SELECT COUNT(*) AS likes_sans_pub FROM Aime a LEFT JOIN Publication p ON p.id_pub = a.id_pub WHERE p.id_pub IS NULL;',
+        'SELECT id_user_src, COUNT(*) AS nb_relations FROM Relation GROUP BY id_user_src;'
+      ],
+      velo: [
+        'SELECT COUNT(*) AS nb_trajets FROM Trajet;',
+        'SELECT station_depart, COUNT(*) AS departs FROM Trajet GROUP BY station_depart;',
+        'SELECT COUNT(*) AS velos_sans_station FROM Velo v LEFT JOIN Station s ON s.id_station = v.id_station WHERE s.id_station IS NULL;'
+      ]
+    };
+
+    const e2eSnippets = {
+      bibliotheque: `-- Nettoyage
+DROP TABLE IF EXISTS biblio_lecteur;
+DROP TABLE IF EXISTS biblio_livre;
+DROP TABLE IF EXISTS biblio_emprunt;
+DROP TABLE IF EXISTS biblio_auteur;
+DROP TABLE IF EXISTS biblio_ecrire;
+
+-- Après chargement via « Charger le dataset » exécutez ces contrôles
+SELECT COUNT(*) AS nb_lecteurs FROM biblio_lecteur;
+SELECT COUNT(*) AS nb_livres FROM biblio_livre;
+SELECT COUNT(*) AS emprunts_sans_retour FROM biblio_emprunt WHERE date_retour IS NULL;
+SELECT COUNT(*) AS livres_sans_auteur
+FROM biblio_livre l
+LEFT JOIN biblio_ecrire e ON e.id_livre = l.id_livre
+WHERE e.id_auteur IS NULL;`,
+      cinema: `-- Nettoyage
+DROP TABLE IF EXISTS cine_cinema;
+DROP TABLE IF EXISTS cine_salle;
+DROP TABLE IF EXISTS cine_film;
+DROP TABLE IF EXISTS cine_seance;
+DROP TABLE IF EXISTS cine_client;
+DROP TABLE IF EXISTS cine_reservation;
+
+-- Contrôles post-import
+SELECT COUNT(*) AS nb_cinemas FROM cine_cinema;
+SELECT COUNT(*) AS nb_salles FROM cine_salle;
+SELECT COUNT(*) AS nb_seances FROM cine_seance;
+SELECT COUNT(*) AS reservations_sans_seance
+FROM cine_reservation r
+LEFT JOIN cine_seance s ON s.id_seance = r.id_seance
+WHERE s.id_seance IS NULL;`,
+      reseau: `-- Nettoyage
+DROP TABLE IF EXISTS reseau_utilisateur;
+DROP TABLE IF EXISTS reseau_publication;
+DROP TABLE IF EXISTS reseau_relation;
+DROP TABLE IF EXISTS reseau_aime;
+DROP TABLE IF EXISTS reseau_commentaire;
+
+-- Contrôles post-import
+SELECT COUNT(*) AS nb_utilisateurs FROM reseau_utilisateur;
+SELECT COUNT(*) AS nb_publications FROM reseau_publication;
+SELECT COUNT(*) AS relations_orphelines
+FROM reseau_relation rel
+LEFT JOIN reseau_utilisateur u ON u.id_user = rel.id_user_src
+WHERE u.id_user IS NULL;`,
+      velo: `-- Nettoyage
+DROP TABLE IF EXISTS velo_station;
+DROP TABLE IF EXISTS velo_velo;
+DROP TABLE IF EXISTS velo_usager;
+DROP TABLE IF EXISTS velo_trajet;
+
+-- Contrôles post-import
+SELECT COUNT(*) AS nb_stations FROM velo_station;
+SELECT COUNT(*) AS nb_velos FROM velo_velo;
+SELECT COUNT(*) AS nb_trajets FROM velo_trajet;
+SELECT station_depart, COUNT(*) AS depart_count
+FROM velo_trajet
+GROUP BY station_depart
+ORDER BY depart_count DESC
+LIMIT 5;`,
+      classe: `-- Nettoyage
+DROP TABLE IF EXISTS eleves;
+DROP TABLE IF EXISTS profs;
+DROP TABLE IF EXISTS options;
+DROP TABLE IF EXISTS inscriptions_options;
+
+-- Contrôles post-import
+SELECT COUNT(*) AS nb_eleves FROM eleves;
+SELECT COUNT(*) AS nb_profs FROM profs;
+SELECT COUNT(*) AS nb_options FROM options;
+SELECT COUNT(*) AS nb_inscriptions FROM inscriptions_options;
+SELECT option_id, COUNT(*) AS nb_affectations
+FROM inscriptions_options
+GROUP BY option_id
+ORDER BY nb_affectations DESC
+LIMIT 5;`
+    };
+
+    const teacherResourceGroups = [
+      {
+        title: 'SQL — DDL & imports prêts à l’emploi',
+        description: 'Scripts pour initialiser rapidement les bases en PostgreSQL ou SQLite.',
+        items: [
+          { label: 'Biblio · DDL', href: 'enseignant/sql/ddl/ddl_biblio.sql' },
+          { label: 'Ciné · DDL', href: 'enseignant/sql/ddl/ddl_cine.sql' },
+          { label: 'Réseau · DDL', href: 'enseignant/sql/ddl/ddl_reseau.sql' },
+          { label: 'Vélo · DDL', href: 'enseignant/sql/ddl/ddl_velo.sql' },
+          { label: 'Import Biblio (SQLite)', href: 'enseignant/sql/import/import_biblio_sqlite.sql' },
+          { label: 'Import Ciné (PostgreSQL)', href: 'enseignant/sql/import/import_cine_psql.sql' }
+        ]
+      },
+      {
+        title: 'Guides & corrections',
+        description: 'Supports réservés à l’enseignant pour sécuriser la progression.',
+        items: [
+          { label: 'Corrections types', href: 'enseignant/sql/corrections/corrections_types.sql' },
+          { label: 'Solutions Biblio', href: 'enseignant/sql/solutions/solutions_biblio.sql' },
+          { label: 'Solutions Ciné', href: 'enseignant/sql/solutions/solutions_cine.sql' },
+          { label: 'Solutions Réseau', href: 'enseignant/sql/solutions/solutions_reseau.sql' },
+          { label: 'Solutions Vélo', href: 'enseignant/sql/solutions/solutions_velo.sql' },
+          { label: 'Grille compétences (A4)', href: 'enseignant/docs/grille_competences_A4.html' }
+        ]
+      },
+      {
+        title: 'Tests & automatisation',
+        description: 'Scripts de validation pour vérifier les jeux de données avant séance.',
+        items: [
+          { label: 'E2E Biblio (SQLite)', href: 'enseignant/sql/e2e/e2e_biblio_sqlite.sql' },
+          { label: 'E2E Ciné (PostgreSQL)', href: 'enseignant/sql/e2e/e2e_cine_psql.sql' },
+          { label: 'E2E Réseau (SQLite)', href: 'enseignant/sql/e2e/e2e_reseau_sqlite.sql' },
+          { label: 'E2E Vélo (PostgreSQL)', href: 'enseignant/sql/e2e/e2e_velo_psql.sql' }
+        ]
+      }
+    ];
+
+    const evaluationTools = [
+      {
+        title: 'Grille d’évaluation par compétence',
+        description: 'Document imprimable A4 pour cocher les niveaux BD1, BD2, BD3.',
+        href: 'enseignant/docs/grille_competences_A4.html'
+      },
+      {
+        title: 'Banque d’indicateurs de réussite',
+        description: 'Barèmes, critères détaillés et aides à la remédiation.',
+        href: 'enseignant/docs/corrections_types.md'
+      },
+      {
+        title: 'Scripts d’auto-correction',
+        description: 'Requêtes de référence pour comparer les productions élèves.',
+        href: 'enseignant/sql/solutions/solutions_biblio.sql'
+      }
+    ];
+
+    const defaultSolutionOverrides = {
+      scenarios: {
+        commerce: null,
+        bibliotheque: null,
+        reseau: null
+      },
+      projects: null
+    };
+
+    /* ---------- reusable UI ---------- */
+    const Pill = ({ children, tone = 'neutral' }) => {
+      const palette = {
+        neutral: 'bg-slate-800/70 text-slate-200 border border-white/10',
+        accent: 'bg-nexus-500/15 text-nexus-100 border border-nexus-500/40',
+        success: 'bg-emerald-500/15 text-emerald-100 border border-emerald-500/40',
+        warning: 'bg-amber-500/15 text-amber-100 border border-amber-500/40'
+      };
+      return (
+        <span className={clsx(
+          'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide',
+          palette[tone] || palette.neutral
+        )}>
+          {children}
+        </span>
+      );
+    };
+
+    const SectionShell = ({ id, kicker, title, children, note }) => (
+      <section id={id} className="relative scroll-mt-20">
+        <div className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-white/5 p-8 shadow-glow backdrop-blur-sm">
+          <div className="flex flex-col gap-3">
+            <Pill tone="accent">{kicker}</Pill>
+            <h2 className="text-3xl font-semibold text-white sm:text-4xl">{title}</h2>
+            {note && <p className="max-w-2xl text-sm text-slate-300">{note}</p>}
+          </div>
+          {children}
+        </div>
+      </section>
+    );
+
+    const Timeline = ({ steps }) => (
+      <ol className="relative space-y-6 pl-4">
+        <div className="absolute left-0 top-2 bottom-2 w-px bg-white/10"></div>
+        {steps.map((step, idx) => (
+          <li key={idx} className="relative pl-6">
+            <span className="absolute left-0 top-0 flex h-3 w-3 -translate-x-[7px] rounded-full bg-nexus-400 ring-4 ring-slate-900"></span>
+            <h3 className="text-lg font-semibold text-white">{step.title}</h3>
+            <p className="mt-1 text-sm text-slate-300">{step.description}</p>
+            {step.actions && (
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-300">
+                {step.actions.map((a, i) => <li key={i}>{a}</li>)}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ol>
+    );
+
+    /* ---------- student content blocks ---------- */
+    const StudentHero = ({ datasetLabel }) => (
+      <header className="relative z-10 mx-auto max-w-6xl px-6 pt-16 pb-12 sm:px-8 lg:px-10">
+        <div className="flex flex-col gap-10 rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-nexus-800/30 p-10 shadow-2xl shadow-nexus-900/40">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl space-y-5">
+              <Pill tone="accent">Espace élève · Terminale NSI</Pill>
+              <h1 className="text-4xl font-bold text-white sm:text-5xl">
+                Tout pour réussir le thème Bases de données
+              </h1>
+              <p className="text-lg text-slate-200">
+                Cours, méthodes, ressources, exercices, quiz et projets réunis au même endroit. Progresse étape par étape du MCD aux requêtes avancées en t’appuyant sur des jeux de données réalistes.
+              </p>
+              <div className="flex flex-wrap gap-3 text-sm text-slate-300">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1">
+                  <strong>Organisation :</strong> 4 blocs progressifs (+ ateliers)
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1">
+                  <strong>Compétences :</strong> BD1 · BD2 · BD3
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-nexus-400/60 bg-nexus-500/20 px-3 py-1">
+                  <strong>Aide :</strong> guides MCD/MLD · Mocodo · mémo SQL
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1 text-emerald-100">
+                  <strong>Dataset actif :</strong> {datasetLabel}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200 shadow-lg lg:w-80">
+              <h2 className="text-lg font-semibold text-white">Ta feuille de route</h2>
+              <ul className="space-y-3">
+                <li className="flex gap-3">
+                  <span className="mt-1 h-2 w-2 rounded-full bg-nexus-400"></span>
+                  Lire le cours bloc par bloc et compléter le carnet de conception.
+                </li>
+                <li className="flex gap-3">
+                  <span className="mt-1 h-2 w-2 rounded-full bg-nexus-400"></span>
+                  Tester les méthodes dans le playground et noter les résultats importants.
+                </li>
+                <li className="flex gap-3">
+                  <span className="mt-1 h-2 w-2 rounded-full bg-nexus-400"></span>
+                  Réaliser un mini-projet en binôme pour valoriser tes compétences.
+                </li>
+              </ul>
+              <div className="rounded-xl border border-nexus-400/40 bg-nexus-500/15 p-3 text-xs text-nexus-100">
+                Besoin d’aide ? RDV dans la section <a href="#outils" className="underline decoration-dotted">Outils</a> pour le mémo SQL, l’aide Mocodo et les schémas MCD/MLD.
+              </div>
+            </div>
+          </div>
+          <nav className="flex flex-wrap gap-2 text-xs uppercase tracking-wide text-slate-200">
+            {[
+              { href: '#cours', label: 'Cours' },
+              { href: '#methodes', label: 'Méthodes' },
+              { href: '#atelier', label: 'Atelier SQL' },
+              { href: '#scenarios', label: 'Exercices' },
+              { href: '#quiz', label: 'Quiz' },
+              { href: '#projets', label: 'Projets' },
+              { href: '#avance', label: 'Approfondir' },
+              { href: '#outils', label: 'Outils' }
+            ].map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className={clsx('inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 transition hover:bg-white/20', focusRing)}
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </header>
+    );
+
+    const StudentCourseMap = () => (
+      <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="cours"
+          kicker="Cours & explications"
+          title="Comprendre les fondamentaux en quatre blocs"
+          note="Lis les blocs dans l’ordre ou cible celui qui répond à ton besoin. Chaque bloc est accompagné de ressources concrètes."
+        >
+          <div className="grid gap-6 lg:grid-cols-2">
+            {studentModules.map((module) => (
+              <article
+                key={module.id}
+                className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200 shadow-xl shadow-black/30"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-xl font-semibold text-white">{module.title}</h3>
+                  <Pill tone="accent">{module.duration}</Pill>
+                </div>
+                <p className="text-sm text-slate-300">{module.focus}</p>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-slate-200">
+                  {module.keyPoints.map((point, index) => (
+                    <li key={index}>{point}</li>
+                  ))}
+                </ul>
+                {module.resources && module.resources.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {module.resources.map((resource) => (
+                      <a
+                        key={resource.href + resource.label}
+                        href={resource.href}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 transition hover:bg-white/20"
+                      >
+                        📁 {resource.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const StudentMethodKit = () => (
+      <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="methodes"
+          kicker="Méthodes & conseils"
+          title="Les routines qui font gagner du temps"
+          note="Imprime ces fiches ou garde-les à portée de main pendant les exercices et projets."
+        >
+          <div className="grid gap-6 lg:grid-cols-3">
+            {methodCards.map((card, index) => (
+              <article
+                key={index}
+                className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200 shadow-xl shadow-black/30"
+              >
+                <h3 className="text-lg font-semibold text-white">{card.title}</h3>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
+                  {card.tips.map((tip, tipIndex) => (
+                    <li key={tipIndex}>{tip}</li>
+                  ))}
+                </ul>
+                {card.cta && (
+                  <a
+                    href={card.cta.href}
+                    className="inline-flex items-center gap-2 self-start rounded-full border border-nexus-400/50 bg-nexus-500/20 px-3 py-1 text-xs font-semibold text-nexus-100 transition hover:bg-nexus-500/40"
+                  >
+                    ↗ {card.cta.label}
+                  </a>
+                )}
+              </article>
+            ))}
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const MocodoSection = () => (
+      <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="mocodo"
+          kicker="MCD & Mocodo"
+          title="Patrons prêts à l’emploi pour démarrer ton schéma"
+          note="Copie ces patrons dans Mocodo, vérifie les cardinalités puis exporte ton diagramme pour le cahier de conception."
+        >
+          <div className="grid gap-6 lg:grid-cols-3">
+            {mocodoTemplates.map((mocodo) => (
+              <article
+                key={mocodo.theme}
+                className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200 shadow-xl shadow-black/30"
+              >
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">{mocodo.theme}</h3>
+                  <p className="text-xs text-slate-300">{mocodo.instructions}</p>
+                </div>
+                <pre className="flex-1 overflow-x-auto rounded-2xl border border-white/10 bg-black/60 p-3 text-xs leading-relaxed text-nexus-100">
+                  <code>{mocodo.template}</code>
+                </pre>
+                <button
+                  onClick={async () => {
+                    const ok = await copyToClipboard(mocodo.template);
+                    if (ok) {
+                      alert('Patron copié. Rendez-vous sur mocodo.net pour générer le schéma.');
+                    } else {
+                      alert('Impossible de copier automatiquement. Sélectionne le texte manuellement.');
+                    }
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-nexus-400/50 bg-nexus-500/20 px-3 py-2 text-xs font-semibold text-nexus-100 transition hover:bg-nexus-500/40"
+                >
+                  Copier dans le presse-papiers
+                </button>
+              </article>
+            ))}
+          </div>
+          <div className="rounded-3xl border border-white/10 bg-slate-900/40 p-4 text-xs text-slate-300">
+            Astuce : dans Mocodo, utilise le menu “Export” → “SVG” pour obtenir un visuel haute définition que tu pourras intégrer dans ton rapport ou ton diaporama de projet.
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const LearningJourney = () => (
+      <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="parcours"
+          kicker="Feuille de route"
+          title="Passer du besoin au SQL exécuté"
+          note="Chaque étape peut être travaillée en autonomie guidée, en binôme ou lors d’un atelier collectif."
+        >
+          <Timeline
+            steps={[
+              {
+                title: 'Étape 1 — Découvrir : modélisation & vocabulaire',
+                description:
+                  'Analyse d’un besoin métier (commerce, médiathèque, réseau social). Identifie entités, attributs et cardinalités.',
+                actions: [
+                  'Lire l’énoncé en surlignant acteurs et actions.',
+                  'Esquisser un premier MCD (outil papier ou Mocodo).',
+                  'Comparer avec le schéma proposé et corriger.'
+                ]
+              },
+              {
+                title: 'Étape 2 — Construire : schéma relationnel SQL',
+                description:
+                  'Traduction du MCD en schéma relationnel : CREATE TABLE, clés primaires et étrangères, typage.',
+                actions: [
+                  'Lister les tables et choisir les PK/FK.',
+                  'Écrire les instructions DDL dans ton carnet.',
+                  'Tester le script dans le playground ou un SGBD local.'
+                ]
+              },
+              {
+                title: 'Étape 3 — Expérimenter : requêtes & analyses',
+                description:
+                  'Lancer des requêtes, analyser les résultats, vérifier leur cohérence métier et proposer des variantes.',
+                actions: [
+                  'Commencer par SELECT * pour vérifier les colonnes.',
+                  'Rédiger les requêtes demandées et les expliquer à voix haute.',
+                  'Aller plus loin : filtre, agrégation, sous-requête ou fenêtre.'
+                ]
+              }
+            ]}
+          />
+        </SectionShell>
+      </section>
+    );
+
+    const QuizSection = () => (
+      <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="quiz"
+          kicker="Quiz & vérifications"
+          title="Teste ta compréhension en quelques minutes"
+          note="Utilise ces quiz après chaque bloc ou en préparation de l’évaluation sommative."
+        >
+          <div className="grid gap-6 lg:grid-cols-3">
+            {quizSets.map((quiz, index) => (
+              <article
+                key={index}
+                className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200 shadow-xl shadow-black/30"
+              >
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{quiz.title}</h3>
+                  <p className="mt-2 text-sm text-slate-300">{quiz.description}</p>
+                </div>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
+                  {quiz.questions.map((question, qIndex) => (
+                    <li key={qIndex}>{question}</li>
+                  ))}
+                </ul>
+                {quiz.resources?.length ? (
+                  <div className="mt-auto flex flex-wrap gap-2">
+                    {quiz.resources.map((resource) => (
+                      <a
+                        key={resource.href + resource.label}
+                        href={resource.href}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 transition hover:bg-white/20"
+                      >
+                        ↗ {resource.label}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const ProjectsSection = ({ showSolutions, projectOverride }) => {
+      const solutionsVisible = projectOverride === true ? true : projectOverride === false ? false : showSolutions;
+      return (
+        <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+          <SectionShell
+            id="projets"
+            kicker="Projets & évaluation"
+            title="Trois parcours pour s’approprier les données"
+            note="Chaque projet peut être conduit en binôme sur 2 à 3 séances. Le barème /20 est aligné avec la grille compétences."
+          >
+            <div className="grid gap-6 lg:grid-cols-3">
+              {projectTracks.map((project, index) => (
+                <article
+                  key={index}
+                  className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200 shadow-xl shadow-black/30"
+                >
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold text-white">{project.title}</h3>
+                    <p className="text-sm text-slate-300">{project.goal}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400"> Jalons </h4>
+                    <ul className="mt-2 list-disc space-y-2 pl-5">
+                      {project.milestones.map((item, milestoneIndex) => (
+                        <li key={milestoneIndex}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400"> Livrables attendus </h4>
+                    <ul className="mt-2 list-disc space-y-2 pl-5">
+                      {project.deliverables.map((deliverable, deliverableIndex) => (
+                        <li key={deliverableIndex}>{deliverable}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400"> Jeux de données </h4>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {project.datasets.map((dataset) => (
+                        <a
+                          key={dataset.href + dataset.label}
+                          href={dataset.href}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 transition hover:bg-white/20"
+                        >
+                          📁 {dataset.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/30 p-3 text-xs text-slate-300">
+                    Barème indicatif : 5 pts MCD/MLD · 5 pts SQL (variété + correction) · 4 pts qualité données · 4 pts communication · 2 pts bonus (initiative, approfondissement).
+                    {!solutionsVisible && ' Les solutions détaillées sont accessibles côté enseignant.'}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </SectionShell>
+        </section>
+      );
+    };
+
+    const AutoEvalSection = () => (
+      <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="auto-evaluation"
+          kicker="Auto-évaluation"
+          title="Fais le point sur ta progression"
+          note="Coche ce que tu maîtrises déjà et identifie les actions prioritaires avant l’évaluation sommative."
+        >
+          <div className="grid gap-6 lg:grid-cols-3">
+            {autoEvalChecklist.map((card, index) => (
+              <article
+                key={index}
+                className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200 shadow-xl shadow-black/30"
+              >
+                <h3 className="text-lg font-semibold text-white">{card.title}</h3>
+                <ul className="space-y-2 text-sm text-slate-300">
+                  {card.items.map((item, itemIndex) => (
+                    <li key={itemIndex} className="flex items-start gap-2">
+                      <span className="mt-1 h-2 w-2 rounded-full bg-nexus-400"></span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const StudentToolbox = () => (
+      <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="outils"
+          kicker="Outils pratiques"
+          title="Rester efficace pendant le projet"
+          note="Ces trois fiches te servent de pense-bête tout au long de la séquence."
+        >
+          <div className="grid gap-6 lg:grid-cols-3">
+            {studentTools.map((tool, index) => (
+              <article
+                key={index}
+                className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200 shadow-xl shadow-black/30"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold text-white">{tool.title}</h3>
+                  <Pill>{tool.id.replace('outils-', '').toUpperCase()}</Pill>
+                </div>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
+                  {tool.items.map((entry, entryIndex) => (
+                    <li key={entryIndex}>{entry}</li>
+                  ))}
+                </ul>
+                {tool.action?.href && (
+                  <a
+                    href={tool.action.href}
+                    className="inline-flex items-center gap-2 self-start rounded-full border border-nexus-400/50 bg-nexus-500/20 px-3 py-1 text-xs font-semibold text-nexus-100 transition hover:bg-nexus-500/40"
+                  >
+                    ↗ {tool.action.label}
+                  </a>
+                )}
+              </article>
+            ))}
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const ResourceDirectory = () => (
+      <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="ressources"
+          kicker="Ressources"
+          title="Tout télécharger en un clin d’œil"
+          note="Datasets, scripts SQL et documents enseignants sont classés par catégorie."
+        >
+          <div className="grid gap-6 lg:grid-cols-3">
+            {resourceDirectory.map((group, groupIndex) => (
+              <article
+                key={groupIndex}
+                className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200 shadow-xl shadow-black/30"
+              >
+                <h3 className="text-xl font-semibold text-white">{group.category}</h3>
+                <ul className="space-y-2 text-sm text-slate-300">
+                  {group.items.map((item, itemIndex) => (
+                    <li key={itemIndex}>
+                      <a
+                        href={item.href}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 transition hover:bg-white/20"
+                      >
+                        📁 {item.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const StudentApp = ({
+      showSolutions,
+      onQueryExecuted,
+      loggingEnabled,
+      scenarioOverrides,
+      projectOverride,
+      isFileProtocol,
+      activeDataset
+    }) => {
+      const datasetLabel = datasetCatalog.find((entry) => entry.key === activeDataset)?.label || datasetCatalog[0]?.label || 'Bibliothèque';
+      return (
+        <>
+          <StudentHero datasetLabel={datasetLabel} />
+          <StudentCourseMap />
+          <StudentMethodKit />
+          <MocodoSection />
+          <LearningJourney />
+          {isFileProtocol && (
+            <section className="relative z-10 mx-auto mt-4 max-w-6xl px-6 sm:px-8 lg:px-10">
+              <div className="rounded-3xl border border-amber-400/40 bg-amber-500/10 p-4 text-xs text-amber-100">
+                Attention : en ouvrant cette page directement depuis le système de fichiers, certaines fonctionnalités (chargement automatique des CSV, génération du pack élève) peuvent échouer. Lancez `python3 -m http.server` dans le dossier du projet puis accédez à <code>http://localhost:8000/index_standalone.html</code> pour une expérience complète.
+              </div>
+            </section>
+          )}
+          <section className="relative z-10 mx-auto mt-6 max-w-6xl px-6 sm:px-8 lg:px-10">
+            <SectionShell
+              id="atelier"
+              kicker="Atelier pratique"
+              title="Manipuler des données réelles"
+              note="Importez vos propres CSV (Pronote, fichiers open-data, exports personnels) pour vérifier vos hypothèses en direct."
+            >
+              <Playground onQueryExecuted={onQueryExecuted} loggingEnabled={loggingEnabled} />
+            </SectionShell>
+          </section>
+          <ScenarioDeck showSolutions={showSolutions} scenarioOverrides={scenarioOverrides} />
+          <QuizSection />
+          <ProjectsSection showSolutions={showSolutions} projectOverride={projectOverride} />
+          <AutoEvalSection />
+          <StudentToolbox />
+          <ResourceDirectory />
+          <AdvancedQueries />
+        </>
+      );
+    };
+
+    /* ---------- playground ---------- */
+    const Playground = ({ onQueryExecuted = () => {}, loggingEnabled = false }) => {
+      const [sql, setSql] = useState(`-- CONSEIL : démarrez par SELECT * FROM nom_de_table LIMIT 5;
+SELECT 1 AS prêt;`);
+      const [columns, setColumns] = useState([]);
+      const [rows, setRows] = useState([]);
+      const [messages, setMessages] = useState([]);
+      const [tables, setTables] = useState([]);
+      const messageRef = useRef(null);
+
+      const pushMessage = (payload) => {
+        setMessages((prev) => [payload, ...prev].slice(0, 6));
+      };
+
+      const refreshTables = () => {
+        try {
+          const data = alasql('SHOW TABLES');
+          setTables(data);
+        } catch (error) {
+          console.error('SHOW TABLES', error);
+        }
+      };
+
+      useEffect(() => {
+        refreshTables();
+      }, []);
+
+      useEffect(() => {
+        if (messageRef.current) {
+          messageRef.current.focus({ preventScroll: false });
+        }
+      }, [messages]);
+
+      const runQuery = () => {
+        try {
+          const trimmed = sql.trim();
+          const result = alasql(trimmed || 'SELECT 1');
+          const last = Array.isArray(result) ? result[result.length - 1] : result;
+          const data = Array.isArray(last) ? last : (last !== undefined ? [last] : []);
+          const cols = data.length ? Object.keys(data[0]) : [];
+          setColumns(cols);
+          setRows(data);
+          pushMessage({ type: 'success', content: 'Requête exécutée avec succès.' });
+          refreshTables();
+          if (loggingEnabled) {
+            onQueryExecuted({
+              type: 'query',
+              status: 'success',
+              sql: trimmed,
+              rows: Array.isArray(data) ? data.length : 0,
+              timestamp: new Date().toISOString()
+            });
+          }
+        } catch (error) {
+          pushMessage({ type: 'error', content: `Erreur SQL : ${error.message}` });
+          if (loggingEnabled) {
+            onQueryExecuted({
+              type: 'query',
+              status: 'error',
+              sql: sql.trim(),
+              message: error.message,
+              timestamp: new Date().toISOString()
+            });
+          }
+        }
+      };
+
+      const resetDatabase = () => {
+        try {
+          const list = alasql('SHOW TABLES');
+          list.forEach((entry) => {
+            try {
+              alasql(`DROP TABLE ${entry.tableid}`);
+            } catch (error) {
+              console.warn('DROP TABLE', error);
+            }
+          });
+          setColumns([]);
+          setRows([]);
+          refreshTables();
+          pushMessage({ type: 'success', content: 'Base réinitialisée. Vous pouvez importer un CSV.' });
+          if (loggingEnabled) {
+            onQueryExecuted({
+              type: 'reset',
+              status: 'success',
+              timestamp: new Date().toISOString()
+            });
+          }
+        } catch (error) {
+          pushMessage({ type: 'error', content: `Reset impossible : ${error.message}` });
+          if (loggingEnabled) {
+            onQueryExecuted({
+              type: 'reset',
+              status: 'error',
+              message: error.message,
+              timestamp: new Date().toISOString()
+            });
+          }
+        }
+      };
+
+      const importCSV = (file) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = String(reader.result);
+          const { rows } = parseCSV(text);
+          if (!rows.length) {
+            pushMessage({ type: 'error', content: 'Le fichier semble vide.' });
+            return;
+          }
+          const rawHeaders = rows[0] || [];
+          const headers = normalizeHeaders(rawHeaders);
+          const rawName = sanitizeName(file.name.replace(/\.[^.]+$/, ''));
+          const tableName = rawName || 'table';
+          try {
+            alasql(`DROP TABLE IF EXISTS ${tableName}`);
+            alasql(`CREATE TABLE ${tableName} (${headers.map((h) => `${h} TEXT`).join(', ')})`);
+            const stmt = alasql.compile(`INSERT INTO ${tableName} VALUES (${headers.map(() => '?').join(', ')})`);
+            rows.slice(1).forEach((row) => {
+              const padded = headers.map((_, index) => row[index] ?? null);
+              stmt(padded);
+            });
+            setSql(`SELECT * FROM ${tableName} LIMIT 10;`);
+            refreshTables();
+            pushMessage({
+              type: 'success',
+              content: `Table “${tableName}” importée (${rows.length - 1} lignes).`
+            });
+            if (loggingEnabled) {
+              onQueryExecuted({
+                type: 'import',
+                status: 'success',
+                table: tableName,
+                rows: rows.length - 1,
+                timestamp: new Date().toISOString()
+              });
+            }
+          } catch (error) {
+            pushMessage({ type: 'error', content: `Import impossible : ${error.message}` });
+            if (loggingEnabled) {
+              onQueryExecuted({
+                type: 'import',
+                status: 'error',
+                table: tableName,
+                message: error.message,
+                timestamp: new Date().toISOString()
+              });
+            }
+          }
+        };
+        reader.readAsText(file, 'utf-8');
+      };
+
+      const messageTone = {
+        success: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-50',
+        error: 'border-rose-500/40 bg-rose-500/10 text-rose-100',
+        info: 'border-slate-400/40 bg-slate-400/10 text-slate-50'
+      };
+
+      return (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr),minmax(0,1fr)]">
+          <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-xl shadow-black/40">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-2xl font-semibold text-white">Playground SQL exécutable</h3>
+                <p className="text-sm text-slate-300">
+                  Compatible SQLite/PostgreSQL (fonctions de fenêtre limitées). Vous pouvez importer vos données CSV.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={runQuery}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-nexus-400 bg-nexus-500/80 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-nexus-500 focus:outline-none focus:ring-2 focus:ring-nexus-300"
+                >
+                  ▶ Exécuter
+                </button>
+                <button
+                  onClick={resetDatabase}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-slate-200/40"
+                >
+                  🗄️ Réinitialiser
+                </button>
+              </div>
+            </div>
+
+            <label className="flex flex-col gap-2 text-sm text-slate-200">
+              Requête SQL
+              <textarea
+                value={sql}
+                onChange={(event) => setSql(event.target.value)}
+                onKeyDown={(event) => {
+                  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                    event.preventDefault();
+                    runQuery();
+                  }
+                }}
+                className="min-h-[220px] w-full rounded-2xl border border-white/10 bg-slate-950/80 p-4 font-mono text-sm text-slate-100 shadow-inner focus:border-nexus-400 focus:outline-none focus:ring-2 focus:ring-nexus-300/60"
+              />
+            </label>
+
+            <div
+              ref={messageRef}
+              tabIndex={-1}
+              aria-live="polite"
+              className="flex flex-col gap-2"
+            >
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={clsx(
+                    'rounded-2xl border px-3 py-2 text-sm shadow-inner',
+                    messageTone[message.type] || messageTone.info
+                  )}
+                >
+                  {message.content}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/30">
+              <table className="min-w-full text-left text-sm text-slate-200">
+                <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-300">
+                  <tr>
+                    {columns.map((column) => (
+                      <th key={column} className="px-4 py-2">{column}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.length ? (
+                    rows.map((row, rowIndex) => (
+                      <tr key={rowIndex} className={rowIndex % 2 ? 'bg-white/5' : ''}>
+                        {columns.map((column) => (
+                          <td key={column} className="px-4 py-2 text-slate-100/90">
+                            {row[column] !== undefined ? String(row[column]) : '—'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={columns.length || 1} className="px-4 py-6 text-center text-slate-500">
+                        Les résultats s’afficheront ici.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <aside className="flex flex-col gap-4">
+            <div className="rounded-3xl border border-nexus-500/40 bg-nexus-500/10 p-6 text-sm text-slate-50 shadow-xl shadow-black/40">
+              <h3 className="text-lg font-semibold text-white">Importer un jeu de données</h3>
+              <p className="mt-2 text-slate-200">
+                Séparateur détecté automatiquement (“;” ou “,”). Première ligne = en-têtes.
+              </p>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(event) => importCSV(event.target.files[0])}
+                className="mt-4 block w-full rounded-xl border border-white/20 bg-black/40 px-4 py-2 text-sm file:mr-4 file:rounded-xl file:border-0 file:bg-nexus-500/40 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-nexus-500/60"
+              />
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  onClick={() =>
+                    downloadText(
+                      'eleves_exemple.csv',
+                      'id;nom;prenom;classe\nE001;Martin;Léa;Terminale NSI\nE002;Dupont;Noah;Terminale NSI\n'
+                    )
+                  }
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 transition hover:bg-white/20"
+                >
+                  ⬇ Exemple “Élèves”
+                </button>
+                <button
+                  onClick={() =>
+                    downloadText(
+                      'achats_exemple.csv',
+                      'commande_id;client;produit;quantite;prix\nC101;Martin;Laptop;1;1199\nC102;Martin;Souris;2;25\nC103;Dupont;Clavier;1;89\n'
+                    )
+                  }
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white/90 transition hover:bg-white/20"
+                >
+                  ⬇ Exemple “Achats”
+                </button>
+              </div>
+              <p className="mt-4 text-xs text-slate-300">
+                Astuce : après import, lancez <code className="rounded-lg bg-black/40 px-2 py-1">SELECT * FROM nom_table LIMIT 5;</code>
+                pour vérifier les colonnes.
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 text-sm text-slate-200 shadow-xl shadow-black/40">
+              <h3 className="text-lg font-semibold text-white">Tables créées</h3>
+              <ul className="mt-3 space-y-2 text-sm">
+                {tables.length ? (
+                  tables.map((entry) => (
+                    <li key={entry.tableid} className="flex items-center gap-2">
+                      <Pill>TABLE</Pill>
+                      <span className="font-mono text-slate-100">{entry.tableid}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li className="text-xs text-slate-500">Aucune table pour l’instant.</li>
+                )}
+              </ul>
+            </div>
+          </aside>
+        </div>
+      );
+    };
+
+    /* ---------- scenarios & exercises ---------- */
+    const scenarios = [
+      {
+        id: 'commerce',
+        title: 'Commerce connecté',
+        schema:
+          'Client(#id_client, nom, email) · Produit(#id_produit, libelle, prix, categorie) · Commande(#id_commande, date, id_client) · Ligne(#id_commande, #id_produit, quantite, prix_unitaire)',
+        description:
+          'Piloter une boutique en ligne : analyser le chiffre d’affaires, les paniers moyens, identifier les produits stars ou peu rentables.',
+        diagram: (
+          <svg viewBox="0 0 720 360" className="h-auto w-full rounded-2xl border border-white/10 bg-white/5 p-4">
+            <g transform="translate(40,40)">
+              <rect width="160" height="56" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="80" y="20" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Client</text>
+              <text x="12" y="38" fontSize="12" fill="#94a3b8">#id_client, nom, email</text>
+            </g>
+            <g transform="translate(260,220)">
+              <rect width="170" height="56" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="85" y="20" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Commande</text>
+              <text x="12" y="38" fontSize="12" fill="#94a3b8">#id_commande, date, total</text>
+            </g>
+            <g transform="translate(500,40)">
+              <rect width="160" height="56" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="80" y="20" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Produit</text>
+              <text x="12" y="38" fontSize="12" fill="#94a3b8">#id_produit, libellé, prix, catégorie</text>
+            </g>
+            <g transform="translate(500,220)">
+              <rect width="170" height="56" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="85" y="20" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Ligne</text>
+              <text x="12" y="38" fontSize="12" fill="#94a3b8">quantité, prix_unitaire</text>
+            </g>
+            <line x1="120" y1="96" x2="320" y2="220" stroke="#64748b" strokeWidth="2"></line>
+            <text x="230" y="178" fontSize="12" fill="#cbd5f5">1 · N</text>
+            <line x1="340" y1="248" x2="500" y2="248" stroke="#64748b" strokeWidth="2"></line>
+            <text x="420" y="238" fontSize="12" fill="#cbd5f5">1 · N</text>
+            <line x1="580" y1="96" x2="580" y2="220" stroke="#64748b" strokeWidth="2"></line>
+            <text x="590" y="160" fontSize="12" fill="#cbd5f5">1 · N</text>
+          </svg>
+        ),
+        exercises: [
+          {
+            question: 'Lister le top 10 des produits par chiffre d’affaires.',
+            hint: 'JOIN Ligne ↔ Produit, SUM(quantite * prix_unitaire), GROUP BY',
+            solution: `SELECT p.id_produit, p.libelle,
+       SUM(l.quantite * l.prix_unitaire) AS chiffre_affaires
+FROM Ligne l
+JOIN Produit p ON p.id_produit = l.id_produit
+GROUP BY p.id_produit, p.libelle
+ORDER BY chiffre_affaires DESC
+LIMIT 10;`
+          },
+          {
+            question: 'Panier moyen par client.',
+            hint: 'COUNT commandes + SUM total, AVG',
+            solution: `SELECT c.id_client, c.nom,
+       COUNT(DISTINCT cmd.id_commande) AS nb_commandes,
+       SUM(cmd.total) AS ca_client,
+       AVG(cmd.total) AS panier_moyen
+FROM Client c
+LEFT JOIN Commande cmd ON cmd.id_client = c.id_client
+GROUP BY c.id_client, c.nom;`
+          },
+          {
+            question: 'Produits jamais vendus.',
+            hint: 'LEFT JOIN Ligne → WHERE ligne.id_produit IS NULL',
+            solution: `SELECT p.*
+FROM Produit p
+LEFT JOIN Ligne l ON l.id_produit = p.id_produit
+WHERE l.id_produit IS NULL;`
+          }
+        ]
+      },
+      {
+        id: 'bibliotheque',
+        title: 'Bibliothèque municipale',
+        schema:
+          'Lecteur(#id_lecteur, nom, email) · Livre(#id_livre, titre, annee) · Emprunt(#id_emprunt, date_debut, date_retour, id_lecteur, id_livre) · Auteur(#id_auteur, nom) · Ecrire(#id_auteur, #id_livre)',
+        description:
+          'Gérer l’activité d’une médiathèque : fidélisation des lecteurs, rotation du fonds documentaire, auteurs les plus consultés.',
+        diagram: (
+          <svg viewBox="0 0 720 360" className="h-auto w-full rounded-2xl border border-white/10 bg-white/5 p-4">
+            <g transform="translate(40,40)">
+              <rect width="170" height="56" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="85" y="20" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Lecteur</text>
+              <text x="12" y="38" fontSize="12" fill="#94a3b8">#id_lecteur, nom, email</text>
+            </g>
+            <g transform="translate(260,220)">
+              <rect width="210" height="56" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="105" y="20" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Emprunt</text>
+              <text x="12" y="38" fontSize="12" fill="#94a3b8">date_debut, date_retour</text>
+            </g>
+            <g transform="translate(520,40)">
+              <rect width="160" height="56" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="80" y="20" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Livre</text>
+              <text x="12" y="38" fontSize="12" fill="#94a3b8">#id_livre, titre, annee</text>
+            </g>
+            <g transform="translate(520,220)">
+              <rect width="160" height="56" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="80" y="20" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Auteur</text>
+              <text x="12" y="38" fontSize="12" fill="#94a3b8">#id_auteur, nom</text>
+            </g>
+            <line x1="120" y1="96" x2="320" y2="220" stroke="#64748b" strokeWidth="2"></line>
+            <text x="230" y="178" fontSize="12" fill="#cbd5f5">1 · N</text>
+            <line x1="540" y1="96" x2="320" y2="240" stroke="#64748b" strokeWidth="2"></line>
+            <text x="430" y="170" fontSize="12" fill="#cbd5f5">N · 1</text>
+            <line x1="540" y1="240" x2="540" y2="220" stroke="#64748b" strokeWidth="2"></line>
+            <text x="552" y="230" fontSize="12" fill="#cbd5f5">N · N via Écrire</text>
+          </svg>
+        ),
+        exercises: [
+          {
+            question: 'Top 5 des lecteurs qui empruntent le plus.',
+            hint: 'COUNT(*) + GROUP BY id_lecteur',
+            solution: `SELECT l.id_lecteur, l.nom,
+       COUNT(*) AS nb_emprunts
+FROM Emprunt e
+JOIN Lecteur l ON l.id_lecteur = e.id_lecteur
+GROUP BY l.id_lecteur, l.nom
+ORDER BY nb_emprunts DESC
+LIMIT 5;`
+          },
+          {
+            question: 'Livres jamais empruntés.',
+            hint: 'LEFT JOIN Emprunt, filtrer sur NULL',
+            solution: `SELECT liv.*
+FROM Livre liv
+LEFT JOIN Emprunt emp ON emp.id_livre = liv.id_livre
+WHERE emp.id_livre IS NULL;`
+          },
+          {
+            question: 'Durée moyenne d’emprunt par année de parution.',
+            hint: 'AVG(julianday(date_retour) - julianday(date_debut))',
+            solution: `SELECT liv.annee,
+       AVG(CAST(julianday(emp.date_retour) - julianday(emp.date_debut) AS REAL)) AS duree_moyenne
+FROM Emprunt emp
+JOIN Livre liv ON liv.id_livre = emp.id_livre
+GROUP BY liv.annee
+ORDER BY liv.annee;`
+          }
+        ]
+      },
+      {
+        id: 'reseau',
+        title: 'Réseau social scolaire',
+        schema:
+          'Utilisateur(#id_user, pseudo, email, date_inscription) · Publication(#id_pub, contenu, date_pub, id_user) · Relation(#id_user_src, #id_user_dst, type) · Aime(#id_user, #id_pub, date_like)',
+        description:
+          'Analyser l’engagement, détecter les élèves isolés, comprendre la propagation des contenus dans un réseau social fermé.',
+        diagram: (
+          <svg viewBox="0 0 720 360" className="h-auto w-full rounded-2xl border border-white/10 bg-white/5 p-4">
+            <g transform="translate(60,60)">
+              <rect width="220" height="72" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="110" y="22" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Utilisateur</text>
+              <text x="12" y="42" fontSize="12" fill="#94a3b8">#id_user, pseudo, email, date_inscription</text>
+            </g>
+            <g transform="translate(420,60)">
+              <rect width="200" height="56" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="100" y="20" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Publication</text>
+              <text x="12" y="38" fontSize="12" fill="#94a3b8">#id_pub, contenu, date_pub</text>
+            </g>
+            <g transform="translate(240,220)">
+              <rect width="200" height="56" rx="12" fill="#0f172a" stroke="#94a3b8" strokeWidth="1.5"></rect>
+              <text x="100" y="20" textAnchor="middle" fontWeight="600" fill="#e2e8f0">Relation</text>
+              <text x="12" y="38" fontSize="12" fill="#94a3b8">type (ami, suit, bloque)</text>
+            </g>
+            <line x1="180" y1="120" x2="280" y2="220" stroke="#64748b" strokeWidth="2"></line>
+            <text x="220" y="175" fontSize="12" fill="#cbd5f5">N · N</text>
+            <line x1="520" y1="120" x2="320" y2="220" stroke="#64748b" strokeWidth="2"></line>
+            <text x="390" y="184" fontSize="12" fill="#cbd5f5">1 · N</text>
+          </svg>
+        ),
+        exercises: [
+          {
+            question: 'Nombre de likes par publication.',
+            hint: 'COUNT(Aime) + GROUP BY id_pub',
+            solution: `SELECT pub.id_pub, pub.contenu,
+       COUNT(aime.id_user) AS nb_likes
+FROM Publication pub
+LEFT JOIN Aime aime ON aime.id_pub = pub.id_pub
+GROUP BY pub.id_pub, pub.contenu
+ORDER BY nb_likes DESC;`
+          },
+          {
+            question: 'Publications des amis directs d’un utilisateur (U001).',
+            hint: 'JOIN Relation → Publication',
+            solution: `SELECT pub.*
+FROM Relation rel
+JOIN Publication pub ON pub.id_user = rel.id_user_dst
+WHERE rel.id_user_src = 'U001'
+  AND rel.type = 'ami';`
+          },
+          {
+            question: 'Utilisateurs qui n’ont jamais publié.',
+            hint: 'LEFT JOIN Publication → NULL',
+            solution: `SELECT u.*
+FROM Utilisateur u
+LEFT JOIN Publication p ON p.id_user = u.id_user
+WHERE p.id_user IS NULL;`
+          }
+        ]
+      }
+    ];
+
+    const ScenarioDeck = ({ showSolutions, scenarioOverrides = {} }) => (
+      <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="scenarios"
+          kicker="Scénarios contextuels"
+          title="Trois univers métiers pour donner du sens"
+          note="L’élève choisit un contexte, construit son schéma et valide sa compréhension via des requêtes métiers à difficulté croissante."
+        >
+          <div className="grid gap-6 lg:grid-cols-3">
+            {scenarios.map((scenario) => {
+              const override = scenarioOverrides[scenario.id];
+              const solutionsVisible = override === true ? true : override === false ? false : showSolutions;
+              return (
+                <article
+                  key={scenario.id}
+                  className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/50 p-6 text-slate-200 shadow-xl shadow-black/40"
+                >
+                  <div className="flex flex-col gap-3">
+                    <h3 className="text-2xl font-semibold text-white">{scenario.title}</h3>
+                    <p className="text-sm text-slate-300">{scenario.description}</p>
+                    <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-xs leading-relaxed text-slate-200">
+                      <strong>Schéma relationnel :</strong><br />
+                      {scenario.schema}
+                    </div>
+                  </div>
+                  <div className="flex-1">{scenario.diagram}</div>
+                  <div className="space-y-3">
+                    {scenario.exercises.map((exercise, index) => (
+                      <details
+                        key={index}
+                        className="group rounded-2xl border border-white/10 bg-white/5 p-4 transition duration-200 hover:border-nexus-400/40"
+                      >
+                        <summary className="cursor-pointer text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-300">
+                          {index + 1}. {exercise.question}
+                        </summary>
+                        <div className="mt-3 space-y-3 text-sm text-slate-200">
+                          <p>
+                            <strong>Indice :</strong>{' '}
+                            <code className="rounded-lg bg-black/40 px-2 py-1">{exercise.hint}</code>
+                          </p>
+                          {solutionsVisible ? (
+                            <div>
+                              <strong>Solution possible :</strong>
+                              <pre className="mt-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/60 p-3 text-xs leading-relaxed text-nexus-100">
+                                <code>{exercise.solution}</code>
+                              </pre>
+                            </div>
+                          ) : (
+                            <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-3 text-xs text-amber-100">
+                              Solution masquée. Demande à ton enseignant d’activer l’affichage ou tente d’expliquer ta démarche avant de vérifier.
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const AdvancedQueries = () => (
+      <section className="relative z-10 mx-auto mt-6 max-w-6xl space-y-10 px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="avance"
+          kicker="Approfondissements"
+          title="Pour aller plus loin — requêtes avancées"
+          note="Les requêtes ci-dessous sont compatibles PostgreSQL/SQLite ≥ 3.25. Le moteur AlaSQL du playground ne gère pas toutes les fonctions de fenêtre : proposez, si besoin, une alternative par sous-requête."
+        >
+          <div className="grid gap-6 lg:grid-cols-2">
+            <article className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg shadow-black/50">
+              <h3 className="text-xl font-semibold text-white">Fenêtres : classement, cumul, comparaison</h3>
+              <p className="mt-2 text-sm text-slate-300">
+                Pour illustrer BD3 (“Mettre en œuvre des requêtes sur des données structurées”), voici trois exemples
+                classiques basés sur nos scénarios.
+              </p>
+              <div className="mt-4 space-y-4 text-xs text-nexus-100">
+                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/60 p-3">
+                  <code>{`-- Top 3 produits par catégorie (classement)
+WITH ca AS (
+  SELECT p.categorie, p.id_produit, p.libelle,
+         SUM(l.quantite * l.prix_unitaire) AS ca
+  FROM Ligne l
+  JOIN Produit p ON p.id_produit = l.id_produit
+  GROUP BY p.categorie, p.id_produit, p.libelle
+)
+SELECT *
+FROM (
+  SELECT c.*, RANK() OVER(PARTITION BY categorie ORDER BY ca DESC) AS rg
+  FROM ca c
+) s
+WHERE rg <= 3;`}</code>
+                </pre>
+                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/60 p-3">
+                  <code>{`-- Durée & emprunt précédent (comparaison temporelle)
+SELECT id_lecteur, id_emprunt, date_debut, date_retour,
+       julianday(date_retour) - julianday(date_debut) AS duree,
+       LAG(date_retour) OVER(PARTITION BY id_lecteur ORDER BY date_debut) AS precedant_retour
+FROM Emprunt;`}</code>
+                </pre>
+                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/60 p-3">
+                  <code>{`-- Première publication de chaque utilisateur
+WITH num AS (
+  SELECT id_pub, id_user, date_pub,
+         ROW_NUMBER() OVER(PARTITION BY id_user ORDER BY date_pub) AS rang_pub
+  FROM Publication
+)
+SELECT *
+FROM num
+WHERE rang_pub = 1;`}</code>
+                </pre>
+              </div>
+            </article>
+
+            <article className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg shadow-black/50">
+              <h3 className="text-xl font-semibold text-white">Sous-requêtes corrélées & optimisation</h3>
+              <p className="mt-2 text-sm text-slate-300">
+                Utiliser les sous-requêtes pour filtrer, comparer ou recalculer des indicateurs sans vue intermédiaire.
+              </p>
+              <div className="mt-4 space-y-4 text-xs text-nexus-100">
+                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/60 p-3">
+                  <code>{`-- Produits plus chers que la moyenne de leur catégorie
+SELECT p.*
+FROM Produit p
+WHERE p.prix > (
+  SELECT AVG(p2.prix)
+  FROM Produit p2
+  WHERE p2.categorie = p.categorie
+);`}</code>
+                </pre>
+                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/60 p-3">
+                  <code>{`-- Clients “VIP” (dépenses > 2 × dépense moyenne)
+SELECT c.*
+FROM Client c
+WHERE (
+  SELECT SUM(cmd.total)
+  FROM Commande cmd
+  WHERE cmd.id_client = c.id_client
+) > 2 * (
+  SELECT AVG(total_par_client)
+  FROM (
+    SELECT SUM(total) AS total_par_client
+    FROM Commande
+    GROUP BY id_client
+  )
+);`}</code>
+                </pre>
+                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/60 p-3">
+                  <code>{`-- Utilisateurs sans relation réciproque (amis non mutuels)
+SELECT rel.*
+FROM Relation rel
+WHERE rel.type = 'ami'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM Relation rel2
+    WHERE rel2.id_user_src = rel.id_user_dst
+      AND rel2.id_user_dst = rel.id_user_src
+      AND rel2.type = 'ami'
+  );`}</code>
+                </pre>
+              </div>
+            </article>
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const TeacherHero = ({ showSolutions }) => (
+      <header className="relative z-10 mx-auto mt-6 max-w-6xl px-6 pt-10 pb-12 sm:px-8 lg:px-10">
+        <div className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-gradient-to-br from-nexus-800/30 via-slate-900/70 to-slate-950/90 p-10 shadow-2xl shadow-black/40">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl space-y-4">
+              <Pill tone="accent">Espace enseignant</Pill>
+              <h1 className="text-4xl font-bold text-white sm:text-5xl">
+                Piloter la séquence Bases de données sereinement
+              </h1>
+              <p className="text-sm text-slate-200">
+                Retrouvez le paramétrage de la séance, les jeux de données officiels, les scripts d’import, les grilles d’évaluation et un journal local optionnel. Le mode solutions est actuellement <strong>{showSolutions ? 'ACTIVÉ' : 'DÉSACTIVÉ'}</strong>.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-nexus-500/40 bg-nexus-500/15 p-6 text-sm text-nexus-100 lg:w-80">
+              <h2 className="text-lg font-semibold text-white">Rappels clés</h2>
+              <ul className="mt-3 space-y-2">
+                <li>Préparer la base : DDL → import CSV → requêtes santé.</li>
+                <li>Différencier : soutien guidé vs défis fenêtres SQL.</li>
+                <li>Évaluer : grille compétences + barème /20 par projet.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+
+    const TeacherControlPanel = ({
+      showSolutions,
+      onShowSolutionsChange,
+      loggingEnabled,
+      setLoggingEnabled,
+      datasetSource,
+      setDatasetSource,
+      selectedDataset,
+      onDatasetChange,
+      onGeneratePack,
+      onRunHealthCheck,
+      isPackaging,
+      solutionOverrides,
+      onOverrideChange,
+      isFileProtocol,
+      onShareLinkCopy,
+      shareFeedback
+    }) => (
+      <section className="relative z-10 mx-auto mt-4 max-w-6xl px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="enseignant-parametres"
+          kicker="Paramétrage"
+          title="Préparer et distribuer la séance"
+          note="Activez les solutions au moment opportun, choisissez les datasets et téléchargez les scripts nécessaires."
+        >
+          {isFileProtocol && (
+            <div className="rounded-3xl border border-amber-400/40 bg-amber-500/10 p-4 text-xs text-amber-100">
+              Ouvrez cette page via un serveur local (`python3 -m http.server`) pour garantir le fonctionnement de l’import automatique des CSV et de la génération du pack ZIP.
+            </div>
+          )}
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200">
+              <h3 className="text-lg font-semibold text-white">Affichage des solutions</h3>
+              <p className="text-xs text-slate-300">
+                Contrôle global sur les indices/solutions visibles dans la page élève.
+              </p>
+              <button
+                type="button"
+                onClick={() => onShowSolutionsChange((prev) => !prev)}
+                className={clsx(
+                  'inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition',
+                  showSolutions
+                    ? 'border-emerald-400/50 bg-emerald-500/30 text-emerald-50 hover:bg-emerald-500/40'
+                    : 'border-white/15 bg-white/10 text-white/80 hover:bg-white/20',
+                  focusRing
+                )}
+                aria-pressed={showSolutions}
+              >
+                {showSolutions ? 'Masquer les solutions' : 'Afficher les solutions'}
+              </button>
+              <p className="text-xs text-slate-400">
+                Astuce : activez-les uniquement lors de la phase de correction collective.
+              </p>
+              <div className="mt-4 space-y-3 text-xs text-slate-300">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Overrides par scénario</h4>
+                {scenarios.map((scenario) => {
+                  const value = solutionOverrides?.scenarios?.[scenario.id];
+                  return (
+                    <label key={scenario.id} className="flex flex-col gap-1">
+                      <span className="font-semibold text-slate-200">{scenario.title}</span>
+                      <select
+                        value={value === true ? 'on' : value === false ? 'off' : 'inherit'}
+                        onChange={(event) => {
+                          const next = event.target.value;
+                          onOverrideChange('scenarios', scenario.id, next === 'inherit' ? null : next === 'on');
+                        }}
+                        className={clsx('rounded-2xl border border-white/15 bg-slate-950/80 px-3 py-2 text-sm text-slate-100', focusRing)}
+                      >
+                        <option value="inherit">Suivre le réglage global</option>
+                        <option value="on">Toujours afficher</option>
+                        <option value="off">Toujours masquer</option>
+                      </select>
+                    </label>
+                  );
+                })}
+                <div className="flex flex-col gap-1">
+                  <span className="font-semibold text-slate-200">Section Projets</span>
+                  <select
+                    value={solutionOverrides?.projects === true ? 'on' : solutionOverrides?.projects === false ? 'off' : 'inherit'}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      onOverrideChange('projects', null, next === 'inherit' ? null : next === 'on');
+                    }}
+                    className={clsx('rounded-2xl border border-white/15 bg-slate-950/80 px-3 py-2 text-sm text-slate-100', focusRing)}
+                  >
+                    <option value="inherit">Suivre le réglage global</option>
+                    <option value="on">Toujours afficher</option>
+                    <option value="off">Toujours masquer</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200">
+              <h3 className="text-lg font-semibold text-white">Jeu de données</h3>
+              <label className="flex flex-col gap-2 text-xs text-slate-300">
+                Thème
+                <select
+                  value={selectedDataset || datasetCatalog[0]?.key || ''}
+                  onChange={(event) => onDatasetChange(event.target.value)}
+                  className={clsx('rounded-2xl border border-white/15 bg-slate-950/80 px-3 py-2 text-sm text-slate-100', focusRing)}
+                >
+                  {datasetCatalog.map((entry) => (
+                    <option key={entry.key} value={entry.key}>{entry.label}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex gap-3 text-xs text-slate-300">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="dataset-source"
+                    value="fourni"
+                    checked={datasetSource === 'fourni'}
+                    onChange={() => setDatasetSource('fourni')}
+                  />
+                  CSV fournis
+                </label>
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="dataset-source"
+                    value="personnalise"
+                    checked={datasetSource === 'personnalise'}
+                    onChange={() => setDatasetSource('personnalise')}
+                  />
+                  CSV de classe
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={onGeneratePack}
+                className={clsx(
+                  'inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition',
+                  isPackaging
+                    ? 'border-nexus-400/50 bg-nexus-500/20 text-nexus-100/60'
+                    : 'border-nexus-400/50 bg-nexus-500/30 text-nexus-50 hover:bg-nexus-500/50',
+                  focusRing
+                )}
+                disabled={isPackaging}
+                aria-busy={isPackaging ? 'true' : undefined}
+              >
+                {isPackaging ? 'Préparation du pack…' : 'Générer le pack élève (zip)'}
+              </button>
+              <p className="text-xs text-slate-400">
+                Le pack inclut l’interface standalone, les CSV du thème, les scripts SQL et un manifest.md décrivant le contenu.
+                Pour vos vérifications, chargez ce pack dans l’exécuteur ci-dessous afin d’enchaîner les contrôles d’intégrité.
+              </p>
+              <div className="flex flex-col gap-2 text-xs text-slate-300">
+                <button
+                  type="button"
+                  onClick={onShareLinkCopy}
+                  className={clsx('inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 font-semibold text-white/80 transition hover:bg-white/20', focusRing)}
+                >
+                  Copier le lien direct vers la vue Élève
+                </button>
+                {shareFeedback && (
+                  <p role="status" className="text-[11px] text-slate-300">{shareFeedback}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200">
+              <h3 className="text-lg font-semibold text-white">Santé du dataset</h3>
+              <p className="text-xs text-slate-300">
+                Liste mise à jour ci-dessous pour tester l’intégrité des données avant la séance.
+              </p>
+              <button
+                type="button"
+                onClick={onRunHealthCheck}
+                className={clsx('inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/20', focusRing)}
+              >
+                Actualiser les requêtes de contrôle
+              </button>
+              <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+                <span>Journal local</span>
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={loggingEnabled}
+                    onChange={() => setLoggingEnabled((prev) => !prev)}
+                  />
+                  Activer la collecte
+                </label>
+              </div>
+            </div>
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const TeacherDatasets = ({ selectedDataset }) => {
+      const theme = datasetCatalog.find((entry) => entry.key === selectedDataset) || datasetCatalog[0];
+      if (!theme) return null;
+      return (
+        <section className="relative z-10 mx-auto mt-4 max-w-6xl px-6 sm:px-8 lg:px-10">
+          <SectionShell
+            id="enseignant-datasets"
+            kicker="Jeux de données & scripts"
+            title={`Ressources pour ${theme.label}`}
+            note="Téléchargez les fichiers nécessaires pour préparer la base dans votre SGBD."
+          >
+            <div className="grid gap-6 lg:grid-cols-2">
+              <article className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200">
+                <h3 className="text-lg font-semibold text-white">CSV à distribuer</h3>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
+                  {(theme.csv || []).map((href) => (
+                    <li key={href}>
+                      <a href={href} className="underline decoration-dotted decoration-white/40 hover:text-white">{href}</a>
+                    </li>
+                  ))}
+                </ul>
+                {!theme.csv?.length && (
+                  <p className="text-xs text-slate-400">Aucun CSV n’est associé à ce dataset pour l’instant.</p>
+                )}
+              </article>
+              <article className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200">
+                <h3 className="text-lg font-semibold text-white">Scripts SQL</h3>
+                <ul className="space-y-2 text-sm text-slate-300">
+                  {theme.ddl && (
+                    <li>
+                      <strong>DDL :</strong>{' '}
+                      <a href={theme.ddl} className="underline decoration-dotted decoration-white/40 hover:text-white">{theme.ddl}</a>
+                    </li>
+                  )}
+                  {(theme.imports || []).map((href) => (
+                    <li key={href}>
+                      <strong>Import :</strong>{' '}
+                      <a href={href} className="underline decoration-dotted decoration-white/40 hover:text-white">{href}</a>
+                    </li>
+                  ))}
+                  {theme.e2e && (
+                    <li>
+                      <strong>Script E2E :</strong>{' '}
+                      <a href={theme.e2e} className="underline decoration-dotted decoration-white/40 hover:text-white">{theme.e2e}</a>
+                    </li>
+                  )}
+                </ul>
+                {!theme.ddl && !theme.imports?.length && !theme.e2e && (
+                  <p className="text-xs text-slate-400">Aucun script officiel n’est disponible pour ce dataset. Utilisez vos fichiers personnalisés.</p>
+                )}
+              </article>
+            </div>
+          </SectionShell>
+        </section>
+      );
+    };
+
+    const TeacherSessionsPlanner = () => (
+      <section className="relative z-10 mx-auto mt-4 max-w-6xl px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="enseignant-scenarios"
+          kicker="Progression proposée"
+          title="Trois séances prêtes à l’emploi"
+          note="Adaptez les durées et objectifs selon vos contraintes d’emploi du temps."
+        >
+          <div className="grid gap-6 lg:grid-cols-3">
+            {teacherSessions.map((session, index) => (
+              <article
+                key={index}
+                className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-lg font-semibold text-white">{session.phase}</h3>
+                  <Pill tone="accent">{session.duration}</Pill>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Objectifs</h4>
+                  <ul className="mt-2 list-disc space-y-2 pl-5 text-xs text-slate-300">
+                    {session.objectives.map((objective, objIndex) => (
+                      <li key={objIndex}>{objective}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Mouvements enseignant</h4>
+                  <ul className="mt-2 list-disc space-y-2 pl-5 text-xs text-slate-300">
+                    {session.teacherMoves.map((move, moveIndex) => (
+                      <li key={moveIndex}>{move}</li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+            ))}
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const TeacherResourcesHub = () => (
+      <section className="relative z-10 mx-auto mt-4 max-w-6xl px-6 sm:px-8 lg:px-10">
+        <SectionShell
+          id="enseignant-ressources"
+          kicker="Ressources enseignantes"
+          title="Corrections, grilles et automatisation"
+          note="Réservé à l’enseignant : ne pas diffuser aux élèves en amont."
+        >
+          <div className="grid gap-6 lg:grid-cols-3">
+            {teacherResourceGroups.map((group, index) => (
+              <article
+                key={index}
+                className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200"
+              >
+                <h3 className="text-lg font-semibold text-white">{group.title}</h3>
+                <p className="text-xs text-slate-300">{group.description}</p>
+                <ul className="space-y-2 text-xs text-slate-300">
+                  {group.items.map((item) => (
+                    <li key={item.href}>
+                      <a href={item.href} className="underline decoration-dotted decoration-white/40 hover:text-white">{item.label}</a>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+            <article className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200">
+              <h3 className="text-lg font-semibold text-white">Évaluation & suivi</h3>
+              <ul className="space-y-2 text-xs text-slate-300">
+                {evaluationTools.map((tool) => (
+                  <li key={tool.href}>
+                    <a href={tool.href} className="underline decoration-dotted decoration-white/40 hover:text-white">{tool.title}</a>
+                    <p className="mt-1 text-[11px] text-slate-400">{tool.description}</p>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const TeacherExecutor = ({ selectedDataset }) => {
+      const [script, setScript] = useState(e2eSnippets[selectedDataset] || '');
+      const [logs, setLogs] = useState([]);
+      const [resultColumns, setResultColumns] = useState([]);
+      const [resultRows, setResultRows] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+      const dbRef = useRef(() => new alasql.Database());
+
+      useEffect(() => {
+        setScript(e2eSnippets[selectedDataset] || '');
+      }, [selectedDataset]);
+
+      const pushLog = (entry) => {
+        setLogs((prev) => [
+          { ...entry, timestamp: new Date().toISOString() },
+          ...prev
+        ].slice(0, 15));
+      };
+
+      const currentDb = () => {
+        if (typeof dbRef.current === 'function') {
+          dbRef.current = new alasql.Database();
+        }
+        if (!dbRef.current) {
+          dbRef.current = new alasql.Database();
+        }
+        return dbRef.current;
+      };
+
+      const resetDatabase = () => {
+        dbRef.current = new alasql.Database();
+        setResultColumns([]);
+        setResultRows([]);
+        pushLog({ status: 'info', message: 'Nouvelle base initialisée.' });
+      };
+
+      const loadDataset = async () => {
+        const theme = datasetCatalog.find((entry) => entry.key === selectedDataset);
+        if (!theme) {
+          pushLog({ status: 'error', message: 'Dataset introuvable pour ce thème.' });
+          return;
+        }
+        if (!Array.isArray(theme.csv) || !theme.csv.length) {
+          pushLog({ status: 'warning', message: 'Aucun CSV associé à ce dataset.' });
+        }
+        setIsLoading(true);
+        try {
+          const db = new alasql.Database();
+          for (const href of theme.csv || []) {
+            const response = await fetch(href);
+            if (!response.ok) {
+              throw new Error(`Impossible de récupérer ${href} (${response.status})`);
+            }
+            const text = await response.text();
+            const { rows } = parseCSV(text);
+            if (!rows.length) {
+              pushLog({ status: 'warning', message: `Fichier vide ignoré : ${href}` });
+              continue;
+            }
+            const headers = normalizeHeaders(rows[0]);
+            const tableName = sanitizeName(href.split('/').pop().replace(/\.[^.]+$/, '')) || 'table';
+            db.exec(`DROP TABLE IF EXISTS ${tableName}`);
+            db.exec(`CREATE TABLE ${tableName} (${headers.map((h) => `${h} TEXT`).join(', ')})`);
+            const table = db.tables[tableName];
+            rows.slice(1).forEach((row) => {
+              const record = {};
+              headers.forEach((header, index) => {
+                record[header] = row[index] ?? null;
+              });
+              table.data.push(record);
+            });
+            pushLog({ status: 'success', message: `${tableName} importée (${rows.length - 1} lignes).` });
+          }
+          dbRef.current = db;
+          setResultColumns([]);
+          setResultRows([]);
+          pushLog({ status: 'info', message: 'Dataset chargé — exécutez les contrôles ci-dessous.' });
+        } catch (error) {
+          pushLog({ status: 'error', message: error.message });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const importLocalCSV = (file) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const text = String(reader.result);
+            const { rows } = parseCSV(text);
+            if (!rows.length) {
+              pushLog({ status: 'error', message: 'Le fichier local semble vide.' });
+              return;
+            }
+            const headers = normalizeHeaders(rows[0]);
+            const tableName = sanitizeName(file.name.replace(/\.[^.]+$/, '')) || 'table_local';
+            const db = currentDb();
+            db.exec(`DROP TABLE IF EXISTS ${tableName}`);
+            db.exec(`CREATE TABLE ${tableName} (${headers.map((h) => `${h} TEXT`).join(', ')})`);
+            const table = db.tables[tableName];
+            rows.slice(1).forEach((row) => {
+              const record = {};
+              headers.forEach((header, index) => {
+                record[header] = row[index] ?? null;
+              });
+              table.data.push(record);
+            });
+            pushLog({ status: 'success', message: `Import local réussi : ${tableName} (${rows.length - 1} lignes).` });
+          } catch (error) {
+            pushLog({ status: 'error', message: error.message });
+          }
+        };
+        reader.readAsText(file, 'utf-8');
+      };
+
+      const runScript = () => {
+        const db = currentDb();
+        setResultColumns([]);
+        setResultRows([]);
+        if (!script.trim()) {
+          pushLog({ status: 'warning', message: 'Aucun script à exécuter.' });
+          return;
+        }
+        const statements = script
+          .split(/;\s*(?:\n|$)/)
+          .map((stmt) => stmt.trim())
+          .filter(Boolean);
+
+        if (!statements.length) {
+          pushLog({ status: 'warning', message: 'Script vide après nettoyage.' });
+          return;
+        }
+
+        for (const statement of statements) {
+          if (!statement || statement.startsWith('--')) {
+            continue;
+          }
+          try {
+            const result = db.exec(statement);
+            if (Array.isArray(result) && result.length) {
+              if (typeof result[0] === 'object') {
+                setResultColumns(Object.keys(result[0]));
+                setResultRows(result.slice(0, 10));
+              } else {
+                setResultColumns(['valeur']);
+                setResultRows(result.slice(0, 10).map((value) => ({ valeur: value })));
+              }
+              pushLog({ status: 'success', message: `SELECT exécuté (${result.length} ligne(s)).` });
+            } else {
+              pushLog({ status: 'success', message: `Instruction exécutée : ${statement.substring(0, 60)}…` });
+            }
+          } catch (error) {
+            pushLog({ status: 'error', message: `Erreur sur « ${statement.substring(0, 60)}… » : ${error.message}` });
+            break;
+          }
+        }
+      };
+
+      return (
+        <section className="relative z-10 mx-auto mt-4 max-w-6xl px-6 sm:px-8 lg:px-10">
+          <SectionShell
+            id="enseignant-execution"
+            kicker="Contrôles de cohérence"
+            title="Exécuter un script SQL local (AlaSQL)"
+            note="Chargez un dataset, collez un script E2E (DROP→CREATE→INSERT→CHECK) puis exécutez-le hors-ligne."
+          >
+            <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+              <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold text-white">Script SQL</h3>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <button
+                      onClick={() => setScript(e2eSnippets[selectedDataset] || '')}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 font-semibold text-white/80 transition hover:bg-white/20"
+                    >
+                      Charger le modèle
+                    </button>
+                    <button
+                      onClick={resetDatabase}
+                      className="inline-flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-500/15 px-3 py-1 font-semibold text-rose-100 transition hover:bg-rose-500/25"
+                    >
+                      Réinitialiser la base
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  value={script}
+                  onChange={(event) => setScript(event.target.value)}
+                  className="min-h-[220px] w-full rounded-2xl border border-white/10 bg-slate-950/80 p-4 font-mono text-sm text-slate-100 shadow-inner focus:border-nexus-400 focus:outline-none focus:ring-2 focus:ring-nexus-300/60"
+                />
+                <div className="flex flex-wrap gap-2 text-sm">
+                  <button
+                    onClick={runScript}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-nexus-400 bg-nexus-500/80 px-4 py-2 font-semibold text-white shadow-lg transition hover:bg-nexus-500"
+                  >
+                    ▶ Exécuter le script
+                  </button>
+                  <button
+                    onClick={loadDataset}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 font-semibold text-white/80 transition hover:bg-white/20"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Chargement…' : 'Charger le dataset sélectionné'}
+                  </button>
+                  <label className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-300 hover:bg-white/10">
+                    CSV local
+                    <input
+                      type="file"
+                      accept=".csv,text/csv"
+                      onChange={(event) => importLocalCSV(event.target.files[0])}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/30">
+                  <table className="min-w-full text-left text-sm text-slate-200">
+                    <thead className="bg-white/5 text-xs uppercase tracking-wide text-slate-300">
+                      <tr>
+                        {resultColumns.map((column) => (
+                          <th key={column} className="px-3 py-2">{column}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resultRows.length ? (
+                        resultRows.map((row, rowIndex) => (
+                          <tr key={rowIndex} className={rowIndex % 2 ? 'bg-white/5' : undefined}>
+                            {resultColumns.map((column) => (
+                              <td key={column} className="px-3 py-2 text-xs text-slate-100/80 break-all">
+                                {row[column] !== undefined ? String(row[column]) : '—'}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={resultColumns.length || 1} className="px-3 py-4 text-center text-xs text-slate-500">
+                            Les résultats des SELECT apparaîtront ici (limités à 10 lignes).
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <aside className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-xs text-slate-300">
+                <h3 className="text-sm font-semibold text-white">Journal d’exécution</h3>
+                <ul className="space-y-2">
+                  {logs.length ? logs.map((entry, index) => (
+                    <li key={index} className={clsx(
+                      'rounded-2xl border px-3 py-2',
+                      entry.status === 'error' ? 'border-rose-400/40 bg-rose-500/10 text-rose-100' :
+                        entry.status === 'warning' ? 'border-amber-400/40 bg-amber-500/10 text-amber-100' :
+                          'border-white/10 bg-white/5 text-slate-200'
+                    )}>
+                      <div className="font-mono text-[10px] text-slate-400">{entry.timestamp}</div>
+                      <div className="text-xs leading-snug">{entry.message}</div>
+                    </li>
+                  )) : (
+                    <li className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4 text-center text-slate-400">
+                      Aucune exécution enregistrée pour l’instant.
+                    </li>
+                  )}
+                </ul>
+                <p className="mt-auto text-[11px] text-slate-400">
+                  Astuce : après avoir chargé un dataset, ajustez le script (ou utilisez le modèle) pour lancer vos propres contrôles d’intégrité, anti-joins et indicateurs.
+                </p>
+              </aside>
+            </div>
+          </SectionShell>
+        </section>
+      );
+    };
+
+    const TeacherJournalPanel = ({ journal, onExport, onClear, loggingEnabled, healthQueries }) => (
+      <section className="relative z-10 mx-auto mt-4 max-w-6xl px-6 pb-16 sm:px-8 lg:px-10">
+        <SectionShell
+          id="enseignant-journal"
+          kicker="Suivi local"
+          title="Journal des requêtes (hors ligne)"
+          note="Les entrées sont stockées uniquement dans le navigateur courant. Exportez-les pour analyser la séance ou préparez la suivante."
+        >
+          <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+            <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">{journal.length} entrées enregistrées</h3>
+                <Pill tone={loggingEnabled ? 'success' : 'warning'}>{loggingEnabled ? 'Collecte active' : 'Collecte inactive'}</Pill>
+              </div>
+              <div className="mt-3 overflow-x-auto">
+                <table className="min-w-full text-left text-xs text-slate-300">
+                  <thead className="border-b border-white/10 text-[11px] uppercase tracking-wide text-slate-400">
+                    <tr>
+                      <th className="px-3 py-2">Horodatage</th>
+                      <th className="px-3 py-2">Type</th>
+                      <th className="px-3 py-2">Statut</th>
+                      <th className="px-3 py-2">Détail</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {journal.slice(-10).reverse().map((entry, index) => (
+                      <tr key={index} className={index % 2 ? 'bg-white/5' : undefined}>
+                        <td className="px-3 py-2 font-mono text-[11px] text-slate-200">{entry.timestamp}</td>
+                        <td className="px-3 py-2 uppercase tracking-wide text-[11px]">{entry.type}</td>
+                        <td className={clsx('px-3 py-2 text-[11px]', entry.status === 'success' ? 'text-emerald-300' : 'text-rose-300')}>
+                          {entry.status || '—'}
+                        </td>
+                        <td className="px-3 py-2 text-[11px] text-slate-300 break-all">
+                          {entry.sql || entry.message || entry.table || '—'}
+                        </td>
+                      </tr>
+                    ))}
+                    {!journal.length && (
+                      <tr>
+                        <td colSpan={4} className="px-3 py-4 text-center text-[11px] text-slate-500">
+                          Aucune entrée pour l’instant. Activez la collecte ou demandez aux élèves d’exécuter une requête.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                <button
+                  onClick={onExport}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 font-semibold text-white/80 transition hover:bg-white/20"
+                >
+                  Exporter le journal (.json)
+                </button>
+                <button
+                  onClick={onClear}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-rose-400/40 bg-rose-500/15 px-4 py-2 font-semibold text-rose-100 transition hover:bg-rose-500/25"
+                >
+                  Réinitialiser
+                </button>
+              </div>
+            </div>
+            <aside className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-xs text-slate-300">
+              <h3 className="text-sm font-semibold text-white">Requêtes de contrôle à exécuter</h3>
+              {healthQueries?.length ? (
+                <ol className="list-decimal space-y-2 pl-5 text-[11px]">
+                  {healthQueries.map((query, index) => (
+                    <li key={index} className="break-words text-[11px] text-slate-200">
+                      <code>{query}</code>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p>Aucune requête sélectionnée pour le moment.</p>
+              )}
+              <p className="mt-2 text-[11px] text-slate-400">
+                Conseil : lancez ces requêtes dans un SGBD réel (SQLite ou PostgreSQL) après import pour vérifier l’intégrité des données.
+              </p>
+            </aside>
+          </div>
+        </SectionShell>
+      </section>
+    );
+
+    const AudienceSwitcher = ({ role, onRoleChange, journalCount, showSolutions, dataset }) => {
+      const currentDataset = datasetCatalog.find((entry) => entry.key === dataset)?.label || datasetCatalog[0]?.label || 'Bibliothèque';
+      return (
+        <div className="relative z-30 flex justify-center px-6 pt-8 sm:px-8 lg:px-10">
+          <div className="flex w-full max-w-4xl flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-slate-900/70 px-6 py-4 text-sm text-slate-200 shadow-glow backdrop-blur">
+            <div className="flex flex-col">
+              <span className="text-xs uppercase tracking-wide text-slate-400">Interface affichée</span>
+              <span className="text-sm font-semibold text-white">{role === 'enseignant' ? 'Espace enseignant' : 'Espace élève'}</span>
+              <span className="text-[11px] text-slate-400">Dataset chargé : <strong className="text-slate-200">{currentDataset}</strong></span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onRoleChange('eleve')}
+                className={clsx(
+                  'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition',
+                  role === 'eleve'
+                    ? 'border-nexus-400/60 bg-nexus-500/50 text-white shadow-glow'
+                    : 'border-white/15 bg-white/10 text-white/80 hover:bg-white/20',
+                  focusRing
+                )}
+              >
+                Espace élève
+              </button>
+              <button
+                onClick={() => onRoleChange('enseignant')}
+                className={clsx(
+                  'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition',
+                  role === 'enseignant'
+                    ? 'border-emerald-400/60 bg-emerald-500/40 text-white shadow-glow'
+                    : 'border-white/15 bg-white/10 text-white/80 hover:bg-white/20',
+                  focusRing
+                )}
+              >
+                Espace enseignant
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300">
+              <span>
+                Solutions :{' '}
+                <strong className={showSolutions ? 'text-emerald-300' : 'text-slate-100/80'}>
+                  {showSolutions ? 'activées' : 'masquées'}
+                </strong>
+              </span>
+              <span>Journal : {journalCount}</span>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const TeacherApp = ({
+      showSolutions,
+      onShowSolutionsChange,
+      loggingEnabled,
+      setLoggingEnabled,
+      journal,
+      setJournal,
+      solutionOverrides,
+      setSolutionOverrides,
+      isFileProtocol,
+      activeDataset,
+      onDatasetChange,
+      sharedStateSnapshot
+    }) => {
+      const [datasetSource, setDatasetSource] = useState('fourni');
+      const [healthQueries, setHealthQueries] = useState(healthCheckLibrary[activeDataset] || []);
+      const [isPackaging, setIsPackaging] = useState(false);
+      const [shareFeedback, setShareFeedback] = useState('');
+
+      useEffect(() => {
+        setHealthQueries(healthCheckLibrary[activeDataset] || []);
+      }, [activeDataset]);
+
+      useEffect(() => {
+        if (!shareFeedback) return;
+        const timer = setTimeout(() => setShareFeedback(''), 4000);
+        return () => clearTimeout(timer);
+      }, [shareFeedback]);
+
+      const handleOverrideChange = (section, key, value) => {
+        setSolutionOverrides((prev) => {
+          const next = JSON.parse(JSON.stringify(prev || defaultSolutionOverrides));
+          if (section === 'scenarios') {
+            if (!next.scenarios) next.scenarios = {};
+            next.scenarios[key] = value;
+          } else if (section === 'projects') {
+            next.projects = value;
+          }
+          return next;
+        });
+      };
+
+      const handleGeneratePack = async () => {
+        setIsPackaging(true);
+        try {
+          const blob = await PackBuilder.generate({ datasetKey: activeDataset, datasetSource });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `pack_eleve_${activeDataset}.zip`;
+          link.click();
+        } catch (error) {
+          alert(`Création du pack impossible : ${error.message}`);
+        } finally {
+          setIsPackaging(false);
+        }
+      };
+
+      const handleHealthCheck = () => {
+        setHealthQueries(healthCheckLibrary[activeDataset] || []);
+      };
+
+      const handleExportJournal = () => {
+        downloadText('journal_sql.json', JSON.stringify(journal, null, 2));
+      };
+
+      const handleClearJournal = () => {
+        setJournal([]);
+      };
+
+      const handleShareLinkCopy = async () => {
+        const url = SharedState.toStudentUrl(sharedStateSnapshot);
+        if (!url) {
+          setShareFeedback('Impossible de composer le lien élève.');
+          return;
+        }
+        const ok = await copyToClipboard(url);
+        setShareFeedback(ok ? 'Lien élève copié dans le presse-papiers.' : 'Copie impossible : sélectionnez le lien dans la barre d’adresse.');
+      };
+
+      return (
+        <>
+          <TeacherHero showSolutions={showSolutions} />
+          <TeacherControlPanel
+            showSolutions={showSolutions}
+            onShowSolutionsChange={onShowSolutionsChange}
+            loggingEnabled={loggingEnabled}
+            setLoggingEnabled={setLoggingEnabled}
+            datasetSource={datasetSource}
+            setDatasetSource={setDatasetSource}
+            selectedDataset={activeDataset}
+            onDatasetChange={onDatasetChange}
+            onGeneratePack={handleGeneratePack}
+            onRunHealthCheck={handleHealthCheck}
+            isPackaging={isPackaging}
+            solutionOverrides={solutionOverrides}
+            onOverrideChange={handleOverrideChange}
+            isFileProtocol={isFileProtocol}
+            onShareLinkCopy={handleShareLinkCopy}
+            shareFeedback={shareFeedback}
+          />
+          <TeacherDatasets selectedDataset={activeDataset} />
+          <TeacherExecutor selectedDataset={activeDataset} />
+          <TeacherSessionsPlanner />
+          <TeacherResourcesHub />
+          <TeacherJournalPanel
+            journal={journal}
+            onExport={handleExportJournal}
+            onClear={handleClearJournal}
+            loggingEnabled={loggingEnabled}
+            healthQueries={healthQueries}
+          />
+        </>
+      );
+    };
+
+    /* ---------- Application root ---------- */
+    const StandaloneApp = () => {
+      const [sharedStateValue, setSharedStateValue] = useState(() => SharedState.initialize());
+      const [loggingEnabled, setLoggingEnabled] = useState(false);
+      const [journal, setJournal] = useState([]);
+      const [solutionOverrides, setSolutionOverrides] = useState(() => JSON.parse(JSON.stringify(defaultSolutionOverrides)));
+      const [isFileProtocol, setIsFileProtocol] = useState(false);
+
+      useEffect(() => {
+        setIsFileProtocol(typeof window !== 'undefined' && window.location.protocol === 'file:');
+      }, []);
+
+      useEffect(() => {
+        try {
+          const loggingKeys = ['nsi_bdd_logging_enabled', 'bdd_nsi_logging_enabled'];
+          const storedLogging = loggingKeys.map((key) => localStorage.getItem(key)).find((value) => value !== null);
+          if (storedLogging !== undefined && storedLogging !== null) {
+            setLoggingEnabled(storedLogging === 'true');
+          }
+
+          const overrideKeys = ['nsi_bdd_solution_overrides', 'bdd_nsi_solution_overrides'];
+          const storedOverrides = overrideKeys.map((key) => localStorage.getItem(key)).find((value) => value);
+          if (storedOverrides) {
+            const parsed = JSON.parse(storedOverrides);
+            setSolutionOverrides((prev) => ({
+              ...JSON.parse(JSON.stringify(defaultSolutionOverrides)),
+              ...parsed,
+              scenarios: {
+                ...(defaultSolutionOverrides.scenarios || {}),
+                ...(parsed?.scenarios || {})
+              }
+            }));
+          }
+        } catch (error) {
+          console.warn('Impossible de restaurer les préférences avancées', error);
+        }
+      }, []);
+
+      useEffect(() => {
+        SharedState.persist(sharedStateValue);
+        SharedState.syncUrl(sharedStateValue);
+      }, [sharedStateValue]);
+
+      useEffect(() => {
+        try {
+          localStorage.setItem('nsi_bdd_logging_enabled', String(loggingEnabled));
+        } catch (error) {
+          console.warn('Impossible d’enregistrer le journal', error);
+        }
+      }, [loggingEnabled]);
+
+      useEffect(() => {
+        try {
+          localStorage.setItem('nsi_bdd_solution_overrides', JSON.stringify(solutionOverrides));
+        } catch (error) {
+          console.warn('Impossible d’enregistrer les overrides de solutions', error);
+        }
+      }, [solutionOverrides]);
+
+      const handleJournalPush = (entry) => {
+        setJournal((previous) => [...previous, entry]);
+      };
+
+      const handleRoleChange = (nextRole) => {
+        setSharedStateValue((prev) => {
+          const normalizedRole = nextRole === 'enseignant' ? 'enseignant' : 'eleve';
+          const nextState = { ...prev, role: normalizedRole };
+          if (normalizedRole === 'eleve') {
+            nextState.showSolutions = false;
+          }
+          return nextState;
+        });
+      };
+
+      const handleDatasetChange = (nextDataset) => {
+        setSharedStateValue((prev) => ({
+          ...prev,
+          dataset: SharedState.normalizeDataset(nextDataset)
+        }));
+      };
+
+      const handleShowSolutionsChange = (updater) => {
+        setSharedStateValue((prev) => {
+          const nextValue = typeof updater === 'function' ? !!updater(prev.showSolutions) : !!updater;
+          return {
+            ...prev,
+            showSolutions: prev.role === 'eleve' ? false : nextValue
+          };
+        });
+      };
+
+      const scenarioOverrides = solutionOverrides?.scenarios || {};
+      const projectOverride = solutionOverrides?.projects ?? null;
+
+      return (
+        <>
+          <AudienceSwitcher
+            role={sharedStateValue.role}
+            onRoleChange={handleRoleChange}
+            journalCount={journal.length}
+            showSolutions={sharedStateValue.showSolutions}
+            dataset={sharedStateValue.dataset}
+          />
+          {sharedStateValue.role === 'eleve' ? (
+            <StudentApp
+              showSolutions={sharedStateValue.showSolutions}
+              onQueryExecuted={handleJournalPush}
+              loggingEnabled={loggingEnabled}
+              scenarioOverrides={scenarioOverrides}
+              projectOverride={projectOverride}
+              isFileProtocol={isFileProtocol}
+              activeDataset={sharedStateValue.dataset}
+            />
+          ) : (
+            <TeacherApp
+              showSolutions={sharedStateValue.showSolutions}
+              onShowSolutionsChange={handleShowSolutionsChange}
+              loggingEnabled={loggingEnabled}
+              setLoggingEnabled={setLoggingEnabled}
+              journal={journal}
+              setJournal={setJournal}
+              solutionOverrides={solutionOverrides}
+              setSolutionOverrides={setSolutionOverrides}
+              isFileProtocol={isFileProtocol}
+              activeDataset={sharedStateValue.dataset}
+              onDatasetChange={handleDatasetChange}
+              sharedStateSnapshot={sharedStateValue}
+            />
+          )}
+        </>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('app'));
+    root.render(<StandaloneApp />);
+  </script>
+</body>
+
+</html>

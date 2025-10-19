@@ -21,7 +21,7 @@ COPY . .
 RUN npm ci --include=dev --ignore-scripts
 
 # générer le client Prisma (maintenant que le code est là)
-RUN npx prisma generate
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/* && npx prisma generate
 
 # argon2 a un module natif -> on installe les outils de build et on reconstruit
 RUN apt-get update && apt-get install -y --no-install-recommends python3 build-essential && rm -rf /var/lib/apt/lists/*

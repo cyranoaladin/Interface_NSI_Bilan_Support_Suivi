@@ -348,7 +348,7 @@ export const resourceDirectory: ResourceDirectoryEntry[] = [
       { label: "DDL Ciné", href: "enseignant/sql/ddl/ddl_cine.sql" },
       { label: "Import Bibliothèque (SQLite)", href: "enseignant/sql/import/import_biblio_sqlite.sql" },
       { label: "Import Réseau (PostgreSQL)", href: "enseignant/sql/import/import_reseau_psql.sql" },
-      { label: "E2E Vélo (SQLite)", href: "enseignant/sql/e2e/e2e_velo_sqlite.sql" }
+      { label: "E2E Vélo (SQLite)", href: "e2e_scripts/e2e_velo_sqlite.sql" }
     ]
   },
   {
@@ -357,8 +357,8 @@ export const resourceDirectory: ResourceDirectoryEntry[] = [
       { label: "Grille compétences A4", href: "enseignant/docs/grille_competences_A4.html" },
       { label: "Corrections types (MD)", href: "enseignant/docs/corrections_types.md" },
       { label: "Solutions Bibliothèque", href: "enseignant/sql/solutions/solutions_biblio.sql" },
-      { label: "Pack CSV complet", href: "csv_projets_all/" },
-      { label: "Scripts import (zip)", href: "import_scripts/" }
+      { label: "README BDD", href: "README.md" },
+      { label: "Interface standalone", href: "index_standalone.html" }
     ]
   }
 ];
@@ -440,10 +440,10 @@ export const teacherResourceGroups: TeacherResourceGroup[] = [
     title: "Tests & automatisation",
     description: "Scripts de validation pour vérifier les jeux de données avant séance.",
     items: [
-      { label: "E2E Biblio (SQLite)", href: "enseignant/sql/e2e/e2e_biblio_sqlite.sql" },
-      { label: "E2E Ciné (PostgreSQL)", href: "enseignant/sql/e2e/e2e_cine_psql.sql" },
-      { label: "E2E Réseau (SQLite)", href: "enseignant/sql/e2e/e2e_reseau_sqlite.sql" },
-      { label: "E2E Vélo (PostgreSQL)", href: "enseignant/sql/e2e/e2e_velo_psql.sql" }
+      { label: "E2E Biblio (SQLite)", href: "e2e_scripts/e2e_biblio_sqlite.sql" },
+      { label: "E2E Ciné (PostgreSQL)", href: "e2e_scripts/e2e_cine_psql.sql" },
+      { label: "E2E Réseau (SQLite)", href: "e2e_scripts/e2e_reseau_sqlite.sql" },
+      { label: "E2E Vélo (PostgreSQL)", href: "e2e_scripts/e2e_velo_psql.sql" }
     ]
   }
 ];

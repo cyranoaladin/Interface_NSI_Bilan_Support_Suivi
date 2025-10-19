@@ -40,13 +40,7 @@ import {
   uniquePackResources
 } from '@/features/bdd-nsi/pack-builder';
 
-const resolveAssetHref = (href: string): string => {
-  if (!href) return '#';
-  if (href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto:')) return href;
-  if (href.startsWith('/NSI/BDD_NSI/')) return href;
-  const trimmed = href.replace(/^\/+/, '');
-  return `/NSI/BDD_NSI/${trimmed}`;
-};
+import { resolveAssetHref, isSensitiveResource } from '@/features/bdd-nsi/utils';
 
 const Section = ({ id, title, description, children }: { id: string; title: string; description?: React.ReactNode; children: React.ReactNode; }) => (
   <section id={id} className="space-y-4">
@@ -94,6 +88,7 @@ const toDurationLabel = (value?: string) => (value ? `${value}` : undefined);
 export default function BddNsiHubPage() {
   const { push } = useToast();
   const [state, setState] = React.useState<SharedStateSnapshot>(() => initializeSharedState());
+  const [canSwitchToTeacher, setCanSwitchToTeacher] = React.useState<boolean>(false);
   const [datasetSource, setDatasetSource] = React.useState<'officiel' | 'personnalise'>('officiel');
   const [copiedShareUrl, setCopiedShareUrl] = React.useState(false);
   const [copiedManifest, setCopiedManifest] = React.useState(false);
@@ -102,7 +97,7 @@ export default function BddNsiHubPage() {
     () => datasetCatalog.find((entry) => entry.key === state.dataset) ?? datasetCatalog[0],
     [state.dataset]
   );
-  const datasetResources = React.useMemo(
+  const allDatasetResources = React.useMemo(
     () => uniquePackResources(resourcesForDataset(state.dataset)),
     [state.dataset]
   );
@@ -111,11 +106,46 @@ export default function BddNsiHubPage() {
     [state.dataset, datasetSource]
   );
   const quizPayloads = React.useMemo(() => buildQuizPayloads(), []);
+  const hideSolutions = state.role === 'eleve' || !state.showSolutions || !canSwitchToTeacher;
+  const filteredDatasetResources = React.useMemo(
+    () => hideSolutions
+      ? allDatasetResources.filter((resource) => !isSensitiveResource(resource.href))
+      : allDatasetResources,
+    [allDatasetResources, hideSolutions]
+  );
+  const filteredTeacherDocs = React.useMemo(
+    () => hideSolutions
+      ? packBuilderTeacherDocs.filter((doc) => !isSensitiveResource(doc.href))
+      : packBuilderTeacherDocs,
+    [hideSolutions]
+  );
 
   React.useEffect(() => {
     persistSharedState(state);
     syncUrlWithState(state);
   }, [state]);
+
+  // Récupération du rôle réel depuis l'API pour empêcher l’accès enseignant aux élèves
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/me', { cache: 'no-store' });
+        const data = await res.json();
+        if (res.ok && data?.ok) {
+          if (data.role === 'TEACHER') {
+            setCanSwitchToTeacher(true);
+          } else {
+            setCanSwitchToTeacher(false);
+            // Force le rôle élève si l’utilisateur n’est pas enseignant
+            setState((prev) => ({ ...prev, role: 'eleve', showSolutions: false }));
+          }
+        }
+      } catch {
+        setCanSwitchToTeacher(false);
+        setState((prev) => ({ ...prev, role: 'eleve', showSolutions: false }));
+      }
+    })();
+  }, []);
 
   const updateRole = React.useCallback((role: Role) => {
     setState((prev) => ({ ...prev, role, showSolutions: role === 'eleve' ? false : prev.showSolutions }));
@@ -195,7 +225,14 @@ export default function BddNsiHubPage() {
       </div>}
       right={<div className="flex items-center gap-2">
         <Button variant={state.role === 'eleve' ? 'primary' : 'ghost'} onClick={() => updateRole('eleve')}>Espace élève</Button>
-        <Button variant={state.role === 'enseignant' ? 'primary' : 'ghost'} onClick={() => updateRole('enseignant')}>Espace enseignant</Button>
+        <Button
+          variant={state.role === 'enseignant' ? 'primary' : 'ghost'}
+          onClick={() => updateRole('enseignant')}
+          disabled={!canSwitchToTeacher}
+          title={canSwitchToTeacher ? 'Basculer vers l’espace enseignant' : 'Réservé aux enseignants'}
+        >
+          Espace enseignant
+        </Button>
       </div>}
     >
       <div className="space-y-12">
@@ -367,7 +404,7 @@ export default function BddNsiHubPage() {
           </>
         )}
 
-        {state.role === 'enseignant' && (
+        {state.role === 'enseignant' && canSwitchToTeacher && (
           <>
             <Section id="sessions" title="Déroulé pédagogique" description="Trois séances clés en main pour lancer, animer et évaluer la séquence.">
               <div className="grid gap-4 md:grid-cols-3">
@@ -392,17 +429,26 @@ export default function BddNsiHubPage() {
 
             <Section id="enseignant-ressources" title="Bibliothèque enseignant" description="Imports SQL, corrections et scripts de vérification.">
               <div className="grid gap-4 md:grid-cols-3">
-                {teacherResourceGroups.map((group) => (
-                  <Card key={group.title} title={group.title} subtitle={group.description}>
-                    <ul className="space-y-1">
-                      {group.items.map((item) => (
-                        <li key={item.href}>
-                          <ResourceLink href={item.href}>{item.label}</ResourceLink>
-                        </li>
-                      ))}
-                    </ul>
-                  </Card>
-                ))}
+                {teacherResourceGroups.map((group) => {
+                  const items = hideSolutions
+                    ? group.items.filter((item) => !isSensitiveResource(item.href))
+                    : group.items;
+                  return (
+                    <Card key={group.title} title={group.title} subtitle={group.description}>
+                      {items.length > 0 ? (
+                        <ul className="space-y-1">
+                          {items.map((item) => (
+                            <li key={item.href}>
+                              <ResourceLink href={item.href}>{item.label}</ResourceLink>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-[var(--fg)]/60">Activez l’affichage des solutions pour accéder aux corrections.</p>
+                      )}
+                    </Card>
+                  );
+                })}
               </div>
             </Section>
 
@@ -425,7 +471,7 @@ export default function BddNsiHubPage() {
 
               <Card title="Assets inclus" subtitle="Ressources empaquetées pour le dataset choisi.">
                 <ul className="space-y-1">
-                  {datasetResources.map((resource) => (
+                  {filteredDatasetResources.map((resource) => (
                     <li key={resource.target} className="flex items-center justify-between gap-2">
                       <span className="truncate text-sm">{resource.href}</span>
                       <ResourceLink href={resource.href}>ouvrir</ResourceLink>
@@ -445,15 +491,23 @@ export default function BddNsiHubPage() {
                   </ul>
                 </Card>
                 <Card title="Docs enseignants">
-                  <ul className="space-y-1">
-                    {packBuilderTeacherDocs.map((doc) => (
-                      <li key={doc.href}>
-                        <ResourceLink href={doc.href}>{doc.href}</ResourceLink>
-                      </li>
-                    ))}
-                  </ul>
+                  {filteredTeacherDocs.length > 0 ? (
+                    <ul className="space-y-1">
+                      {filteredTeacherDocs.map((doc) => (
+                        <li key={doc.href}>
+                          <ResourceLink href={doc.href}>{doc.href}</ResourceLink>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-[var(--fg)]/60">Activez les solutions pour inclure corrections et barèmes dans le pack.</p>
+                  )}
                 </Card>
               </div>
+
+              {state.role === 'enseignant' && hideSolutions && (
+                <p className="text-xs text-[var(--fg)]/60">Les ressources sensibles (solutions, corrections) sont masquées tant que les solutions ne sont pas affichées.</p>
+              )}
 
               <Card title="Payloads quiz" subtitle="Export JSON prêt pour l’interface standalone.">
                 <div className="space-y-3">
@@ -549,13 +603,23 @@ export default function BddNsiHubPage() {
           <div className="grid gap-4 md:grid-cols-3">
             {resourceDirectory.map((group) => (
               <Card key={group.category} title={group.category}>
-                <ul className="space-y-1">
-                  {group.items.map((item) => (
-                    <li key={item.href}>
-                      <ResourceLink href={item.href}>{item.label}</ResourceLink>
-                    </li>
-                  ))}
-                </ul>
+                {(() => {
+                  const items = hideSolutions
+                    ? group.items.filter((item) => !isSensitiveResource(item.href))
+                    : group.items;
+                  if (items.length === 0) {
+                    return <p className="text-sm text-[var(--fg)]/60">Solutions et corrections masquées. Activez-les pour les afficher.</p>;
+                  }
+                  return (
+                    <ul className="space-y-1">
+                      {items.map((item) => (
+                        <li key={item.href}>
+                          <ResourceLink href={item.href}>{item.label}</ResourceLink>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                })()}
               </Card>
             ))}
           </div>

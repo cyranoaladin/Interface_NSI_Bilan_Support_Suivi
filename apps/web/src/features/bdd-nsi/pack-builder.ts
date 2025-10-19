@@ -43,7 +43,7 @@ export const manifestForDataset = (datasetKey?: string, datasetSource?: "officie
     `Source des CSV : ${sourceLabel}`,
     "",
     "## Contenu",
-    "- index.html (interface standalone)",
+    "- index_standalone.html (interface standalone)",
     "- assets/ (datasets, scripts SQL, documents, quiz)",
     "",
     "## Démarrage rapide",

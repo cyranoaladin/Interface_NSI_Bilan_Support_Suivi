@@ -41,7 +41,7 @@ describe('menu builders', () => {
     }
   });
 
-  test('teacher resources: includes Bilans évaluations, Première, Terminale, TP Algo', () => {
+  test('teacher resources: includes Bilans évaluations, Première, Terminale, TP Algo, Mentions légales', () => {
     const { resources } = buildTeacherSidebar();
     const labels = resources.map(i => i.label);
     expect(labels).toEqual([
@@ -49,6 +49,7 @@ describe('menu builders', () => {
       'Ressources NSI Première',
       'Ressources Terminale',
       'TP Algo Python',
+      'Mentions légales',
     ]);
     const hrefs = resources.map(i => i.href);
     expect(hrefs).toEqual([
@@ -56,6 +57,7 @@ describe('menu builders', () => {
       '/dashboard/teacher/ressources',
       '/dashboard/teacher/ressources-terminale',
       '/tp-algo/index.html',
+      '/mentions-legales',
     ]);
   });
 });

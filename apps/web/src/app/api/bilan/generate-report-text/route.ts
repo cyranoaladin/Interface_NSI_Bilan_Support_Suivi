@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { env } from '@/lib/env';
 import { metrics } from '@/lib/metrics';
 import { setLastLlmPayload } from '@/lib/mock';
-import { getSessionEmail } from '@/lib/session';
+import { getSessionEmail } from '@/lib/auth-utils';
 import { semanticSearch } from '@/lib/vector';
 import { PrismaClient } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   async function callGemini(system: string, payload: any) {
     const key = env.GEMINI_API_KEY;
     if (!key) { console.warn('⚠️ GEMINI_API_KEY manquant — exécution LLM désactivée'); throw new Error('No GEMINI_API_KEY'); }
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_GENERATION_MODEL || 'gemini-1.5-pro-latest'}:generateContent?key=${encodeURIComponent(key)}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL || 'gemini-1.5-flash-latest'}:generateContent?key=${encodeURIComponent(key)}`;
     const body = { contents: [{ role: 'user', parts: [{ text: system }] }, { role: 'user', parts: [{ text: JSON.stringify(payload) }] }], generationConfig: { responseMimeType: 'application/json' } };
     const t0 = Date.now();
     const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
   // Mode test E2E: si header x-llm-mock présent, capturer payload et court-circuiter
   const mockHeader = req.headers.get('x-llm-mock');
   if (mockHeader) {
-    try { setLastLlmPayload(payload); } catch {}
+    try { setLastLlmPayload(payload); } catch { }
     try {
       const updated = await prisma.bilan.update({ where: { id: bilan.id }, data: { reportText: JSON.stringify({ mocked: true }), status: 'GENERATED' } });
       return NextResponse.json({ ok: true, reportText: updated.reportText, payload });

@@ -1,11 +1,12 @@
 datasource db {
   provider          = "postgresql"
   url               = env("DATABASE_URL")
+  directUrl         = env("DIRECT_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -13,20 +14,20 @@ generator client {
 
 model Student {
   // Spéc: email est la clé primaire
-  email                  String   @id
+  email                  String  @id
   givenName              String
   familyName             String
   classe                 String
   specialites            String
-  active                 Boolean  @default(true)
+  active                 Boolean @default(true)
   passwordHash           String
-  passwordChangeRequired Boolean  @default(true)
+  passwordChangeRequired Boolean @default(true)
 
   // Relations
   attempts    Attempt[]
   profileData StudentProfileData?
   groupId     String
-  group       Group    @relation(fields: [groupId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  group       Group               @relation(fields: [groupId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   bilans      Bilan[]
   evalBilans  EvaluationBilan[]
 
@@ -34,9 +35,9 @@ model Student {
 }
 
 model Attempt {
-  id            String    @id @default(cuid())
+  id       String  @id @default(cuid())
   // Spéc: flag de réactivation
-  isActive      Boolean   @default(true)
+  isActive Boolean @default(true)
 
   studentEmail  String
   student       Student   @relation(fields: [studentEmail], references: [email])
@@ -50,7 +51,7 @@ model Attempt {
 
   // Optionnel: tentative liée à un groupe/classe
   groupId String?
-  group   Group?   @relation(fields: [groupId], references: [id])
+  group   Group?  @relation(fields: [groupId], references: [id])
 
   @@index([studentEmail])
   @@index([groupId])
@@ -92,11 +93,11 @@ model Report {
 
 model Teacher {
   // Spéc: email est la clé primaire
-  email                  String   @id
+  email                  String  @id
   firstName              String
   lastName               String
   passwordHash           String
-  passwordChangeRequired Boolean  @default(true)
+  passwordChangeRequired Boolean @default(true)
 
   // Groupes enseignés (via table de jointure)
   groups TeacherOnGroup[]
@@ -104,16 +105,16 @@ model Teacher {
 
 // === GROUP / CLASSES ===
 model Group {
-  id           String           @id @default(cuid())
-  name         String           @unique
-  code         String           @unique
-  academicYear String           // ex: "2024-2025"
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id           String   @id @default(cuid())
+  name         String   @unique
+  code         String   @unique
+  academicYear String // ex: "2024-2025"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  students     Student[]
-  attempts     Attempt[]
-  teachers     TeacherOnGroup[]
+  students Student[]
+  attempts Attempt[]
+  teachers TeacherOnGroup[]
 
   @@index([academicYear])
 }
@@ -121,10 +122,10 @@ model Group {
 model TeacherOnGroup {
   teacherEmail String
   groupId      String
-  role      String   @default("teacher") // main | teacher | assistant
+  role         String @default("teacher") // main | teacher | assistant
 
-  teacher   Teacher  @relation(fields: [teacherEmail], references: [email])
-  group     Group    @relation(fields: [groupId], references: [id])
+  teacher Teacher @relation(fields: [teacherEmail], references: [email])
+  group   Group   @relation(fields: [groupId], references: [id])
 
   @@id([teacherEmail, groupId])
   @@index([groupId])
@@ -134,41 +135,41 @@ model TeacherOnGroup {
 
 // === BILAN MODELS ===
 model Bilan {
-  id               String   @id @default(cuid())
-  authorEmail      String
-  authorRole       String // 'teacher' | 'student'
+  id          String @id @default(cuid())
+  authorEmail String
+  authorRole  String // 'teacher' | 'student'
 
-  studentEmail     String?
-  student          Student? @relation(fields: [studentEmail], references: [email])
+  studentEmail String?
+  student      Student? @relation(fields: [studentEmail], references: [email])
 
-  matiere          String?
-  niveau           String?
+  matiere String?
+  niveau  String?
 
   qcmRawAnswers    Json?
   pedagoRawAnswers Json?
 
-  qcmScores        Json?
-  pedagoProfile    Json?
-  preAnalyzedData  Json?
+  qcmScores       Json?
+  pedagoProfile   Json?
+  preAnalyzedData Json?
 
-  reportText       String?
-  summaryText      String?
+  reportText  String?
+  summaryText String?
 
-  generatedAt      DateTime?
-  status           String   @default("PENDING")
-  variant          String?
+  generatedAt DateTime?
+  status      String    @default("PENDING")
+  variant     String?
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([authorEmail])
   @@index([studentEmail])
 }
 
 model StudentProfileData {
-  id               String   @id @default(cuid())
-  studentEmail     String   @unique
-  student          Student  @relation(fields: [studentEmail], references: [email])
+  id           String  @id @default(cuid())
+  studentEmail String  @unique
+  student      Student @relation(fields: [studentEmail], references: [email])
 
   pedagoRawAnswers Json?
   pedagoProfile    Json?
@@ -178,15 +179,15 @@ model StudentProfileData {
 
 // === EVALUATIONS (Bilans évaluations) ===
 model Evaluation {
-  id     Int                @id @default(autoincrement())
-  title  String
-  date   DateTime
+  id    Int      @id @default(autoincrement())
+  title String
+  date  DateTime
 
   bilans EvaluationBilan[]
 }
 
 model EvaluationBilan {
-  id                   Int       @id @default(autoincrement())
+  id                   Int    @id @default(autoincrement())
   studentEmail         String
   evaluationId         Int
   noteFinale           String
@@ -205,21 +206,32 @@ model EvaluationBilan {
 
 // === RAG MODELS (DB tables existantes) ===
 model Document {
-  id     String  @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  id     String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   source String? @db.Text
   path   String  @db.Text
   title  String? @db.Text
   label  String? @db.Text
   meta   Json?   @db.JsonB
 
+  // relation back to DocumentNotion (explicit M:N with Notion)
+  notions DocumentNotion[]
+
   @@map("documents")
 }
 
 // === EXTENSION « Programme & Quiz » ===
 
-enum ExerciseType { QCM OUVERT CODING }
+enum ExerciseType {
+  QCM
+  OUVERT
+  CODING
+}
 
-enum Difficulty { EASY MEDIUM HARD }
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
 
 model CurrTheme {
   id       String      @id @default(cuid())
@@ -230,26 +242,27 @@ model CurrTheme {
   parent   CurrTheme?  @relation("ThemeParent", fields: [parentId], references: [id])
   children CurrTheme[] @relation("ThemeParent")
 
-  notions  Notion[]
+  notions Notion[]
 
   @@index([parentId])
   @@index([order])
 }
 
 model Notion {
-  id       String    @id @default(cuid())
-  code     String    @unique
-  title    String
-  order    Int       @default(0)
-  themeId  String
-  theme    CurrTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  id      String    @id @default(cuid())
+  code    String    @unique
+  title   String
+  order   Int       @default(0)
+  themeId String
+  theme   CurrTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
 
   // liens
-  resources ResourceNotion[]
-  exercises ExerciseNotion[]
-  mastery   StudentMastery[]
-  coverage  TeacherCoverage[]
-  documents DocumentNotion[]
+  resources   ResourceNotion[]
+  exercises   ExerciseNotion[]
+  mastery     StudentMastery[]
+  coverage    TeacherCoverage[]
+  documents   DocumentNotion[]
+  resourceDocs ResourceDocumentNotion[]
 
   @@index([themeId])
 }
@@ -263,7 +276,7 @@ model TeacherCoverage {
   durationMin Int?
   notes       String?
 
-  notion      Notion   @relation(fields: [notionId], references: [id], onDelete: Cascade)
+  notion Notion @relation(fields: [notionId], references: [id], onDelete: Cascade)
 
   @@index([teacherId])
   @@index([groupId])
@@ -271,13 +284,13 @@ model TeacherCoverage {
 }
 
 model Resource {
-  id           String   @id @default(cuid())
+  id           String           @id @default(cuid())
   title        String
   s3Key        String
   mime         String
   size         Int
   uploadedById String
-  uploadedAt   DateTime @default(now())
+  uploadedAt   DateTime         @default(now())
   notions      ResourceNotion[]
 
   @@index([uploadedById])
@@ -289,13 +302,14 @@ model ResourceNotion {
   notionId   String
   resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
   notion     Notion   @relation(fields: [notionId], references: [id], onDelete: Cascade)
+
   @@id([resourceId, notionId])
   @@index([notionId])
 }
 
 model Exercise {
-  id           String       @id @default(cuid())
-  code         String       @unique
+  id           String           @id @default(cuid())
+  code         String           @unique
   title        String
   type         ExerciseType
   statementMd  String
@@ -304,7 +318,7 @@ model Exercise {
   testsJson    Json?
   starterCode  String?
   difficulty   Difficulty
-  createdAt    DateTime     @default(now())
+  createdAt    DateTime         @default(now())
   notions      ExerciseNotion[]
   items        QuizItem[]
 
@@ -317,15 +331,16 @@ model ExerciseNotion {
   notionId   String
   exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   notion     Notion   @relation(fields: [notionId], references: [id], onDelete: Cascade)
+
   @@id([exerciseId, notionId])
 }
 
 model Quiz {
-  id          String     @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String?
   studentId   String?
   createdById String
-  createdAt   DateTime   @default(now())
+  createdAt   DateTime         @default(now())
   items       QuizItem[]
   submissions QuizSubmission[]
 
@@ -334,13 +349,13 @@ model Quiz {
 }
 
 model QuizItem {
-  id         String   @id @default(cuid())
-  quizId     String
-  exerciseId String
+  id          String           @id @default(cuid())
+  quizId      String
+  exerciseId  String
   /// ordre d’affichage
-  order      Int
-  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  order       Int
+  quiz        Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  exercise    Exercise         @relation(fields: [exerciseId], references: [id])
   submissions SubmissionItem[]
 
   @@index([quizId])
@@ -348,12 +363,12 @@ model QuizItem {
 }
 
 model QuizSubmission {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   quizId      String
   studentId   String
-  startedAt   DateTime @default(now())
+  startedAt   DateTime         @default(now())
   submittedAt DateTime?
-  quiz        Quiz     @relation(fields: [quizId], references: [id])
+  quiz        Quiz             @relation(fields: [quizId], references: [id])
   items       SubmissionItem[]
 
   @@index([quizId])
@@ -361,27 +376,27 @@ model QuizSubmission {
 }
 
 model SubmissionItem {
-  id            String   @id @default(cuid())
-  submissionId  String
-  quizItemId    String
-  answerJson    Json?
-  codePy        String?
-  createdAt     DateTime @default(now())
-  submission    QuizSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  quizItem      QuizItem      @relation(fields: [quizItemId], references: [id])
-  grading       SubmissionItemGrading?
+  id           String                 @id @default(cuid())
+  submissionId String
+  quizItemId   String
+  answerJson   Json?
+  codePy       String?
+  createdAt    DateTime               @default(now())
+  submission   QuizSubmission         @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  quizItem     QuizItem               @relation(fields: [quizItemId], references: [id])
+  grading      SubmissionItemGrading?
 
   @@index([submissionId])
   @@index([quizItemId])
 }
 
 model SubmissionItemGrading {
-  id               String   @id @default(cuid())
-  submissionItemId String   @unique
+  id               String         @id @default(cuid())
+  submissionItemId String         @unique
   score            Float
   openFeedbackJson Json?
   codeReviewJson   Json?
-  gradedAt         DateTime @default(now())
+  gradedAt         DateTime       @default(now())
   item             SubmissionItem @relation(fields: [submissionItemId], references: [id], onDelete: Cascade)
 }
 
@@ -399,10 +414,96 @@ model StudentMastery {
 
 /// Relie les documents existants aux notions
 model DocumentNotion {
-  documentId String @db.Uuid
+  documentId String   @db.Uuid
   notionId   String
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   notion     Notion   @relation(fields: [notionId], references: [id], onDelete: Cascade)
+
   @@id([documentId, notionId])
   @@index([notionId])
+}
+
+// --- RAG Resource models (alternate pipeline) ---
+enum ResourceStatus {
+  UPLOADED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model ResourceDocument {
+  id           Int            @id @default(autoincrement())
+  uploaderId   String
+  title        String
+  description  String?
+  mimeType     String
+  sizeBytes    BigInt         @default(0)
+  storageKey   String         @unique
+  status       ResourceStatus @default(UPLOADED)
+  source       String?
+  version      Int            @default(1)
+  uploadedAt   DateTime       @default(now())
+  processedAt  DateTime?
+  notions      ResourceDocumentNotion[]
+  chunks       ResourceChunk[]
+}
+
+model ResourceDocumentNotion {
+  docId   Int
+  notionId String
+  doc     ResourceDocument @relation(fields: [docId], references: [id], onDelete: Cascade)
+  notion  Notion           @relation(fields: [notionId], references: [id], onDelete: Cascade)
+  @@id([docId, notionId])
+}
+
+model ResourceChunk {
+  id          BigInt            @id @default(autoincrement())
+  docId       Int
+  chunkIndex  Int
+  text        String
+  embedding   Unsupported("vector")
+  doc         ResourceDocument  @relation(fields: [docId], references: [id], onDelete: Cascade)
+  @@unique([docId, chunkIndex], name: "ResourceChunk_doc_chunk_idx")
+}
+
+// === GOVERNANCE ===
+
+model Proposal {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  authorEmail String
+  authorRole  String   // 'student' | 'teacher'
+  status      String   @default("PENDING") // 'PENDING', 'APPROVED', 'REJECTED', 'IMPLEMENTED'
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  votes       Vote[]
+  comments    Comment[]
+
+  @@index([status])
+  @@index([authorEmail])
+}
+
+model Vote {
+  id          String   @id @default(cuid())
+  proposalId  String
+  voterEmail  String
+  voteType    String   // 'UP', 'DOWN'
+  createdAt   DateTime @default(now())
+
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  @@unique([proposalId, voterEmail])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  proposalId  String
+  authorEmail String
+  authorRole  String   // 'student' | 'teacher' | 'AI_AGENT'
+  content     String
+  createdAt   DateTime @default(now())
+
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  @@index([proposalId])
 }

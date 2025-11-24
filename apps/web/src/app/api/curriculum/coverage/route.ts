@@ -1,40 +1,28 @@
-import { z } from "zod";
-import { prisma } from "@/lib/prisma";
-import { getSession, assertRole } from "@/lib/auth";
-import { ok, err } from "@/lib/http";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
 
 const Body = z.object({
-  entries: z.array(z.object({
-    notionId: z.string().min(1),
-    coveredAt: z.string().datetime().optional(),
-    durationMin: z.number().int().min(0).optional(),
-    notes: z.string().max(2000).optional(),
-    groupId: z.string().min(1).optional(),
-  })).min(1),
+  groupId: z.string().min(1).optional(),
+  teacherId: z.string().min(1),
+  notionId: z.string().min(1),
+  coveredAt: z.string().datetime().optional(),
+  notes: z.string().max(2000).optional(),
 });
 
 export async function POST(req: Request) {
-  try {
-    const session = await getSession();
-    assertRole(session, ["TEACHER"]);
-    const { entries } = Body.parse(await req.json());
+  const json = await req.json();
+  const body = Body.parse(json);
 
-    const created = await prisma.$transaction(entries.map(e =>
-      prisma.teacherCoverage.create({
-        data: {
-          teacherId: session!.sub!,
-          notionId: e.notionId,
-          coveredAt: e.coveredAt ? new Date(e.coveredAt) : new Date(),
-          durationMin: e.durationMin ?? 0,
-          notes: e.notes ?? null,
-          groupId: e.groupId ?? null,
-        },
-      })
-    ));
+  const ev = await prisma.teacherCoverage.create({
+    data: {
+      groupId: body.groupId ?? null,
+      teacherId: body.teacherId,
+      notionId: body.notionId,
+      coveredAt: body.coveredAt ? new Date(body.coveredAt) : undefined,
+      notes: body.notes ?? null,
+    },
+  });
 
-    return ok({ created: created.length });
-  } catch (e: any) {
-    const status = e?.status ?? 400;
-    return err("coverage_failed", e?.message, { status });
-  }
+  return NextResponse.json({ ok: true, event: ev }, { status: 201 });
 }

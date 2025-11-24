@@ -1,16 +1,37 @@
-import { prisma } from "@/lib/prisma";
-import { ok, err } from "@/lib/http";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const groupId = searchParams.get('groupId') || undefined;
+
+  // Build a tree from CurrTheme (with parent/children) and Notion under leaf themes
+  const themes = await prisma.currTheme.findMany({
+    where: { parentId: { not: null } },
+    orderBy: { order: 'asc' },
+    include: {
+      children: { orderBy: { order: 'asc' } },
+      notions: { orderBy: { order: 'asc' } },
+    },
+  });
+
+  // Coverage aggregation from TeacherCoverage if available
+  let coverage: any[] = [];
   try {
-    const themes = await prisma.currTheme.findMany({
-      orderBy: [{ parentId: "asc" }, { order: "asc" }],
-      include: {
-        notions: { orderBy: { order: "asc" }, select: { id: true, code: true, title: true, order: true } },
-      },
-    });
-    return ok({ themes });
-  } catch (e: any) {
-    return err("failed_to_load_curriculum", e?.message);
-  }
+    if (groupId) {
+      coverage = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT "notionId", COUNT(*)::int AS count
+         FROM "TeacherCoverage" WHERE "groupId" = $1
+         GROUP BY "notionId"`,
+        groupId
+      );
+    } else {
+      coverage = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT "notionId", COUNT(*)::int AS count
+         FROM "TeacherCoverage" GROUP BY "notionId"`
+      );
+    }
+  } catch {}
+
+  return NextResponse.json({ tree: themes, coverage });
 }

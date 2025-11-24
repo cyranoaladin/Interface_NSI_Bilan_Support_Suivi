@@ -1,4 +1,4 @@
-import { getSessionEmail } from '@/lib/session';
+import { getSessionEmail } from '@/lib/auth-utils';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { NextRequest, NextResponse } from 'next/server';

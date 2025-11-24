@@ -1,5 +1,5 @@
 import { env } from '@/lib/env';
-import { getSession, getSessionEmail } from '@/lib/session';
+import { getSession, getSessionEmail } from '@/lib/auth-utils';
 import { Queue } from 'bullmq';
 import Busboy from 'busboy';
 import Redis from 'ioredis';

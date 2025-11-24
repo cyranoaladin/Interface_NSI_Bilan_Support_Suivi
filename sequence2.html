@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Séquence NSI Première – De l’algorithme à la solution programmée</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      margin: 40px;
+      background-color: #f7f8fa;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: #003366;
+    }
+
+    h1 {
+      border-bottom: 3px solid #003366;
+      padding-bottom: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 25px 0;
+    }
+
+    caption {
+      caption-side: bottom;
+      font-style: italic;
+      color: #555;
+      text-align: left;
+      padding: 8px 0;
+      font-size: 0.9em;
+    }
+
+    table,
+    th,
+    td {
+      border: 1px solid #aaa;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      text-align: left;
+    }
+
+    thead th {
+      background-color: #003366;
+      color: white;
+    }
+
+    .highlight {
+      background-color: #e6f0ff;
+      padding: 10px;
+      border-left: 5px solid #003366;
+      margin: 20px 0;
+    }
+
+    .footer {
+      margin-top: 40px;
+      font-style: italic;
+      color: #555;
+    }
+
+    .btn-print {
+      display: inline-block;
+      background-color: #003366;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      margin: 20px 0;
+      border: none;
+      cursor: pointer;
+      font-size: 1em;
+    }
+
+    .btn-print:hover {
+      background-color: #0055aa;
+    }
+
+    @media print {
+      body {
+        background: white;
+        margin: 20mm;
+        font-size: 11pt;
+      }
+
+      .btn-print {
+        display: none;
+      }
+
+      table,
+      th,
+      td {
+        border: 1px solid #000;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Séquence complète : De l’algorithme à la solution programmée</h1>
+  <h2>Première NSI – Octobre 2025</h2>
+
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimer ou exporter en PDF</button>
+
+  <div class="highlight">
+    <p><strong>Enseignants :</strong> Pierre Caillabet, Hatem Bouhlel, Alaeddine Ben Rhouma</p>
+    <p><strong>Durée :</strong> 4 semaines – 5 à 6 séances + mini-projet</p>
+  </div>
+
+  <h2>1. Contexte et intention pédagogique</h2>
+  <p>Après cinq TPs d’introduction à Python (variables, conditions, boucles, entrées/sorties), les élèves ont acquis
+    les bases syntaxiques et manipulé des programmes simples. Il s’agit maintenant de consolider ces acquis tout en
+    amorçant deux dimensions essentielles : la <strong>pensée algorithmique structurée</strong> et la
+    <strong>manipulation des types construits</strong> (listes et chaînes de caractères).
+  </p>
+
+  <h2>2. Objectifs généraux</h2>
+  <ul>
+    <li>Comprendre la notion d’algorithme et de spécification.</li>
+    <li>Concevoir un algorithme avant de coder.</li>
+    <li>Introduire et manipuler les types construits.</li>
+    <li>Développer un mini-projet mobilisant ces notions.</li>
+  </ul>
+
+  <h2>3. Compétences travaillées</h2>
+  <table>
+    <caption>Tableau 1 : Compétences du référentiel travaillées dans la séquence.</caption>
+    <thead>
+      <tr>
+        <th>Geste</th>
+        <th>Code</th>
+        <th>Compétence observable</th>
+        <th>Application</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Évaluer</td>
+        <td>E-ALG1, E-LAN1</td>
+        <td>Évaluer la validité d’un algorithme</td>
+        <td>Analyse et correction</td>
+      </tr>
+      <tr>
+        <td>Modéliser</td>
+        <td>M-ALG3, M-LAN3</td>
+        <td>Modéliser un problème sous forme d’algorithme</td>
+        <td>Pseudo-code, traduction Python</td>
+      </tr>
+      <tr>
+        <td>Anticiper</td>
+        <td>A-ALG4, A-LAN5</td>
+        <td>Anticiper les tests et les étapes</td>
+        <td>Planification du projet</td>
+      </tr>
+      <tr>
+        <td>Décomposer</td>
+        <td>D-LAN7</td>
+        <td>Découper un programme en sous-fonctions</td>
+        <td>Modularisation</td>
+      </tr>
+      <tr>
+        <td>Généraliser</td>
+        <td>G-TAB6, G-LAN9</td>
+        <td>Réutiliser des structures de traitement</td>
+        <td>Transfert à d’autres contextes</td>
+      </tr>
+      <tr>
+        <td>Abstraire</td>
+        <td>X-LAN10</td>
+        <td>Identifier les invariants des programmes</td>
+        <td>Structure entrée-traitement-sortie</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>4. Déroulement de la séquence</h2>
+  <h3>Semaine 1 – Introduction à l’algorithmique</h3>
+  <ul>
+    <li><strong>Activité débranchée :</strong> Le robot cuisinier (rédaction d’un algorithme exécuté à la main)</li>
+    <li><strong>Activité :</strong> Introduction aux spécifications et pseudo-code</li>
+    <li><strong>TP :</strong> Traduire un pseudo-code en programme Python</li>
+  </ul>
+
+  <h3>Semaine 2 – Types construits : listes et chaînes</h3>
+  <ul>
+    <li>Cours : notion de type construit et représentation mémoire</li>
+    <li>TP : manipulations sur listes et chaînes</li>
+    <li>Activité : Spécifier un traitement sur une liste</li>
+  </ul>
+
+  <h3>Semaine 3 – Vers le projet</h3>
+  <ul>
+    <li>Atelier : de la spécification au projet</li>
+    <li>TP : Analyseur de texte (mots, lettres, fréquences)</li>
+  </ul>
+
+  <h3>Semaine 4 – Mini-projet intégrateur</h3>
+  <ul>
+    <li>Projet au choix : gestionnaire de notes ou quiz interactif</li>
+    <li>Travail en binômes : spécification, algorithme, code, test, présentation</li>
+  </ul>
+
+  <h2>5. Évaluation</h2>
+  <h3>Grille sommative (professeur)</h3>
+  <table>
+    <caption>Tableau 2 : Grille d'évaluation sommative du projet.</caption>
+    <thead>
+      <tr>
+        <th>Critère</th>
+        <th>Indicateur</th>
+        <th>Niveau attendu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Spécification</td>
+        <td>Entrées/sorties cohérentes</td>
+        <td>Bonne précision</td>
+      </tr>
+      <tr>
+        <td>Algorithme</td>
+        <td>Pseudo-code lisible et logique</td>
+        <td>Étapes justifiées</td>
+      </tr>
+      <tr>
+        <td>Code Python</td>
+        <td>Lisibilité et modularité</td>
+        <td>Fonctionnel</td>
+      </tr>
+      <tr>
+        <td>Tests</td>
+        <td>Jeux de tests pertinents</td>
+        <td>Validation complète</td>
+      </tr>
+      <tr>
+        <td>Autonomie</td>
+        <td>Gestion du travail en binôme</td>
+        <td>Bonne répartition</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Grille prof – par gestes du référentiel</h3>
+  <table>
+    <caption>Tableau 3 : Grille d'évaluation formative par gestes métier.</caption>
+    <thead>
+      <tr>
+        <th>Geste</th>
+        <th>Description</th>
+        <th>Indicateurs</th>
+        <th>Niveaux</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Évaluer</td>
+        <td>Validation d’algorithmes et correction</td>
+        <td>Cas de test justifiés</td>
+        <td>Débutant / En cours / Maîtrisé</td>
+      </tr>
+      <tr>
+        <td>Modéliser</td>
+        <td>Traduction en pseudo-code</td>
+        <td>Structures adaptées</td>
+        <td>Débutant / En cours / Maîtrisé</td>
+      </tr>
+      <tr>
+        <td>Anticiper</td>
+        <td>Prévoir les étapes et cas limites</td>
+        <td>Plan clair</td>
+        <td>Débutant / En cours / Maîtrisé</td>
+      </tr>
+      <tr>
+        <td>Décomposer</td>
+        <td>Découpage en fonctions</td>
+        <td>Modules cohérents</td>
+        <td>Débutant / En cours / Maîtrisé</td>
+      </tr>
+      <tr>
+        <td>Généraliser</td>
+        <td>Réutilisation d’algorithmes</td>
+        <td>Transfert réussi</td>
+        <td>Débutant / En cours / Maîtrisé</td>
+      </tr>
+      <tr>
+        <td>Abstraire</td>
+        <td>Formalisation du schéma général</td>
+        <td>Analyse pertinente</td>
+        <td>Débutant / En cours / Maîtrisé</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Fiche projet élève</h3>
+  <table>
+    <caption>Tableau 4 : Checklist pour le suivi du projet par l'élève.</caption>
+    <thead>
+      <tr>
+        <th>Étape</th>
+        <th>À faire</th>
+        <th>✔️</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Spécifier le problème (entrées/sorties)</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Concevoir l’algorithme (pseudo-code)</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Coder le programme Python</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Tester et valider</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Présenter le projet (court texte explicatif)</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Autoévaluer selon les gestes du référentiel</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>6. Ressources et prolongements</h2>
+  <ul>
+    <li><a href="https://nsi.labomaths.tn/tp-algo/index.html">TPs initiaux Python</a></li>
+    <li>Référentiel de compétences NSI – BEN RHOUMA & CAILLABET (2025)</li>
+    <li>Vademecum Éduscol – Démarches de projet et algorithmique débranchée</li>
+  </ul>
+
+  <div class="footer">
+    Version proposée pour validation – Document interne NSI (Pierre Caillabet, Hatem Bouhlel, Alaeddine Ben Rhouma)
+  </div>
+</body>
+
+</html>

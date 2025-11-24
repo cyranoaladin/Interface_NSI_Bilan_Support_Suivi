@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getSession } from '@/lib/session';
+import { getSession } from '@/lib/auth-utils';
 
 const prisma = new PrismaClient();
 

@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { env } from '@/lib/env';
-import { getSession } from '@/lib/session';
+import { getSession } from '@/lib/auth-utils';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { PrismaClient } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
@@ -31,14 +31,46 @@ export async function GET(req: NextRequest, { params }: { params: { reportId: st
 
   const report = await prisma.report.findUnique({
     where: { id: params.reportId },
-    include: { attempt: { select: { studentEmail: true, id: true } } },
+    include: {
+      attempt: {
+        select: {
+          studentEmail: true,
+          id: true,
+          student: {
+            select: { groupId: true }
+          }
+        }
+      }
+    },
   });
   if (!report) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
 
-  // Authorization: student owner or teacher
-  const isOwnerStudent = report.attempt?.studentEmail && report.attempt.studentEmail === session.email;
-  const isTeacher = session.role === 'TEACHER';
-  if (!isOwnerStudent && !isTeacher) {
+  // Authorization logic
+  let isAuthorized = false;
+
+  if (session.role === 'STUDENT') {
+    // Student can only access their own 'eleve' reports
+    const isOwnerStudent = report.attempt?.studentEmail && report.attempt.studentEmail === session.email;
+    const isStudentReport = report.type === 'eleve';
+    isAuthorized = isOwnerStudent && isStudentReport;
+  } else if (session.role === 'TEACHER') {
+    // Teacher can access reports for students in their groups
+    if (report.attempt?.student?.groupId) {
+      const teacherAccess = await prisma.teacherOnGroup.findUnique({
+        where: {
+          teacherEmail_groupId: {
+            teacherEmail: session.email,
+            groupId: report.attempt.student.groupId
+          }
+        },
+      });
+      isAuthorized = !!teacherAccess;
+    } else {
+      isAuthorized = false;
+    }
+  }
+
+  if (!isAuthorized) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
 
@@ -120,13 +152,46 @@ export async function HEAD(req: NextRequest, { params }: { params: { reportId: s
 
   const report = await prisma.report.findUnique({
     where: { id: params.reportId },
-    include: { attempt: { select: { studentEmail: true, id: true } } },
+    include: {
+      attempt: {
+        select: {
+          studentEmail: true,
+          id: true,
+          student: {
+            select: { groupId: true }
+          }
+        }
+      }
+    },
   });
   if (!report) return new NextResponse(null, { status: 404 });
 
-  const isOwnerStudent = report.attempt?.studentEmail && report.attempt.studentEmail === session.email;
-  const isTeacher = session.role === 'TEACHER';
-  if (!isOwnerStudent && !isTeacher) return new NextResponse(null, { status: 403 });
+  // Authorization logic (same as GET)
+  let isAuthorized = false;
+
+  if (session.role === 'STUDENT') {
+    // Student can only access their own 'eleve' reports
+    const isOwnerStudent = report.attempt?.studentEmail && report.attempt.studentEmail === session.email;
+    const isStudentReport = report.type === 'eleve';
+    isAuthorized = isOwnerStudent && isStudentReport;
+  } else if (session.role === 'TEACHER') {
+    // Teacher can access reports for students in their groups
+    if (report.attempt?.student?.groupId) {
+      const teacherAccess = await prisma.teacherOnGroup.findUnique({
+        where: {
+          teacherEmail_groupId: {
+            teacherEmail: session.email,
+            groupId: report.attempt.student.groupId
+          }
+        },
+      });
+      isAuthorized = !!teacherAccess;
+    } else {
+      isAuthorized = false;
+    }
+  }
+
+  if (!isAuthorized) return new NextResponse(null, { status: 403 });
 
   // Local fallback first
   const attemptId = (report as any).attemptId || report.attempt?.id;

@@ -7,6 +7,8 @@ import { SidebarNav } from '@/components/ui/SidebarNav';
 import { buildStudentSidebar } from '@/lib/menu';
 import { Download, KeyRound, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Timeline } from '@/components/ui/Timeline';
+import { RadarChart } from '@/components/charts/RadarChart';
 
 type SimpleReport = { id: string; pdfUrl: string | null; attemptId?: string; };
 
@@ -18,6 +20,13 @@ export default function StudentDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [creating, setCreating] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [pdfReady, setPdfReady] = useState(false);
+
+  // Données de progression (chargées depuis l'API)
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [timelineItems, setTimelineItems] = useState<any[]>([]);
+  const [weakPoints, setWeakPoints] = useState<Array<{ domain: string; score: number }>>([]);
+  const [hasProgressionData, setHasProgressionData] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -31,7 +40,8 @@ export default function StudentDashboard() {
           setStudentName((gn || fn) ? `${gn} ${fn}`.trim() : fallback);
           setClasse(d.classe || '');
         }
-      } catch {}
+      } catch { }
+
       try {
         const r2 = await fetch('/api/my/reports');
         const d2 = await r2.json();
@@ -42,11 +52,21 @@ export default function StudentDashboard() {
             setLatestReport({ id: rep.id, pdfUrl: rep.pdfUrl || null, attemptId: rep.attemptId });
           }
         }
-      } catch {}
+      } catch { }
+
+      // Charger les données de progression
+      try {
+        const r3 = await fetch('/api/student/progression');
+        const d3 = await r3.json();
+        if (r3.ok && d3.ok) {
+          setTimelineItems(d3.timeline || []);
+          setScores(d3.scores || {});
+          setWeakPoints(d3.weakPoints || []);
+          setHasProgressionData(d3.hasData || false);
+        }
+      } catch { }
     })();
   }, []);
-
-  const [pdfReady, setPdfReady] = useState(false);
 
   useEffect(() => {
     let timer: any;
@@ -57,7 +77,7 @@ export default function StudentDashboard() {
           const res = await fetch(url, { method: 'HEAD' });
           if (res.ok) { setPdfReady(true); return; }
         }
-      } catch {}
+      } catch { }
       setPdfReady(false);
     }
     (async () => {
@@ -68,6 +88,7 @@ export default function StudentDashboard() {
   }, [latestReport?.id, latestReport?.pdfUrl]);
 
   const showProcessing = hasSubmitted && (!latestReport || !latestReport.pdfUrl || !pdfReady);
+
   return (
     <Layout
       right={<div className="flex items-center gap-2">
@@ -75,7 +96,7 @@ export default function StudentDashboard() {
           <KeyRound className="h-4 w-4" />
         </Button>
         <Button variant="ghost" onClick={async () => {
-          try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
+          try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { }
           window.location.href = '/login';
         }}><LogOut className="h-4 w-4" /> Déconnexion</Button>
       </div>}
@@ -88,14 +109,79 @@ export default function StudentDashboard() {
       </div>}
     >
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <h3 className="text-xl">Bienvenue sur NSI-PMF</h3>
-          </CardHeader>
-          <CardContent>
-            <p className="text-[var(--fg)]/80">Commence par le questionnaire de rentrée pour générer ton bilan personnalisé.</p>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Colonne Gauche: Progression & Next Steps */}
+          <div className="md:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <h3 className="text-xl font-semibold">Ma Progression</h3>
+              </CardHeader>
+              <CardContent>
+                {hasProgressionData && timelineItems.length > 0 ? (
+                  <Timeline items={timelineItems} />
+                ) : (
+                  <div className="text-center py-8 text-[var(--fg)]/60">
+                    <p>Complète ton premier bilan pour voir ta progression !</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <h3 className="text-xl font-semibold">Mes Prochaines Étapes</h3>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                    <div className="mt-1 w-2 h-2 rounded-full bg-blue-500" />
+                    <div>
+                      <h4 className="font-medium text-blue-400">Compléter le bilan mi-trimestre</h4>
+                      <p className="text-sm text-[var(--fg)]/70">Questionnaire disponible jusqu'au 30/11</p>
+                      <Button
+                        variant="ghost"
+                        className="text-blue-400 p-0 h-auto mt-1 hover:bg-transparent hover:underline"
+                        onClick={() => document.getElementById('start_bilan_button')?.click()}
+                      >
+                        Commencer maintenant →
+                      </Button>
+                    </div>
+                  </div>
+
+                  {weakPoints.length > 0 && (
+                    <div className="flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                      <div className="mt-1 w-2 h-2 rounded-full bg-gray-500" />
+                      <div>
+                        <h4 className="font-medium">Travailler {weakPoints[0].domain}</h4>
+                        <p className="text-sm text-[var(--fg)]/70">
+                          Score actuel: {weakPoints[0].score}% - Objectif: +10% d'ici fin trimestre
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Colonne Droite: Radar Chart */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <h3 className="text-xl font-semibold">Mes Points Forts</h3>
+              </CardHeader>
+              <CardContent className="flex justify-center py-4">
+                {hasProgressionData && Object.keys(scores).length > 0 ? (
+                  <RadarChart data={scores} size={250} />
+                ) : (
+                  <div className="text-center py-12 text-[var(--fg)]/60">
+                    <p className="text-sm">Tes scores apparaîtront ici après ton premier bilan</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         <Card>
           <CardHeader>
@@ -122,8 +208,6 @@ export default function StudentDashboard() {
             </Button>
           </CardContent>
         </Card>
-
-
 
         {showProcessing && (
           <Card>
@@ -170,7 +254,7 @@ export default function StudentDashboard() {
           <CardContent>
             {latestReport ? (
               latestReport.pdfUrl ? (
-                <Button variant="link" disabled={downloading} onClick={async () => {
+                <Button variant="ghost" disabled={downloading} onClick={async () => {
                   setDownloading(true);
                   try {
                     const url = `/api/bilan/download/${latestReport.id}`;
@@ -186,7 +270,7 @@ export default function StudentDashboard() {
                   } finally {
                     setDownloading(false);
                   }
-                }} className="inline-flex items-center gap-2 text-electric">
+                }} className="inline-flex items-center gap-2 text-electric hover:bg-transparent hover:underline p-0 h-auto">
                   <Download className="h-4 w-4" /> {downloading ? 'Préparation…' : 'Télécharger le bilan'}
                 </Button>
               ) : (

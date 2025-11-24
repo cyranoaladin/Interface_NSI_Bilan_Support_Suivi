@@ -12,43 +12,45 @@ services:
       # LIGNE CRUCIALE : Force le mode "trust" pour toutes les connexions
       - ./postgres/override-pg-hba.conf:/etc/postgresql/pg_hba.conf:ro
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "nsi", "-d", "nsi"]
+      test: [ "CMD", "pg_isready", "-U", "nsi", "-d", "nsi" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    ports:
+      - "5434:5432"
     networks:
       - nsi_network
 
-  pgbouncer:
-    image: bitnami/pgbouncer:1
-    # ports removed for local full-mode without host exposure
-    environment:
-      - PGBOUNCER_DATABASE=nsi
-      - PGBOUNCER_USERNAME=nsi
-      - PGBOUNCER_PASSWORD=${POSTGRES_PASSWORD}
-      - PGBOUNCER_AUTH_TYPE=trust
-      - PGBOUNCER_AUTH_USER=nsi
-      - PGBOUNCER_AUTH_PASSWORD=${POSTGRES_PASSWORD}
-      - PGBOUNCER_PORT=5432
-      - PGBOUNCER_POOL_MODE=transaction
-      - PGBOUNCER_MAX_CLIENT_CONN=500
-      - PGBOUNCER_DEFAULT_POOL_SIZE=50
-      - POSTGRESQL_HOST=postgres
-      - POSTGRESQL_USERNAME=nsi
-      - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD}
-    depends_on:
-      postgres:
-        condition: service_started
-    networks:
-      - nsi_network
-    ports:
-      - "6432:5432"
+  # pgbouncer:
+  #   image: bitnami/pgbouncer:1.21.0
+  #   # ports removed for local full-mode without host exposure
+  #   environment:
+  #     - PGBOUNCER_DATABASE=nsi
+  #     - PGBOUNCER_USERNAME=nsi
+  #     - PGBOUNCER_PASSWORD=${POSTGRES_PASSWORD}
+  #     - PGBOUNCER_AUTH_TYPE=trust
+  #     - PGBOUNCER_AUTH_USER=nsi
+  #     - PGBOUNCER_AUTH_PASSWORD=${POSTGRES_PASSWORD}
+  #     - PGBOUNCER_PORT=5432
+  #     - PGBOUNCER_POOL_MODE=transaction
+  #     - PGBOUNCER_MAX_CLIENT_CONN=500
+  #     - PGBOUNCER_DEFAULT_POOL_SIZE=50
+  #     - POSTGRESQL_HOST=postgres
+  #     - POSTGRESQL_USERNAME=nsi
+  #     - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_started
+  #   networks:
+  #     - nsi_network
+  #   ports:
+  #     - "6432:5432"
 
   redis:
     image: redis:7-alpine
     command: redis-server --save '' --appendonly no
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -84,8 +86,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      pgbouncer:
-        condition: service_started
     environment:
       NEXT_BASE_PATH: ""
       SKIP_ENV_VALIDATION: "1"
@@ -106,7 +106,7 @@ services:
       - /home/alaeddine/Interface_NSI_2025_2026_local/site-nsi-tp-algo_python/site-nsi-tp/dist:/app/apps/web/public/tp-algo:ro
       - /home/alaeddine/Interface_NSI_2025_2026_local/site-nsi-tp-algo_python/site-nsi-tp/dist/assets:/app/apps/web/public/assets:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -120,6 +120,7 @@ services:
     env_file: ../.env
     environment:
       SKIP_ENV_VALIDATION: "1"
+      DATABASE_URL: postgresql://nsi:CHANGE_ME@postgres:5432/nsi
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
@@ -136,8 +137,6 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-      pgbouncer:
-        condition: service_started
     volumes:
       - ragdata:/data/rag_uploads
       - ..:/app
@@ -153,7 +152,7 @@ services:
       - ./prometheus:/etc/prometheus:ro
       - prometheus_data:/prometheus
     ports:
-      - "9090:9090"
+      - "9091:9090"
     depends_on:
       - web
     networks:
@@ -182,6 +181,7 @@ volumes:
   ragdata:
   prometheus_data:
   grafana_data:
+
 
 networks:
   nsi_network:

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getSession, assertRole } from "@/lib/auth";
+import { getSession, assertRole } from "@/lib/auth-utils";
 import { ok, err } from "@/lib/http";
 
 const Body = z.object({

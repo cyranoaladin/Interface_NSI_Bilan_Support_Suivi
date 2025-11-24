@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1760649891898" clover="3.2.0">
+  <project timestamp="1760649891898" name="All files">
+    <metrics statements="50" coveredstatements="40" conditionals="31" coveredconditionals="16" methods="24" coveredmethods="15" elements="105" coveredelements="71" complexity="0" loc="50" ncloc="50" packages="3" files="7" classes="7"/>
+    <package name="app.login">
+      <metrics statements="14" coveredstatements="12" conditionals="6" coveredconditionals="3" methods="4" coveredmethods="4"/>
+      <file name="page.tsx" path="/home/alaeddine/Interface_NSI_2025_2026_local/apps/web/src/app/login/page.tsx">
+        <metrics statements="14" coveredstatements="12" conditionals="6" coveredconditionals="3" methods="4" coveredmethods="4"/>
+        <line num="8" count="8" type="stmt"/>
+        <line num="9" count="8" type="stmt"/>
+        <line num="10" count="8" type="stmt"/>
+        <line num="11" count="8" type="stmt"/>
+        <line num="12" count="8" type="stmt"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="26" count="2" type="stmt"/>
+        <line num="27" count="2" type="stmt"/>
+        <line num="28" count="2" type="stmt"/>
+        <line num="29" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="30" count="0" type="stmt"/>
+        <line num="31" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="32" count="2" type="stmt"/>
+      </file>
+    </package>
+    <package name="components.ui">
+      <metrics statements="18" coveredstatements="13" conditionals="17" coveredconditionals="9" methods="14" coveredmethods="6"/>
+      <file name="Button.tsx" path="/home/alaeddine/Interface_NSI_2025_2026_local/apps/web/src/components/ui/Button.tsx">
+        <metrics statements="3" coveredstatements="3" conditionals="5" coveredconditionals="5" methods="1" coveredmethods="1"/>
+        <line num="10" count="10" type="stmt"/>
+        <line num="11" count="10" type="stmt"/>
+        <line num="18" count="10" type="stmt"/>
+      </file>
+      <file name="Card.tsx" path="/home/alaeddine/Interface_NSI_2025_2026_local/apps/web/src/components/ui/Card.tsx">
+        <metrics statements="4" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="4" coveredmethods="3"/>
+        <line num="7" count="9" type="stmt"/>
+        <line num="15" count="9" type="stmt"/>
+        <line num="23" count="9" type="stmt"/>
+        <line num="31" count="0" type="stmt"/>
+      </file>
+      <file name="Input.tsx" path="/home/alaeddine/Interface_NSI_2025_2026_local/apps/web/src/components/ui/Input.tsx">
+        <metrics statements="2" coveredstatements="2" conditionals="6" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="10" count="16" type="cond" truecount="2" falsecount="0"/>
+        <line num="11" count="16" type="stmt"/>
+      </file>
+      <file name="Toast.tsx" path="/home/alaeddine/Interface_NSI_2025_2026_local/apps/web/src/components/ui/Toast.tsx">
+        <metrics statements="9" coveredstatements="5" conditionals="6" coveredconditionals="0" methods="8" coveredmethods="1"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="13" count="2" type="stmt"/>
+        <line num="14" count="2" type="stmt"/>
+        <line num="15" count="2" type="stmt"/>
+        <line num="16" count="2" type="stmt"/>
+        <line num="21" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="31" count="0" type="stmt"/>
+        <line num="32" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="33" count="0" type="stmt"/>
+      </file>
+    </package>
+    <package name="lib">
+      <metrics statements="18" coveredstatements="15" conditionals="8" coveredconditionals="4" methods="6" coveredmethods="5"/>
+      <file name="menu.ts" path="/home/alaeddine/Interface_NSI_2025_2026_local/apps/web/src/lib/menu.ts">
+        <metrics statements="16" coveredstatements="13" conditionals="6" coveredconditionals="3" methods="4" coveredmethods="3"/>
+        <line num="13" count="4" type="cond" truecount="1" falsecount="1"/>
+        <line num="14" count="4" type="stmt"/>
+        <line num="18" count="4" type="stmt"/>
+        <line num="19" count="4" type="stmt"/>
+        <line num="21" count="4" type="stmt"/>
+        <line num="23" count="4" type="stmt"/>
+        <line num="25" count="4" type="stmt"/>
+        <line num="27" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="28" count="3" type="stmt"/>
+        <line num="30" count="1" type="stmt"/>
+        <line num="32" count="1" type="stmt"/>
+        <line num="34" count="4" type="stmt"/>
+        <line num="38" count="1" type="stmt"/>
+        <line num="50" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="53" count="0" type="stmt"/>
+        <line num="55" count="0" type="stmt"/>
+      </file>
+      <file name="sanitizeLatex.ts" path="/home/alaeddine/Interface_NSI_2025_2026_local/apps/web/src/lib/sanitizeLatex.ts">
+        <metrics statements="2" coveredstatements="2" conditionals="2" coveredconditionals="1" methods="2" coveredmethods="2"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="6" count="10" type="cond" truecount="1" falsecount="1"/>
+      </file>
+    </package>
+  </project>
+</coverage>

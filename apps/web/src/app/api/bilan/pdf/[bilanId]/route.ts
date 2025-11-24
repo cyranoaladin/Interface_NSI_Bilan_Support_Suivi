@@ -1,73 +1,203 @@
 export const dynamic = 'force-dynamic';
-import { env } from '@/lib/env';
-import { getSessionEmail } from '@/lib/session';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSession } from '@/lib/auth-utils';
 import { PrismaClient } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
-const s3 = new S3Client({
-  region: env.S3_REGION,
-  endpoint: env.S3_ENDPOINT,
-  forcePathStyle: true,
-  credentials: { accessKeyId: env.S3_ACCESS_KEY, secretAccessKey: env.S3_SECRET_KEY },
-});
 
-export async function GET(req: NextRequest, { params }: { params: { bilanId: string; }; }) {
-  const email = await getSessionEmail();
-  if (!email) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+export async function GET(req: NextRequest, { params }: { params: { bilanId: string } }) {
+  const session = await getSession();
+  if (!session?.email) {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
 
-  const bilan = await prisma.bilan.findUnique({ where: { id: params.bilanId } });
-  if (!bilan) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
-  const isAuthor = bilan.authorEmail === email;
-  const isStudent = bilan.studentEmail ? bilan.studentEmail === email : false;
-  if (!isAuthor && !isStudent) return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  const { bilanId } = params;
+  const bilan = await prisma.bilan.findUnique({ where: { id: bilanId } });
 
-  const variant = (req.nextUrl.searchParams.get('variant') || 'eleve').toLowerCase();
+  if (!bilan) {
+    return NextResponse.json({ ok: false, error: 'Bilan not found' }, { status: 404 });
+  }
 
-  // Trouver le dernier Report pour l'élève de ce bilan, du type demandé
-  const attempts = await prisma.attempt.findMany({
-    where: { studentEmail: bilan.studentEmail || email },
-    select: { id: true },
-    orderBy: { submittedAt: 'desc' },
-    take: 10,
-  });
-  if (attempts.length === 0) return NextResponse.json({ ok: false, error: 'No attempts yet' }, { status: 404 });
-  const attemptIds = attempts.map(a => a.id);
-  const report = await prisma.report.findFirst({
-    where: { attemptId: { in: attemptIds }, type: variant },
-    orderBy: { publishedAt: 'desc' },
-  });
-  if (!report?.pdfUrl) return NextResponse.json({ ok: false, error: 'PDF not available yet' }, { status: 404 });
+  // Authorization check
+  let isAuthorized = false;
 
-  // Stream depuis S3 si url s3://
-  if (report.pdfUrl.startsWith('s3://')) {
-    const without = report.pdfUrl.slice('s3://'.length);
-    const idx = without.indexOf('/');
-    if (idx <= 0) return NextResponse.json({ ok: false, error: 'Invalid S3 URL' }, { status: 400 });
-    const bucket = without.slice(0, idx);
-    const key = without.slice(idx + 1);
-    try {
-      const obj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
-      const body = obj.Body as any;
-      const filename = key.split('/').pop() || `${variant}.pdf`;
-      return new Response(body as unknown as ReadableStream, {
-        status: 200,
-        headers: {
-          'content-type': 'application/pdf',
-          'content-disposition': `inline; filename="${filename}"`,
-          'cache-control': 'no-store',
-        },
+  if (session.role === 'STUDENT') {
+    // Student can access their own bilans
+    const isStudent = bilan.studentEmail === session.email;
+    isAuthorized = isStudent;
+  } else if (session.role === 'TEACHER' && bilan.studentEmail) {
+    // Teacher can access bilans for students in their groups
+    const student = await prisma.student.findUnique({ where: { email: bilan.studentEmail } });
+    if (student?.groupId) {
+      const teacherAccess = await prisma.teacherOnGroup.findUnique({
+        where: { teacherEmail_groupId: { teacherEmail: session.email, groupId: student.groupId } },
       });
-    } catch (e: any) {
-      return NextResponse.json({ ok: false, error: 'File not found in storage' }, { status: 404 });
+      isAuthorized = !!teacherAccess;
     }
   }
 
-  // Sinon: rediriger vers l'URL
-  try {
-    return NextResponse.redirect(report.pdfUrl);
-  } catch {
-    return NextResponse.json({ ok: false, error: 'Invalid pdfUrl' }, { status: 400 });
+  if (!isAuthorized) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
+
+  if (bilan.status !== 'GENERATED' || !bilan.reportText) {
+    return NextResponse.json({ ok: false, error: 'PDF not ready yet' }, { status: 404 });
+  }
+
+  // Parse the report
+  let report: any = {};
+  try {
+    report = JSON.parse(bilan.reportText);
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Invalid report data' }, { status: 500 });
+  }
+
+  // Generate HTML
+  const html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bilan d'entrée ${bilan.matiere} - ${bilan.niveau}</title>
+  <style>
+    @media print {
+      body { margin: 0; }
+      .no-print { display: none; }
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1 {
+      color: #2563eb;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+    }
+    h2 {
+      color: #1e40af;
+      border-bottom: 2px solid #3b82f6;
+      padding-bottom: 5px;
+      margin-top: 30px;
+    }
+    h3 {
+      color: #1e3a8a;
+      margin-top: 20px;
+    }
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    li {
+      padding: 5px 0 5px 20px;
+      position: relative;
+    }
+    li:before {
+      content: "•";
+      color: #3b82f6;
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+    }
+    .week {
+      background: #f8fafc;
+      padding: 15px;
+      margin: 15px 0;
+      border-left: 4px solid #3b82f6;
+      border-radius: 4px;
+    }
+    .seance {
+      margin-left: 20px;
+      margin-top: 10px;
+    }
+    .print-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .print-btn:hover {
+      background: #2563eb;
+    }
+  </style>
+</head>
+<body>
+  <button class="print-btn no-print" onclick="window.print()">Imprimer / Télécharger PDF</button>
+  
+  <h1>Bilan d'entrée ${bilan.matiere} - ${bilan.niveau}</h1>
+  <div class="subtitle">
+    <strong>Élève:</strong> ${bilan.studentEmail}<br>
+    <strong>Date:</strong> ${new Date(bilan.createdAt).toLocaleDateString('fr-FR')}
+  </div>
+
+  ${report.synthese_profil ? `
+    <h2>Synthèse du profil</h2>
+    ${report.synthese_profil.points_forts?.length > 0 ? `
+      <h3>Points forts</h3>
+      <ul>
+        ${report.synthese_profil.points_forts.map((pf: string) => `<li>${pf}</li>`).join('')}
+      </ul>
+    ` : ''}
+    ${report.synthese_profil.points_faibles?.length > 0 ? `
+      <h3>Points à améliorer</h3>
+      <ul>
+        ${report.synthese_profil.points_faibles.map((pf: string) => `<li>${pf}</li>`).join('')}
+      </ul>
+    ` : ''}
+  ` : ''}
+
+  ${report.plan_4_semaines ? `
+    <h2>Plan de remédiation sur 4 semaines</h2>
+    ${[1, 2, 3, 4].map(i => {
+    const semaine = report.plan_4_semaines[`semaine_${i}`];
+    if (!semaine) return '';
+    return `
+        <div class="week">
+          <h3>Semaine ${i}</h3>
+          ${semaine.objectifs ? `<p><strong>Objectifs:</strong> ${semaine.objectifs}</p>` : ''}
+          ${semaine.seances?.length > 0 ? `
+            <div class="seance">
+              ${semaine.seances.map((seance: any) => `
+                <p><strong>• ${seance.titre || 'Séance'}</strong></p>
+                ${seance.exercices ? `<p style="margin-left: 20px; font-size: 0.9em;">Exercices: ${seance.exercices}</p>` : ''}
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+  }).join('')}
+  ` : ''}
+
+  ${report.indicateurs_pedago ? `
+    <h2>Indicateurs pédagogiques</h2>
+    <ul>
+      ${Object.entries(report.indicateurs_pedago).map(([key, value]) => `<li>${value}</li>`).join('')}
+    </ul>
+  ` : ''}
+</body>
+</html>
+  `;
+
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
+  });
 }

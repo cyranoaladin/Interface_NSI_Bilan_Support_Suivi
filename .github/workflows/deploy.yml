@@ -1,0 +1,32 @@
+name: Deploy to VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and patch on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            set -Eeuo pipefail
+            CID=$(docker ps --filter 'publish=13001' --format '{{.ID}}')
+            if [ -z "$CID" ]; then
+              echo "Aucun container exposant le port 13001"; exit 1;
+            fi
+            echo "Container: $CID"
+            for p in \
+              /app/apps/web/.next/server/app/api/teacher/students/route.js \
+              /app/apps/web/.next/standalone/apps/web/.next/server/app/api/teacher/students/route.js
+            do
+              echo "Patch: $p"
+              docker exec "$CID" sh -lc "test -f '$p' && sed -i 's/where:{groupId:a}/where:{groupId:a,active:!0}/' '$p' || true"
+            done
+            echo "Restart container…"
+            docker restart "$CID"

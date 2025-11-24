@@ -42,6 +42,7 @@ export function buildTeacherSidebar(): { groupsLabel: string; resources: NavItem
       { href: '/dashboard/teacher/ressources', label: 'Ressources NSI Première' },
       { href: '/dashboard/teacher/ressources-terminale', label: 'Ressources Terminale' },
       { href: '/tp-algo/index.html', label: 'TP Algo Python' },
+      { href: '/mentions-legales', label: 'Mentions légales' },
     ],
   };
 }

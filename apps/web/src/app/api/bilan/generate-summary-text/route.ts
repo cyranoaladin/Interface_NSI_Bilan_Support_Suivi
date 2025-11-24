@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { env } from '@/lib/env';
 import { metrics } from '@/lib/metrics';
 import { setLastLlmPayload } from '@/lib/mock';
-import { getSessionEmail } from '@/lib/session';
+import { getSessionEmail } from '@/lib/auth-utils';
 import { semanticSearch } from '@/lib/vector';
 import { PrismaClient } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';

@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { env } from '@/lib/env';
-import { getSession } from '@/lib/session';
+import { getSession } from '@/lib/auth-utils';
 import { HeadObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';

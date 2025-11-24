@@ -21,7 +21,7 @@ function TeacherDashboardInner() {
   const [students, setStudents] = useState<Array<{ email: string; name: string; }>>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalRows, setModalRows] = useState<Array<{ id: string; type: string; pdfUrl: string | null; publishedAt: string | null; }>>([]);
+  const [modalRows, setModalRows] = useState<Array<{ id: string; type: string; title?: string; noteFinale?: string; pdfUrl: string | null; publishedAt: string | null; status?: string; createdAt?: string; }>>([]);
   const [modalStudentEmail, setModalStudentEmail] = useState<string | null>(null);
   const [modalFilter, setModalFilter] = useState<'all' | 'eleve' | 'enseignant'>('all');
   const [pdfReadyMap, setPdfReadyMap] = useState<Record<string, boolean>>({});
@@ -34,7 +34,7 @@ function TeacherDashboardInner() {
         if (me.ok && meJson.ok && meJson.role === 'TEACHER') {
           setOwnerName(`${meJson.firstName} ${meJson.lastName}`);
         }
-      } catch {}
+      } catch { }
       try {
         const r = await fetch('/api/teacher/groups');
         const d = await r.json();
@@ -42,14 +42,14 @@ function TeacherDashboardInner() {
           const gs = d.groups.map((g: any) => ({ id: g.id, name: g.name, code: g.code, count: g.count ?? undefined }));
           setGroups(gs);
           // Set selectedId from URL or default to first group
-          const groupIdFromUrl = searchParams.get('groupId');
+          const groupIdFromUrl = searchParams?.get('groupId');
           if (groupIdFromUrl && gs.some((g: any) => g.id === groupIdFromUrl)) {
             setSelectedId(groupIdFromUrl);
           } else if (gs.length > 0) {
             setSelectedId(gs[0].id);
           }
         }
-      } catch {}
+      } catch { }
     })();
   }, [searchParams]);
 
@@ -84,10 +84,8 @@ function TeacherDashboardInner() {
       for (const b of rowsLocal) {
         if (!b?.id || !b?.pdfUrl) continue;
         if (next[b.id]) continue;
-        try {
-          const res = await fetch(`/api/bilan/download/${b.id}`, { method: 'HEAD' });
-          if (res.ok) next[b.id] = true;
-        } catch {}
+        // Mark as ready if pdfUrl is present
+        next[b.id] = true;
       }
       setPdfReadyMap(next);
     }
@@ -107,7 +105,7 @@ function TeacherDashboardInner() {
           <KeyRound className="h-4 w-4" />
         </Button>
         <Button variant="ghost" onClick={async () => {
-          try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
+          try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { }
           window.location.href = '/login';
         }}><LogOut className="h-4 w-4" /> Déconnexion</Button>
       </div>}
@@ -231,31 +229,34 @@ function TeacherDashboardInner() {
           ) : (
             <ul className="space-y-2">
               {(Array.isArray(modalRows) ? modalRows : [])
-                .filter(b => (modalFilter === 'all' ? true : (modalFilter === 'eleve' ? b.type === 'eleve' : b.type === 'enseignant')) && !!b.pdfUrl)
+                .filter(b => {
+                  // Only require pdfUrl for bilan_entree, evaluations can be shown without PDF
+                  if (b.type === 'bilan_entree' && !b.pdfUrl) return false;
+                  if (modalFilter === 'all') return true;
+                  if (modalFilter === 'eleve') return b.type === 'evaluation';
+                  if (modalFilter === 'enseignant') return b.type === 'bilan_entree';
+                  return false;
+                })
                 .map(b => (
                   <li key={b.id} className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="text-sm">{b.type === 'eleve' ? 'Bilan Élève' : 'Bilan Enseignant'}</div>
-                      <div className="text-xs text-[var(--fg)]/60">{b.publishedAt ?? 'Non publié'}</div>
+                      <div className="text-sm">{b.title || (b.type === 'evaluation' ? 'Évaluation' : 'Bilan d\'entrée')}</div>
+                      <div className="text-xs text-[var(--fg)]/60">
+                        {b.type === 'evaluation' && b.noteFinale ? b.noteFinale : (b.publishedAt ?? 'Non publié')}
+                      </div>
                     </div>
                     <div>
-                      {b.id && b.pdfUrl ? (
+                      {b.pdfUrl ? (
                         <div className="flex items-center gap-2">
-                          <Button variant="link" onClick={async () => {
-                            try {
-                              const res = await fetch(`/api/bilan/download/${b.id}`, { method: 'HEAD' });
-                              if (res.ok) {
-                                window.open(`/api/bilan/download/${b.id}`, '_blank', 'noopener,noreferrer');
-                              } else {
-                                push({ message: 'PDF en préparation — réessaie dans quelques instants.', variant: 'warning' });
-                              }
-                            } catch {
-                              push({ message: 'Impossible d\'ouvrir le PDF pour le moment.', variant: 'error' });
-                            }
+                          <Button variant="secondary" onClick={() => {
+                            const pdfUrl = b.pdfUrl || `/api/bilan/pdf/${b.id}`;
+                            window.open(pdfUrl, '_blank', 'noopener,noreferrer');
                           }} className="text-electric">
                             Ouvrir <ExternalLink className="h-4 w-4" />
                           </Button>
                         </div>
+                      ) : b.type === 'evaluation' ? (
+                        <Badge variant="default">Consulter</Badge>
                       ) : (
                         <span className="text-xs text-[var(--fg)]/60">PDF en préparation</span>
                       )}

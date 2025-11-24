@@ -3,7 +3,7 @@ import { loadPedagoSurvey, loadQcmData } from '@/lib/bilan_data';
 import { env } from '@/lib/env';
 import { scoreQCM } from '@/lib/scoring/nsi_qcm_scorer';
 import { deriveProfileNSI, scorePedagoNSI } from '@/lib/scoring/pedago_nsi_indices';
-import { getSessionEmail } from '@/lib/session';
+import { getSessionEmail } from '@/lib/auth-utils';
 import { semanticSearch } from '@/lib/vector';
 import { PrismaClient } from '@prisma/client';
 import { Queue } from 'bullmq';

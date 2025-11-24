@@ -1,35 +1,30 @@
-import { prisma } from "@/lib/prisma";
-import { ok, err } from "@/lib/http";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
-  try {
-    const sub = await prisma.quizSubmission.findUnique({
-      where: { id: params.id },
-      include: {
-        items: {
-          include: {
-            grading: true,
-            quizItem: { select: { id: true, exerciseId: true } },
-          },
-        },
-      },
-    });
-    if (!sub) return err("not_found", undefined, { status: 404 });
-
-    const scores = sub.items.map(i => i.grading?.score ?? 0);
-    const score = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-
-    return ok({
+  const id = String(params.id);
+  const sub = await prisma.quizSubmission.findUnique({
+    where: { id },
+    include: {
+      quiz: { select: { id: true } },
+      items: { include: { quizItem: { include: { exercise: true } }, grading: true } },
+    },
+  });
+  if (!sub) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+  const items = sub.items.map((it) => ({
+    quizItemId: it.quizItemId,
+    exerciseTitle: it.quizItem.exercise.title,
+    type: it.quizItem.exercise.type,
+    score: it.grading?.score ?? 0,
+  }));
+  const total = items.length ? items.reduce((a, b) => a + (b.score ?? 0), 0) / items.length : 0;
+  return NextResponse.json({
+    result: {
       submissionId: sub.id,
-      score,
-      items: sub.items.map(i => ({
-        quizItemId: i.quizItemId,
-        score: i.grading?.score ?? 0,
-        feedback: i.grading?.openFeedbackJson ?? null,
-        codeReview: i.grading?.codeReviewJson ?? null,
-      })),
-    });
-  } catch (e: any) {
-    return err("result_failed", e?.message);
-  }
+      student: { id: sub.studentId, name: sub.studentId },
+      quizId: sub.quiz.id,
+      totalScore: total,
+      items,
+    },
+  });
 }

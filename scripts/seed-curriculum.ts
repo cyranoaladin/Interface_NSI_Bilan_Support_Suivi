@@ -13,6 +13,9 @@ async function main() {
   const file = path.resolve(process.cwd(), "curriculum/terminale-nsi.fr.yml");
   const doc = yaml.load(fs.readFileSync(file, "utf8")) as YDoc;
 
+  let themeUpserts = 0;
+  let notionUpserts = 0;
+
   // Root theme (optional umbrella)
   const root = await prisma.currTheme.upsert({
     where: { code: doc.code },
@@ -28,6 +31,7 @@ async function main() {
       update: { title: t.title, order: t.order, parentId },
       create: { code: t.code, title: t.title, order: t.order, parentId },
     });
+    themeUpserts++;
     // Notions
     let ord = 1;
     for (const n of t.notions) {
@@ -36,11 +40,12 @@ async function main() {
         update: { title: n.title, themeId: theme.id, order: ord },
         create: { code: n.code, title: n.title, themeId: theme.id, order: ord },
       });
+      notionUpserts++;
       ord++;
     }
   }
 
-  console.log("✅ Seed curriculum OK");
+  console.log(`✅ Seed curriculum OK — upserts: themes=${themeUpserts}, notions=${notionUpserts}`);
 }
 
 main().catch((e)=>{ console.error(e); process.exit(1); }).finally(()=> prisma.$disconnect());

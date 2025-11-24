@@ -10,7 +10,7 @@ export default function QuizPlay({ params }: { params: { id: string } }) {
     return <div className="p-6 text-sm opacity-70">FEATURE_QUIZ=0</div>;
   }
   const { data } = useSWR(`/api/quiz/${params.id}`, fetcher);
-  const quiz = data?.data?.quiz;
+  const quiz = data?.quiz;
 
   return (
     <div className="p-6 space-y-4">

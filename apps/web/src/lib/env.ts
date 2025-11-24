@@ -6,6 +6,7 @@ const EnvSchema = z.object({
   HF_TOKEN: z.preprocess((v) => (typeof v === 'string' && v.trim().length === 0 ? undefined : v), z.string().min(10).optional()),
   GEMINI_API_KEY: z.preprocess((v) => (typeof v === 'string' && v.trim().length === 0 ? undefined : v), z.string().min(10).optional()),
   GEMINI_EMBEDDINGS_MODEL: z.string().default('text-embedding-004'),
+  GEMINI_MODEL: z.string().default('gemini-1.5-flash-latest'),
   VECTOR_DIM: z.coerce.number().default(768),
 
   APP_BASE_URL: z.string().url(),

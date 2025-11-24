@@ -1,0 +1,26 @@
+services:
+  web:
+    user: "${UID}:${GID}"
+    environment:
+      APP_BASE_URL: "http://localhost:3000"
+      JWT_SECRET: "dev-jwt-secret"      # remplace en prod
+      FEATURE_CURRICULUM: "1"
+      FEATURE_QUIZ: "1"
+      FEATURE_RAG: "1"
+      NEXT_PUBLIC_FEATURE_QUIZ: "1"
+      REDIS_URL: "redis://redis:6379"
+      GEMINI_API_KEY: ""
+      VECTOR_DIM: "768"
+      DATABASE_URL: "postgresql://nsi:${POSTGRES_PASSWORD}@pgbouncer:5432/nsi?pgbouncer=true&connection_limit=1"
+      DIRECT_URL:   "postgresql://nsi:${POSTGRES_PASSWORD}@postgres:5432/nsi"
+  pgbouncer:
+    environment:
+      POSTGRESQL_HOST: "postgres"
+      POSTGRESQL_PORT: "5432"
+      POSTGRESQL_USERNAME: "nsi"
+      POSTGRESQL_PASSWORD: "${POSTGRES_PASSWORD}"
+      PGBOUNCER_AUTH_TYPE: "scram-sha-256"
+      PGBOUNCER_AUTH_USER: "nsi"
+      PGBOUNCER_AUTH_PASSWORD: "${POSTGRES_PASSWORD}"
+      PGBOUNCER_POOL_MODE: "transaction"
+      PGBOUNCER_IGNORE_STARTUP_PARAMETERS: "extra_float_digits"

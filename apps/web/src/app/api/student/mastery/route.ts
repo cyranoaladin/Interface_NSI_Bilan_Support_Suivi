@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSession, assertRole } from "@/lib/auth";
+import { getSession, assertRole } from "@/lib/auth-utils";
 import { ok, err } from "@/lib/http";
 
 export async function GET() {

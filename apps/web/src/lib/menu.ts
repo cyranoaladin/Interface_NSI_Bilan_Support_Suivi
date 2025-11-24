@@ -23,6 +23,8 @@ export function buildStudentSidebar(ctx: ProfileContext): NavItem[] {
   items.push({ href: '/bilans', label: 'Bilans évaluations' });
   // Accès direct au questionnaire
   items.push({ href: '/bilan/initier', label: 'Questionnaire' });
+  // Cours BDD NSI
+  items.push({ href: '/bdd-nsi', label: 'Cours: Bases de données' });
   // Ressources selon niveau
   if (terminale) {
     items.push({ href: '/dashboard/student/ressources', label: 'Ressources Terminale' });
@@ -39,6 +41,7 @@ export function buildTeacherSidebar(): { groupsLabel: string; resources: NavItem
     groupsLabel: 'Mes groupes',
     resources: [
       { href: '/dashboard/teacher/bilans', label: 'Bilans évaluations' },
+      { href: '/bdd-nsi', label: 'Cours: Bases de données' },
       { href: '/dashboard/teacher/ressources', label: 'Ressources NSI Première' },
       { href: '/dashboard/teacher/ressources-terminale', label: 'Ressources Terminale' },
       { href: '/tp-algo/index.html', label: 'TP Algo Python' },

@@ -1,0 +1,9 @@
+id_velo;id_station;statut
+V001;ST01;en_service
+V002;ST01;en_service
+V003;ST02;en_service
+V004;ST03;maintenance
+V005;ST03;en_service
+V006;ST04;en_service
+V007;ST02;en_service
+V008;ST04;en_service
